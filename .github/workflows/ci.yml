@@ -46,9 +46,28 @@ jobs:
             rm -f test/widget_test.dart
           fi
       - run: flutter pub get
-      - run: flutter build web --release --base-href /
+      - run: flutter build web --release --base-href /Lift-Load/
       - uses: actions/upload-artifact@v4
         with:
           name: lift-load-web
           path: build/web
           retention-days: 14
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: build/web
+
+  deploy-pages:
+    # Playable tester build at https://subhadipgithub.github.io/Lift-Load/ (ads stubbed).
+    if: github.ref == 'refs/heads/main'
+    needs: web-build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
