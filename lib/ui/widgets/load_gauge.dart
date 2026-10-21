@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../game/engine.dart';
+import '../layout.dart';
 import '../painters/gauge_painter.dart';
 import '../theme.dart';
 
@@ -23,13 +24,14 @@ class LoadGauge extends StatelessWidget {
       LoadZone.limit => ('At the limit', LL.mint),
       LoadZone.overload => ('OVERLOAD', LL.alarmSoft),
     };
+    final m = Metrics.of(context);
     return Semantics(
       label: 'Lift load: $label',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('LOAD', style: LL.label),
-          const SizedBox(height: 4),
+          Text('LOAD', style: LL.label.copyWith(fontSize: m.font(11))),
+          SizedBox(height: 4 * m.scale),
           TweenAnimationBuilder<double>(
             tween: Tween(end: fraction),
             duration: const Duration(milliseconds: 700),
@@ -39,11 +41,17 @@ class LoadGauge extends StatelessWidget {
               painter: GaugePainter(fraction: f, ghost: ghost),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color),
+          SizedBox(height: 4 * m.scale),
+          SizedBox(
+            width: width * 1.15,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: color),
+              ),
+            ),
           ),
         ],
       ),

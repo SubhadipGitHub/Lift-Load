@@ -18,21 +18,24 @@ class _Overlay extends StatelessWidget {
         child: ColoredBox(
           color: const Color(0xC20C0B1E),
           child: Center(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(22),
-              child: Semantics(
-                container: true,
-                label: label,
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.7, end: 1),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutBack,
-                  builder: (context, s, child) => Transform.scale(scale: s, child: child),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
-                    decoration: BoxDecoration(color: LL.cream, borderRadius: BorderRadius.circular(26)),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: children),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Semantics(
+                  container: true,
+                  label: label,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.7, end: 1),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutBack,
+                    builder: (context, s, child) => Transform.scale(scale: s, child: child),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
+                      decoration: BoxDecoration(color: LL.cream, borderRadius: BorderRadius.circular(26)),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+                    ),
                   ),
                 ),
               ),
@@ -145,7 +148,8 @@ class FailSheet extends StatelessWidget {
         Text(body, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, height: 1.4, color: LL.inkSoft)),
         const SizedBox(height: 14),
         if (c.canContinueWithAd) ...[
-          RewardedButton(label: c.adInFlight ? 'Loading ad…' : adLabel, onPressed: c.adInFlight ? null : c.continueWithAd),
+          RewardedButton(
+              label: c.adInFlight ? 'Loading ad…' : adLabel, onPressed: c.adInFlight ? null : c.continueWithAd),
           const SizedBox(height: 10),
         ],
         if (c.canContinueWithCoins) ...[
@@ -237,7 +241,9 @@ class _BuildingComplete extends StatelessWidget {
               textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 18, color: LL.brass)),
           const SizedBox(height: 4),
           Text(
-            next == null ? 'Every building delivered. The hotel stays open for more.' : 'Next stop: ${next.displayName}',
+            next == null
+                ? 'Every building delivered. The hotel stays open for more.'
+                : 'Next stop: ${next.displayName}',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: LL.cream),
           ),

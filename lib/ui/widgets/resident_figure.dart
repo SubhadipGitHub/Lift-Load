@@ -31,29 +31,33 @@ class ResidentFigure extends StatelessWidget {
 
 /// The floor tag shown above a waiting resident: shape + floor label.
 class FloorTag extends StatelessWidget {
-  const FloorTag({super.key, required this.floor, this.compact = false});
+  const FloorTag({super.key, required this.floor, this.compact = false, this.scale = 1});
 
   final Floor floor;
   final bool compact;
 
+  /// Layout scale from [Metrics].
+  final double scale;
+
   @override
   Widget build(BuildContext context) {
     final style = FloorStyle.of(floor);
+    final k = scale;
     return Container(
-      height: compact ? 14 : 20,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8),
-      decoration: BoxDecoration(color: style.color, borderRadius: BorderRadius.circular(10)),
+      height: (compact ? 14 : 20) * k,
+      padding: EdgeInsets.symmetric(horizontal: (compact ? 5 : 8) * k),
+      decoration: BoxDecoration(color: style.color, borderRadius: BorderRadius.circular(10 * k)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox.square(
-            dimension: compact ? 8 : 11,
+            dimension: (compact ? 8 : 11) * k,
             child: CustomPaint(painter: FloorShapePainter(style.shape, Colors.white)),
           ),
-          SizedBox(width: compact ? 2 : 3),
+          SizedBox(width: (compact ? 2 : 3) * k),
           Text(
             floor.label,
-            style: TextStyle(fontSize: compact ? 9 : 12, fontWeight: FontWeight.w800, color: LL.ink, height: 1),
+            style: TextStyle(fontSize: (compact ? 9 : 12) * k, fontWeight: FontWeight.w800, color: LL.ink, height: 1),
           ),
         ],
       ),

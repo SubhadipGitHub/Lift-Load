@@ -26,13 +26,16 @@ abstract final class LL {
   static const steel = Color(0xFFD9DDE3);
   static const steelFloor = Color(0xFF9AA1AB);
 
-  // Fonts: Baloo 2 (display) and Nunito Sans (body) get bundled in M4.
-  // Until then the platform font carries the same weights.
-  static const display = TextStyle(fontWeight: FontWeight.w800, height: 1.0, letterSpacing: -0.2);
+  // Baloo 2 for display, Nunito Sans for everything else (bundled, OFL).
+  static const displayFont = 'Baloo2';
+  static const bodyFont = 'NunitoSans';
+  static const display =
+      TextStyle(fontFamily: displayFont, fontWeight: FontWeight.w800, height: 1.0, letterSpacing: -0.2);
   static const label = TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: lilac);
 
   static ThemeData theme() => ThemeData(
         useMaterial3: true,
+        fontFamily: bodyFont,
         scaffoldBackgroundColor: night,
         colorScheme: const ColorScheme.dark(
           primary: brass,

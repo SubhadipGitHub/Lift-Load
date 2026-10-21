@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../game/engine.dart';
 import '../game_controller.dart';
+import '../layout.dart';
 import '../theme.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
@@ -32,6 +33,17 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     super.initState();
     _lastPhase = c.game.phase;
     c.addListener(_onChange);
+  }
+
+  @override
+  void didUpdateWidget(PlayScreen old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller) {
+      old.controller.removeListener(_onChange);
+      _lastPhase = c.game.phase;
+      _snapHome();
+      c.addListener(_onChange);
+    }
   }
 
   @override
@@ -105,6 +117,91 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final g = c.game;
+    final m = Metrics.of(context);
+    final shaft = AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) => LiftShaft(
+        game: g,
+        cabinDy: _dy.value * m.scale,
+        cabinTilt: _tilt.value,
+        onTapLift: c.tapLift,
+        onSend: c.send,
+      ),
+    );
+    final message = SizedBox(
+      height: m.messageHeight,
+      child: Center(
+        child: Semantics(
+          liveRegion: true,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: m.gap),
+            child: Text(
+              c.message,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800, color: LL.brass),
+            ),
+          ),
+        ),
+      ),
+    );
+    final hud = _Hud(c: c, onBack: _leave);
+    final bench = BenchRow(game: g, onTapSeat: c.tapBench);
+    final lanes = QueueLanes(game: g, onTapLane: c.tapQueue);
+    final toolbar = _Toolbar(c: c);
+
+    final Widget body;
+    if (m.twoPane) {
+      // Landscape tablets and wide windows: lift, gauge and bench on the left,
+      // the lobby lanes filling the right.
+      body = Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: Metrics.twoPaneMaxWidth),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: m.columnWidth,
+                child: Column(
+                  children: [
+                    hud,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(children: [shaft, message, bench]),
+                      ),
+                    ),
+                    toolbar,
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: m.gap, bottom: m.gap),
+                  child: SingleChildScrollView(child: lanes),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      body = Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: m.columnWidth),
+          child: Column(
+            children: [
+              hud,
+              shaft,
+              message,
+              bench,
+              Expanded(child: SingleChildScrollView(child: lanes)),
+              toolbar,
+            ],
+          ),
+        ),
+      );
+    }
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -112,58 +209,19 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
       },
       child: Scaffold(
         body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 430),
-              child: Stack(
-                children: [
-                  Column(
-                    children: [
-                      _Hud(c: c, onBack: _leave),
-                      AnimatedBuilder(
-                        animation: _anim,
-                        builder: (context, _) => LiftShaft(
-                          game: g,
-                          cabinDy: _dy.value,
-                          cabinTilt: _tilt.value,
-                          onTapLift: c.tapLift,
-                          onSend: c.send,
-                        ),
-                      ),
-                      SizedBox(
-                        height: 32,
-                        child: Center(
-                          child: Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              c.message,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: LL.brass),
-                            ),
-                          ),
-                        ),
-                      ),
-                      BenchRow(game: g, onTapSeat: c.tapBench),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: QueueLanes(game: g, onTapLane: c.tapQueue),
-                        ),
-                      ),
-                      _Toolbar(c: c),
-                    ],
-                  ),
-                  if (g.phase == Phase.failed)
-                    FailSheet(
-                      c: c,
-                      onHome: () {
-                        c.quitToHome();
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  if (g.phase == Phase.won) WinSheet(c: c),
-                ],
-              ),
-            ),
+          child: Stack(
+            children: [
+              Positioned.fill(child: body),
+              if (g.phase == Phase.failed)
+                FailSheet(
+                  c: c,
+                  onHome: () {
+                    c.quitToHome();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              if (g.phase == Phase.won) WinSheet(c: c),
+            ],
           ),
         ),
       ),
@@ -180,35 +238,55 @@ class _Hud extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = c.game;
+    final m = Metrics.of(context);
     return SizedBox(
-      height: 50,
+      height: m.hudHeight,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: EdgeInsets.symmetric(horizontal: 8 * m.scale),
         child: Row(
           children: [
             IconButton(
               tooltip: 'Back to the tower',
               onPressed: onBack,
+              iconSize: 24 * m.textScale,
+              visualDensity: m.form == FormFactor.compactPhone ? VisualDensity.compact : null,
               icon: const Icon(Icons.arrow_back_rounded, color: LL.cream),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
-              decoration: BoxDecoration(color: LL.brass, borderRadius: BorderRadius.circular(999)),
-              child: Text('Lv ${g.level.number}', style: LL.display.copyWith(fontSize: 19, color: LL.ink)),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12 * m.scale, vertical: 1),
+                  decoration: BoxDecoration(color: LL.brass, borderRadius: BorderRadius.circular(999)),
+                  child: Text('Lv ${g.level.number}', style: LL.display.copyWith(fontSize: m.font(19), color: LL.ink)),
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8 * m.scale),
             Expanded(
               child: Text(
                 'Trips left ${g.tripsLeft}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: LL.lilac),
+                style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.lilac),
               ),
             ),
-            const SizedBox(width: 6),
-            _Chip(icon: Icons.favorite_rounded, color: LL.alarm, text: '${c.profile.lives}'),
-            const SizedBox(width: 6),
-            _Chip(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${c.profile.coins}'),
+            SizedBox(width: 6 * m.scale),
+            // Lives and coins shrink before they overflow on the narrowest phones.
+            Flexible(
+              child: FittedBox(
+                alignment: Alignment.centerRight,
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _Chip(icon: Icons.favorite_rounded, color: LL.alarm, text: '${c.profile.lives}'),
+                    SizedBox(width: 6 * m.scale),
+                    _Chip(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${c.profile.coins}'),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -224,18 +302,21 @@ class _Chip extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(7, 4, 10, 4),
-        decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(999)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 5),
-            Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) {
+    final m = Metrics.of(context);
+    return Container(
+      padding: EdgeInsets.fromLTRB(7 * m.scale, 4 * m.scale, 10 * m.scale, 4 * m.scale),
+      decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16 * m.textScale, color: color),
+          SizedBox(width: 5 * m.scale),
+          Text(text, style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
 }
 
 class _Toolbar extends StatelessWidget {
@@ -246,34 +327,35 @@ class _Toolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final playing = c.game.phase == Phase.playing;
+    final m = Metrics.of(context);
     Widget tool({required IconData icon, required String label, required VoidCallback? onTap, String? tooltip}) =>
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
+            padding: EdgeInsets.symmetric(horizontal: 5 * m.scale),
             child: Tooltip(
               message: tooltip ?? label,
               child: FilledButton.icon(
                 onPressed: onTap,
-                icon: Icon(icon, size: 20),
+                icon: Icon(icon, size: 20 * m.textScale),
                 label: Text(label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: m.font(13))),
                 style: FilledButton.styleFrom(
                   backgroundColor: LL.facade,
                   foregroundColor: LL.cream,
                   disabledBackgroundColor: LL.facade.withValues(alpha: 0.5),
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  minimumSize: Size.fromHeight(m.toolbarHeight - 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14 * m.scale)),
                 ),
               ),
             ),
           ),
         );
     return Container(
-      height: 66,
+      height: m.toolbarHeight,
       color: LL.deep,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: 8 * m.scale),
       child: Row(
         children: [
           tool(
