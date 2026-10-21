@@ -2,6 +2,16 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-21 · v1.3 polish pass
+
+- **Polish pulled forward from M4 for the tester build.** Owner's call; Gate A testers judge feel as well as rules.
+- **Tablets rotate, phones stay portrait.** Landscape tablets get a two-pane layout; phone landscape adds nothing.
+- **Effects plus music, all synthesized in-repo.** No licensing, reproducible from `tool/audio/synth.py`; MP3 for
+  iOS Safari testers.
+- **Polish the parametric cast, not commission art.** An illustrator pass can still replace it after Gate A.
+- **No gauge ticks.** A scale would let players read weights off the needle (rule 3).
+- **Looping animation sits behind reduce-motion.** It also keeps `pumpAndSettle` tests deterministic.
+
 ## 2026-10-21 · continues always work
 
 - **Restarting or leaving a started level costs a life.** It was a free escape from a bad start, which bypassed the
