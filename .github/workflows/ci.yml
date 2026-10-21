@@ -22,7 +22,9 @@ jobs:
         run: dart format --output=none --set-exit-if-changed --line-length 120 lib test tool
         continue-on-error: true
       - name: Unit, widget and architecture tests
-        run: flutter test --reporter github --timeout 90s
+        run: |
+          flutter test --reporter json --timeout 90s > test-results.json || true
+          python3 tool/ci/report_failures.py test-results.json
       - name: Level table (solver par and trip budgets)
         run: dart run tool/simulate.dart 1 60
 
