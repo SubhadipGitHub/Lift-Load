@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.3.2
+  audioplayers: ^6.8.1
   # M3 adds: google_mobile_ads, in_app_purchase, firebase_core, firebase_analytics
 
 dev_dependencies:
@@ -20,4 +21,23 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # M4 adds: fonts (Baloo 2, Nunito Sans) and assets/sfx/*.ogg
+  # Synthesized by tool/audio/synth.py (no third-party audio).
+  assets:
+    - assets/sfx/
+    - assets/music/
+  # SIL Open Font License: assets/fonts/OFL-*.txt
+  fonts:
+    - family: Baloo2
+      fonts:
+        - asset: assets/fonts/Baloo2-600.ttf
+          weight: 600
+        - asset: assets/fonts/Baloo2-800.ttf
+          weight: 800
+    - family: NunitoSans
+      fonts:
+        - asset: assets/fonts/NunitoSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/NunitoSans-700.ttf
+          weight: 700
+        - asset: assets/fonts/NunitoSans-800.ttf
+          weight: 800

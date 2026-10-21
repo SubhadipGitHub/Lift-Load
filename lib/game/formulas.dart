@@ -71,14 +71,11 @@ abstract final class Formulas {
 
   /// T(L) = par + slack, where par is the trips the solver bot needs.
   /// (PRD v1 used Σ⌈W_f / 0.85C⌉; it under-counted above 3 floors.)
-  static int trips({required int par, required Difficulty difficulty}) =>
-      par + slack(difficulty);
+  static int trips({required int par, required Difficulty difficulty}) => par + slack(difficulty);
 
   /// Weight-only lower bound on trips, kept for reporting.
   static int weightBoundTrips(Map<Floor, int> weightByFloor, int capacity) =>
-      weightByFloor.values
-          .map((w) => (w / (0.85 * capacity)).ceil())
-          .fold(0, (a, b) => a + b);
+      weightByFloor.values.map((w) => (w / (0.85 * capacity)).ceil()).fold(0, (a, b) => a + b);
 
   /// Base coins for clearing a level: 20 + 2⌊L/5⌋.
   static int baseCoins(int level) => 20 + 2 * (level ~/ 5);

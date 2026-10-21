@@ -26,13 +26,16 @@ abstract final class LL {
   static const steel = Color(0xFFD9DDE3);
   static const steelFloor = Color(0xFF9AA1AB);
 
-  // Fonts: Baloo 2 (display) and Nunito Sans (body) get bundled in M4.
-  // Until then the platform font carries the same weights.
-  static const display = TextStyle(fontWeight: FontWeight.w800, height: 1.0, letterSpacing: -0.2);
+  // Baloo 2 for display, Nunito Sans for everything else (bundled, OFL).
+  static const displayFont = 'Baloo2';
+  static const bodyFont = 'NunitoSans';
+  static const display =
+      TextStyle(fontFamily: displayFont, fontWeight: FontWeight.w800, height: 1.0, letterSpacing: -0.2);
   static const label = TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.4, color: lilac);
 
   static ThemeData theme() => ThemeData(
         useMaterial3: true,
+        fontFamily: bodyFont,
         scaffoldBackgroundColor: night,
         colorScheme: const ColorScheme.dark(
           primary: brass,
@@ -80,6 +83,9 @@ class VenueStyle {
     required this.accent,
     required this.laneInk,
     required this.prop,
+    required this.motif,
+    required this.skyTop,
+    required this.skyBottom,
   });
 
   final Color wall;
@@ -92,6 +98,17 @@ class VenueStyle {
   final Color laneInk;
   final VenueProp prop;
 
+  /// What is painted faintly on the shaft wall behind the lift.
+  final WallMotif motif;
+
+  /// Home-screen sky behind the skyline while this venue is current.
+  final Color skyTop;
+  final Color skyBottom;
+
+  /// Shaft wall gradient, derived from [wall].
+  Color get wallTop => Color.lerp(wall, Colors.white, 0.07)!;
+  Color get wallBottom => Color.lerp(wall, Colors.black, 0.28)!;
+
   static VenueStyle of(Venue v) => switch (v) {
         Venue.society => const VenueStyle(
             wall: LL.facade,
@@ -101,6 +118,9 @@ class VenueStyle {
             accent: LL.brass,
             laneInk: Color(0xFF6B5C44),
             prop: VenueProp.plant,
+            motif: WallMotif.windows,
+            skyTop: Color(0xFF2B2A6B),
+            skyBottom: Color(0xFF6C4A8C),
           ),
         Venue.office => const VenueStyle(
             wall: Color(0xFF2B3445),
@@ -110,6 +130,9 @@ class VenueStyle {
             accent: Color(0xFF8CC4E8),
             laneInk: Color(0xFF4F5B6B),
             prop: VenueProp.cooler,
+            motif: WallMotif.mullions,
+            skyTop: Color(0xFF1C3150),
+            skyBottom: Color(0xFF4E7BA6),
           ),
         Venue.hospital => const VenueStyle(
             wall: Color(0xFF1F3F3B),
@@ -119,6 +142,9 @@ class VenueStyle {
             accent: Color(0xFF7FE0B8),
             laneInk: Color(0xFF3F6157),
             prop: VenueProp.medicalSign,
+            motif: WallMotif.signStripe,
+            skyTop: Color(0xFF17363A),
+            skyBottom: Color(0xFF3E8C7E),
           ),
         Venue.mall => const VenueStyle(
             wall: Color(0xFF3A2350),
@@ -128,6 +154,9 @@ class VenueStyle {
             accent: Color(0xFFFF9BB0),
             laneInk: Color(0xFF7A5566),
             prop: VenueProp.shoppingBag,
+            motif: WallMotif.awnings,
+            skyTop: Color(0xFF3A1F4F),
+            skyBottom: Color(0xFFC2577A),
           ),
         Venue.hotel => const VenueStyle(
             wall: Color(0xFF3B1F2B),
@@ -137,6 +166,9 @@ class VenueStyle {
             accent: Color(0xFFE2C46A),
             laneInk: Color(0xFF6E4E3A),
             prop: VenueProp.bell,
+            motif: WallMotif.wallpaper,
+            skyTop: Color(0xFF2A1420),
+            skyBottom: Color(0xFF8C4A3A),
           ),
       };
 }
@@ -144,6 +176,8 @@ class VenueStyle {
 enum FloorPattern { tiles, stone, stripes, marble, carpet }
 
 enum VenueProp { plant, cooler, medicalSign, shoppingBag, bell }
+
+enum WallMotif { windows, mullions, signStripe, awnings, wallpaper }
 
 /// How each lift kind's cabin reads at a glance. The sign names the cabin;
 /// it never says anything about who weighs what.

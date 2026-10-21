@@ -22,20 +22,25 @@ class GameController extends ChangeNotifier {
     required this.ads,
     required this.analytics,
     this.store,
+    GameAudio? audio,
     FeedbackService? feedback,
     InterstitialPolicy? interstitials,
     DateTime Function()? clock,
     Level Function(int number)? levelFor,
-  })  : feedback = feedback ?? FeedbackService(),
+  })  : audio = audio ?? const SilentAudio(),
+        feedback = feedback ?? FeedbackService(sfx: audio),
         interstitials = interstitials ?? InterstitialPolicy(clock: clock),
         _clock = clock ?? DateTime.now,
-        _levelFor = levelFor ?? LevelGenerator.generate;
+        _levelFor = levelFor ?? LevelGenerator.generate {
+    _applySettings();
+  }
 
   final Profile profile;
   final ProfileStore? store;
   final AdsService ads;
   final AnalyticsService analytics;
   final FeedbackService feedback;
+  final GameAudio audio;
   final InterstitialPolicy interstitials;
   final DateTime Function() _clock;
   final Level Function(int) _levelFor;
@@ -45,6 +50,22 @@ class GameController extends ChangeNotifier {
   bool get hasGame => _game != null;
 
   String message = '';
+
+  /// Moves since the play screen last looked, for walk animations.
+  final List<Motion> _motions = [];
+
+  /// Bumped when a resident is refused (they shake their head in [refused]
+  /// place) or a coned-off lane is tapped ([coneLane] wobbles).
+  int refuseSerial = 0;
+  Selection? refused;
+  int coneSerial = 0;
+  int? coneLane;
+
+  /// Coins a send just earned, for the coin burst; cleared when taken.
+  int _pendingRewardCoins = 0;
+
+  /// Where the selected resident stood when the player acted.
+  Selection? _from;
   bool adInFlight = false;
   bool tripleClaimed = false;
   TripRating? _lastRating;
@@ -59,12 +80,41 @@ class GameController extends ChangeNotifier {
 
   // ── Level lifecycle ──
 
+  // ── Settings ──
+
+  void _applySettings() {
+    audio
+      ..soundOn = profile.soundOn
+      ..musicOn = profile.musicOn;
+    feedback.hapticsOn = profile.hapticsOn;
+  }
+
+  void setSound(bool on) => _setting(() => profile.soundOn = on, 'sound', on);
+  void setMusic(bool on) => _setting(() => profile.musicOn = on, 'music', on);
+  void setHaptics(bool on) => _setting(() => profile.hapticsOn = on, 'haptics', on);
+
+  void _setting(void Function() apply, String name, bool on) {
+    apply();
+    _applySettings();
+    analytics.log('setting_changed', {'setting': name, 'on': on});
+    _save();
+    feedback.tap();
+    notifyListeners();
+  }
+
   void startLevel() {
+    _motions.clear();
+    _pendingRewardCoins = 0;
+    refused = null;
+    coneLane = null;
     _game = LiftGame(_levelFor(profile.level));
     _lobbyNews = '';
     tripleClaimed = false;
     _lifeSpentForThisFail = false;
-    message = debutTip(game.level.number) ?? scenarioTip(game.level.scenario) ?? 'Tap a resident, then the lift or a bench seat';
+    message = debutTip(game.level.number) ??
+        scenarioTip(game.level.scenario) ??
+        'Tap a resident, then the lift or a bench seat';
+    audio.playVenue(game.level.venue);
     analytics.log('level_start', {
       'level': game.level.number,
       'difficulty': game.level.difficulty.name,
@@ -152,6 +202,8 @@ class GameController extends ChangeNotifier {
 
   void tapQueue(int lane) {
     if (game.phase == Phase.playing && game.isLaneLocked(lane)) {
+      coneSerial++;
+      coneLane = lane;
       final n = game.tripsUntilLaneOpens;
       message = 'Closed for maintenance. Opens in $n ${n == 1 ? 'trip' : 'trips'}';
       notifyListeners();
@@ -162,12 +214,14 @@ class GameController extends ChangeNotifier {
   }
 
   void tapBench(int seat) {
+    _from = game.selection;
     final r = game.tapBench(seat);
     if (r == BenchResult.needSelection) message = 'Pick someone from the queue first';
     _afterAction();
   }
 
   void tapLift() {
+    _from = game.selection;
     final r = game.tapLift();
     if (r == BoardResult.noSelection) message = 'Select a resident first';
     _afterAction();
@@ -255,7 +309,8 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool get canAdForLife => profile.lives < Formulas.maxLives && profile.rewarded.canShow(RewardedPlacement.extraLife, now);
+  bool get canAdForLife =>
+      profile.lives < Formulas.maxLives && profile.rewarded.canShow(RewardedPlacement.extraLife, now);
 
   Future<void> adForLife() async {
     if (!canAdForLife || adInFlight) return;
@@ -306,11 +361,15 @@ class GameController extends ChangeNotifier {
       switch (e) {
         case SelectedEvent():
           message = 'Tap the lift, or an empty bench seat';
-        case SeatedEvent():
+        case SeatedEvent(:final resident, :final seat):
+          if (_from case final from?) _motions.add(Motion(resident, from, MotionTarget.seat(seat)));
           message = 'Seated on the bench';
         case RefusedEvent(:final resident, :final liftFloors):
+          refuseSerial++;
+          refused = _from;
           message = 'This lift goes to ${floorList(liftFloors)}. They live on ${resident.floor.label}.';
-        case BoardedEvent(:final zone):
+        case BoardedEvent(:final resident, :final zone):
+          if (_from case final from?) _motions.add(Motion(resident, from, const MotionTarget.cabin()));
           message = switch (zone) {
             LoadZone.light || LoadZone.empty => 'Still light. Room for more?',
             LoadZone.green => 'In the green. Send now, or risk one more',
@@ -318,6 +377,7 @@ class GameController extends ChangeNotifier {
             LoadZone.overload => 'Overloaded!',
           };
         case OverloadEvent(:final resident):
+          if (_from case final from?) _motions.add(Motion(resident, from, const MotionTarget.cabin()));
           message = 'Overloaded! The cable snapped';
           analytics.log('overload', {
             'level': game.level.number,
@@ -328,6 +388,7 @@ class GameController extends ChangeNotifier {
             'riders': game.riders.length,
           });
         case SentEvent(:final floors, :final kind, :final rating, :final coins, :final riders):
+          _pendingRewardCoins = coins;
           _lastRating = rating;
           _lastRatingCoins = coins;
           message = 'Ding! Going up to ${floorList(floors)}';
@@ -406,6 +467,20 @@ class GameController extends ChangeNotifier {
 
   void _save() => store?.save(profile);
 
+  /// Moves recorded since the last call, oldest first.
+  List<Motion> takeMotions() {
+    final out = List.of(_motions);
+    _motions.clear();
+    return out;
+  }
+
+  /// Coins the last send earned (0 for a grey trip), once.
+  int takeReward() {
+    final c = _pendingRewardCoins;
+    _pendingRewardCoins = 0;
+    return c;
+  }
+
   /// Accessibility label for a resident: type, cargo and floor, never weight.
   static String describe(Resident r) =>
       '${r.type.displayName}${r.cargo == Cargo.none ? '' : ' with a ${r.cargo.displayName}'} going to ${r.floor.label}';
@@ -434,4 +509,23 @@ class GameController extends ChangeNotifier {
         Scenario.rushHour => 'Rush hour: more residents will arrive',
         null => null,
       };
+}
+
+/// Where a moving resident ends up.
+class MotionTarget {
+  const MotionTarget.seat(int this.seat);
+  const MotionTarget.cabin() : seat = null;
+
+  /// Bench seat index, or null for the lift cabin.
+  final int? seat;
+}
+
+/// One resident walking from a lane front or seat to a seat or the cabin.
+/// Every resident walks the same way: nothing here depends on weight.
+class Motion {
+  const Motion(this.resident, this.from, this.to);
+
+  final Resident resident;
+  final Selection from;
+  final MotionTarget to;
 }

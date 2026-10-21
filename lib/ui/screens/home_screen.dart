@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -8,9 +9,13 @@ import '../../game/formulas.dart';
 import '../../game/scenario.dart';
 import '../../game/venue.dart';
 import '../game_controller.dart';
+import '../layout.dart';
+import '../motion.dart';
+import '../painters/sky_painter.dart';
 import '../theme.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
+import '../widgets/settings_sheet.dart';
 import 'play_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -63,71 +68,155 @@ class _HomeScreenState extends State<HomeScreen> {
     final p = c.profile;
     final next = p.nextLifeIn(c.now);
     final hasLives = p.lives > 0;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _Stat(icon: Icons.favorite_rounded, color: LL.alarm, text: '${p.lives}'),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          next == null ? '' : 'next in ${_countdown(next)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: LL.lilac, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      _Stat(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${p.coins}'),
-                      const SizedBox(width: 6),
-                      _Stat(icon: Icons.scale_rounded, color: LL.brass, text: '${p.scales}'),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text.rich(
-                    TextSpan(children: [
-                      const TextSpan(text: 'Lift '),
-                      TextSpan(text: 'Load', style: LL.display.copyWith(fontSize: 58, color: LL.brass)),
-                    ]),
-                    style: LL.display.copyWith(fontSize: 58, color: LL.cream),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text('Fill every lift. Never overload it.',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: LL.lilac)),
-                  Expanded(child: _VenueMap(level: p.level)),
-                  if (p.winStreak >= 2)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Text('Win streak ${p.winStreak}',
-                          style: const TextStyle(fontWeight: FontWeight.w800, color: LL.brass)),
-                    ),
-                  PrimaryButton(
-                    label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
-                    height: 62,
-                    onPressed: hasLives ? _play : null,
-                  ),
-                  if (!hasLives && c.canAdForLife) ...[
-                    const SizedBox(height: 10),
-                    RewardedButton(
-                      label: c.adInFlight ? 'Loading ad…' : 'Watch ad · +1 life',
-                      onPressed: c.adInFlight ? null : c.adForLife,
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  Text(_nextHint(p.level), style: const TextStyle(fontSize: 12, color: LL.lilac, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+    final m = Metrics.of(context);
+    final stats = Row(
+      children: [
+        _Stat(icon: Icons.favorite_rounded, color: LL.alarm, text: '${p.lives}'),
+        SizedBox(width: 6 * m.scale),
+        Expanded(
+          child: Text(
+            next == null ? '' : 'next in ${_countdown(next)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: m.font(12), color: LL.lilac, fontWeight: FontWeight.w700),
           ),
         ),
+        _Stat(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${p.coins}'),
+        SizedBox(width: 6 * m.scale),
+        _Stat(icon: Icons.scale_rounded, color: LL.brass, text: '${p.scales}'),
+        IconButton(
+          tooltip: 'Settings',
+          onPressed: () => showSettingsSheet(context, c),
+          iconSize: 24 * m.textScale,
+          icon: const Icon(Icons.settings_rounded, color: LL.lilac),
+        ),
+      ],
+    );
+    final title = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text.rich(
+            TextSpan(children: [
+              const TextSpan(text: 'Lift '),
+              TextSpan(text: 'Load', style: LL.display.copyWith(fontSize: m.font(58), color: LL.brass)),
+            ]),
+            style: LL.display.copyWith(fontSize: m.font(58), color: LL.cream),
+          ),
+        ),
+        SizedBox(height: 4 * m.scale),
+        Text(
+          'Fill every lift. Never overload it.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: m.font(15), fontWeight: FontWeight.w700, color: LL.lilac),
+        ),
+      ],
+    );
+    final actions = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (p.winStreak >= 2)
+          Padding(
+            padding: EdgeInsets.only(bottom: 10 * m.scale),
+            child: Text(
+              'Win streak ${p.winStreak}',
+              style: TextStyle(fontSize: m.font(14), fontWeight: FontWeight.w800, color: LL.brass),
+            ),
+          ),
+        _Pulse(
+          active: hasLives,
+          child: PrimaryButton(
+            label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
+            height: 62 * m.scale,
+            onPressed: hasLives ? _play : null,
+          ),
+        ),
+        if (!hasLives && c.canAdForLife) ...[
+          SizedBox(height: 10 * m.scale),
+          RewardedButton(
+            label: c.adInFlight ? 'Loading ad…' : 'Watch ad · +1 life',
+            onPressed: c.adInFlight ? null : c.adForLife,
+          ),
+        ],
+        SizedBox(height: 10 * m.scale),
+        Text(
+          _nextHint(p.level),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: m.font(12), color: LL.lilac, fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+    final map = _VenueMap(level: p.level);
+
+    final Widget body;
+    if (m.twoPane) {
+      body = ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: Metrics.twoPaneMaxWidth),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20 * m.scale, vertical: 12 * m.scale),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    stats,
+                    const Spacer(),
+                    title,
+                    SizedBox(height: 24 * m.scale),
+                    actions,
+                    const Spacer(),
+                  ],
+                ),
+              ),
+              SizedBox(width: 24 * m.scale),
+              Expanded(child: map),
+            ],
+          ),
+        ),
+      );
+    } else {
+      body = ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: m.columnWidth),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20 * m.scale),
+          child: Column(
+            children: [
+              SizedBox(height: 12 * m.scale),
+              stats,
+              SizedBox(height: 18 * m.scale),
+              title,
+              Expanded(child: map),
+              actions,
+              SizedBox(height: 20 * m.scale),
+            ],
+          ),
+        ),
+      );
+    }
+    final sky = VenueStyle.of(Venue.of(p.level));
+    return Scaffold(
+      body: IdleClockScope(
+        child: Builder(builder: (context) {
+          final clock = IdleClock.of(context);
+          final content = SafeArea(child: Center(child: body));
+          if (clock == null) return CustomPaint(painter: SkyPainter(style: sky), child: content);
+          // Clouds drift across in a minute; stars twinkle every few seconds.
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: clock,
+                    builder: (context, t, _) =>
+                        CustomPaint(painter: SkyPainter(style: sky, drift: (t / 60) % 1, twinkle: (t / 4) % 1)),
+                  ),
+                ),
+              ),
+              content,
+            ],
+          );
+        }),
       ),
     );
   }
@@ -161,6 +250,26 @@ String _scenarioName(Scenario s) => switch (s) {
       Scenario.rushHour => 'rush hour',
     };
 
+/// A slow breathing scale that invites a tap. Still under reduced motion.
+class _Pulse extends StatelessWidget {
+  const _Pulse({required this.child, required this.active});
+
+  final Widget child;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final clock = active ? IdleClock.of(context) : null;
+    if (clock == null) return child;
+    return ValueListenableBuilder<double>(
+      valueListenable: clock,
+      child: child,
+      builder: (context, t, child) =>
+          Transform.scale(scale: 1 + 0.025 * (0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.8)), child: child),
+    );
+  }
+}
+
 class _Stat extends StatelessWidget {
   const _Stat({required this.icon, required this.color, required this.text});
 
@@ -169,18 +278,21 @@ class _Stat extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(8, 5, 12, 5),
-        decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(999)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 6),
-            Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) {
+    final m = Metrics.of(context);
+    return Container(
+      padding: EdgeInsets.fromLTRB(8 * m.scale, 5 * m.scale, 12 * m.scale, 5 * m.scale),
+      decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18 * m.textScale, color: color),
+          SizedBox(width: 6 * m.scale),
+          Text(text, style: TextStyle(fontSize: m.font(14), fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
 }
 
 /// Home map: the five buildings as a skyline. Each window is one level and
@@ -204,48 +316,61 @@ class _VenueMap extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = Venue.of(level);
     final inVenue = (level - current.firstLevel + 1).clamp(1, Venue.levelsPerVenue);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Column(
-        children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, box) => Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  for (final (i, v) in Venue.values.indexed) ...[
-                    if (i > 0) const SizedBox(width: 6),
-                    Expanded(
-                      child: _Building(
-                        venue: v,
-                        height: box.maxHeight * _heights[i],
-                        cleared: (level - v.firstLevel).clamp(0, Venue.levelsPerVenue),
-                        current: v == current,
+    final m = Metrics.of(context);
+    return LayoutBuilder(builder: (context, outer) {
+      // Short screens drop the regulars first, so the skyline keeps room.
+      final showRegulars = outer.maxHeight >= 150 * m.scale + 110;
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 14 * m.scale),
+        child: Column(
+          children: [
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, box) => Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final (i, v) in Venue.values.indexed) ...[
+                      if (i > 0) SizedBox(width: 6 * m.scale),
+                      Expanded(
+                        child: _Building(
+                          venue: v,
+                          height: box.maxHeight * _heights[i],
+                          cleared: (level - v.firstLevel).clamp(0, Venue.levelsPerVenue),
+                          current: v == current,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-          Container(height: 6, color: LL.rule),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (final t in _regulars[current]!)
-                if (t.unlockLevel <= level) ResidentFigure(type: t, height: 58),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(current.displayName.toUpperCase(), style: LL.label.copyWith(color: VenueStyle.of(current).accent)),
-          const SizedBox(height: 2),
-          Text('Level $inVenue of ${Venue.levelsPerVenue} in this building',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: LL.lilac)),
-        ],
-      ),
-    );
+            Container(height: 6 * m.scale, color: LL.rule),
+            SizedBox(height: 8 * m.scale),
+            if (showRegulars)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final t in _regulars[current]!)
+                    if (t.unlockLevel <= level) ResidentFigure(type: t, height: 58 * m.scale),
+                ],
+              ),
+            SizedBox(height: 6 * m.scale),
+            Text(
+              current.displayName.toUpperCase(),
+              style: LL.label.copyWith(fontSize: m.font(11), color: VenueStyle.of(current).accent),
+            ),
+            SizedBox(height: 2 * m.scale),
+            Text(
+              'Level $inVenue of ${Venue.levelsPerVenue} in this building',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w700, color: LL.lilac),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -269,7 +394,12 @@ class _Building extends StatelessWidget {
         height: height,
         padding: const EdgeInsets.fromLTRB(5, 8, 5, 5),
         decoration: BoxDecoration(
-          color: style.wall,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [style.wallTop, style.wall, style.wallBottom],
+          ),
+          boxShadow: current ? [BoxShadow(color: style.accent.withValues(alpha: 0.35), blurRadius: 14)] : null,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           border: Border.all(color: current ? style.accent : LL.rule, width: current ? 2.5 : 1),
         ),
@@ -285,7 +415,9 @@ class _Building extends StatelessWidget {
                         child: Container(
                           margin: const EdgeInsets.all(1.5),
                           decoration: BoxDecoration(
-                            color: r * 2 + c < cleared ? style.accent : LL.deep.withValues(alpha: 0.6),
+                            color: r * 2 + c < cleared ? const Color(0xFFFFD98A) : LL.deep.withValues(alpha: 0.6),
+                            boxShadow:
+                                r * 2 + c < cleared ? const [BoxShadow(color: Color(0x66FFD98A), blurRadius: 3)] : null,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),

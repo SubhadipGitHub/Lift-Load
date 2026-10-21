@@ -3,6 +3,32 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-21 · v1.3 polish pass (branch ccr-445849fc-sjvxbg, PR #3)
+
+**Done**
+- PRD v1.3 signed off in chat: responsive layout, art, motion, sound and music, landscape on tablets. No rule changes.
+- Layout: `Metrics` sizes everything from the 390×844 design across compact phone, phone, tablet portrait and two-pane
+  (tablet landscape, wide windows). Text scale clamped to 1.3; touch targets ≥ 48. The 320×568 overflow is gone.
+- Art: Baloo 2 and Nunito Sans bundled; outlined cast with blinks; steel cabin with doors and floor display; venue
+  shaft walls; gauge bezel and glow (still no ticks); home sky.
+- Motion: one idle clock (off under reduce-motion), walk flights, lane step-ups, doors, crash shake and sparks, coin
+  bursts, confetti. All fixed-duration per resident, so nothing reveals weight.
+- Audio: 17 synthesized cues and five venue loops (`tool/audio/synth.py`), `AudioService` on audioplayers, settings
+  sheet with sound, music and haptics, `setting_changed` analytics.
+- Web shell committed: lift-cabin icons (`tool/icons/make_icons.py`), manifest, boot splash. Checked in Chromium at
+  phone and tablet-landscape sizes; all cues load in under 2 s after the cue-loading fix.
+- Tests: 111 green locally (responsive sweep of 14 sizes, motion, audio and settings).
+
+**Open**
+- Sound mix and music volume (0.35) are untested on a real phone speaker.
+- Android launcher icon waits for M3 (`android/` still generated).
+- Local `dart format` reflows three `lib/game` files to the repo's 120-column width; left unstaged, not in the PR.
+
+**Next**
+1. Owner plays the PR #3 web build on a phone and a tablet (rotate the tablet; toggle sound and music).
+2. Merge PR #3, then Gate A with levels 1–60.
+3. Queued depth from v1.2 (best-play solver, trap Hard levels, stars, cabin spots, pairs, hurry residents).
+
 ## 2026-10-21 · v1.2 variety pass (branch ccr-445849fc-sjvxbg)
 
 **Done**

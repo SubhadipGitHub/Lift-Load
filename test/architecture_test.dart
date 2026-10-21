@@ -4,11 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Guards the two rules in CLAUDE.md that a reviewer could miss.
 void main() {
-  List<File> dartFiles(String dir) => Directory(dir)
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'))
-      .toList();
+  List<File> dartFiles(String dir) =>
+      Directory(dir).listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart')).toList();
 
   test('lib/game is pure Dart: no Flutter imports', () {
     for (final f in dartFiles('lib/game')) {
