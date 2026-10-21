@@ -88,7 +88,7 @@
       "design_height": 102,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "an office worker man in his thirties, average build with a very slight tummy. Wearing pale blue long-sleeved formal shirt with a tie, grey trousers, brown shoes, short dark hair.",
+      "prompt": "a grown office worker man in his mid-thirties, clearly an adult and not a teenager, of sturdy average build: solid, slightly broad shoulders, a visible small round tummy and thicker arms and legs than a slim student. Wearing pale blue long-sleeved formal shirt with a tie, grey trousers, brown shoes, short dark hair.",
       "weight_read": "medium; average build",
       "skin": {
         "name": "medium brown",
