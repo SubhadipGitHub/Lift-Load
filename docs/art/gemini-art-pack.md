@@ -49,8 +49,10 @@ python3 tool/art/gemini_art.py process && python3 tool/art/gemini_art.py sheet
 4. **Review** `art/processed/_cast_lineup.png` against the checklist below, then regenerate what fails.
 
 Without an API key you can do the same by hand. Run `python3 tool/art/gemini_art.py prompts > art/prompts.md` and
-paste each prompt into the Gemini app, attaching the reference image the step names. Save each result as
-`art/raw/<id>.png`, then run `process` and `sheet`.
+paste each prompt into the Gemini app or AI Studio, one new chat per image, attaching the reference image the step
+names. App prompts state the aspect ratio in words, since the app has no setting for it. Save each result as
+`art/raw/<id>.png`, then run `process` and `sheet`. If the app adds a small corner watermark, `process` drops it from
+characters and props, because it removes every island under 5% of the largest. Crop scenes by hand if one shows.
 
 **Cost.** Expect roughly a few dollars to about $15 per full pass of 53 images on the pro model, plus retries.
 Check current pricing before a full run.

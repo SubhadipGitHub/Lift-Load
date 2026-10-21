@@ -60,6 +60,18 @@ def full_prompt(pack: dict, a: dict) -> str:
     return "\n\n".join(parts)
 
 
+# The Gemini app has no aspect-ratio setting, so app prompts say it in words.
+SHAPE = {"2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
+         "9:16": "Tall portrait image, 9:16 aspect ratio.", "4:5": "Portrait image, 4:5 aspect ratio.",
+         "16:9": "Wide landscape image, 16:9 aspect ratio.", "1:1": "Square image, 1:1 aspect ratio."}
+
+
+def app_prompt(pack: dict, a: dict) -> str:
+    text = full_prompt(pack, a)
+    text = text[0].upper() + text[1:]
+    return f"{SHAPE[a['aspect']]} {text}" if a.get("aspect") else text
+
+
 def ordered(pack: dict) -> list[dict]:
     """Assets in an order where every reference and edit source comes first."""
     by_id = {a["id"]: a for a in pack["assets"]}
@@ -84,8 +96,9 @@ def ordered(pack: dict) -> list[dict]:
 
 def cmd_prompts(pack: dict, _: argparse.Namespace) -> None:
     print("# Lift Load art pack: prompts for the Gemini app\n")
-    print("Work top to bottom. Attach the named image where a step says so. Save each result as "
-          "`art/raw/<id>.png`, then run `python3 tool/art/gemini_art.py process`.\n")
+    print("Work top to bottom, one new chat per image. Attach the named image where a step says so. Save each "
+          "result as `art/raw/<id>.png`, then run `python3 tool/art/gemini_art.py process`. A small corner "
+          "watermark from the app is fine: `process` removes it from characters and props.\n")
     for a in ordered(pack):
         print(f"## {a['id']} ({a['name']})\n")
         if a.get("aspect"):
@@ -96,7 +109,7 @@ def cmd_prompts(pack: dict, _: argparse.Namespace) -> None:
             print(f"Attach as style reference: `art/raw/{a['reference']}.png`")
         if a.get("weight_read"):
             print(f"Review for: {a['weight_read']}")
-        print("\n```text\n" + full_prompt(pack, a) + "\n```\n")
+        print("\n```text\n" + app_prompt(pack, a) + "\n```\n")
 
 
 # ── generate ─────────────────────────────────────────────────────────────────
@@ -182,6 +195,49 @@ def _key_out(img):
     return Image.fromarray(rgba, "RGBA")
 
 
+def _drop_specks(img):
+    """Clear small islands left after keying (a corner watermark from the Gemini app, a stray fleck), keeping
+    every part at least 5% the size of the largest one (so a pram or trolley beside its owner survives)."""
+    import numpy as np
+    from PIL import Image
+
+    step = 4
+    alpha = img.getchannel("A")
+    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > 8
+    h, w = small.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    sizes = [0]
+    for y0 in range(h):
+        for x0 in range(w):
+            if not small[y0, x0] or labels[y0, x0]:
+                continue
+            n = len(sizes)
+            labels[y0, x0] = n
+            stack, count = [(y0, x0)], 0
+            while stack:
+                y, x = stack.pop()
+                count += 1
+                for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= yy < h and 0 <= xx < w and small[yy, xx] and not labels[yy, xx]:
+                        labels[yy, xx] = n
+                        stack.append((yy, xx))
+            sizes.append(count)
+    if len(sizes) <= 2:
+        return img
+    biggest = max(sizes)
+    keep = np.isin(labels, [i for i, c in enumerate(sizes) if i and c >= 0.05 * biggest])
+    # Grow the kept mask by one coarse cell so soft edges are not shaved off.
+    grown = keep.copy()
+    grown[1:, :] |= keep[:-1, :]
+    grown[:-1, :] |= keep[1:, :]
+    grown[:, 1:] |= keep[:, :-1]
+    grown[:, :-1] |= keep[:, 1:]
+    mask = Image.fromarray((grown * 255).astype(np.uint8)).resize(img.size, Image.NEAREST)
+    out = img.copy()
+    out.putalpha(Image.fromarray(np.minimum(np.asarray(alpha), np.asarray(mask))))
+    return out
+
+
 def _trim_box(img):
     return img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
 
@@ -196,7 +252,7 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
             continue
         img = Image.open(src)
         if a["kind"] in ("resident", "resident_blink", "prop"):
-            img = _key_out(img)
+            img = _drop_specks(_key_out(img))
             box = _trim_box(img)
             if a.get("edit_of"):
                 # A blink frame swaps in over its idle frame, so it takes the idle frame's canvas, crop and scale
@@ -205,7 +261,7 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
                 if not base.exists():
                     print(f"skip   {a['id']}: needs art/raw/{a['edit_of']}.png")
                     continue
-                idle = _key_out(Image.open(base))
+                idle = _drop_specks(_key_out(Image.open(base)))
                 img = img.resize(idle.size, Image.LANCZOS)
                 box = _trim_box(idle)
             if box:
