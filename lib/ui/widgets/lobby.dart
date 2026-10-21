@@ -120,8 +120,9 @@ class _Seat extends StatelessWidget {
       border = const Color(0xFF5A5592);
     }
     final clock = seatHint ? IdleClock.of(context) : null;
+    // While breathing the border changes every frame, so it must not tween.
     Widget seat(Color border) => AnimatedContainer(
-          duration: motionMs(context, 150),
+          duration: clock == null ? motionMs(context, 150) : Duration.zero,
           height: m.seatHeight,
           decoration: BoxDecoration(
             color: bg,

@@ -14,12 +14,6 @@ import 'ui/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Phones stay portrait; tablets may rotate and get the two-pane layout.
-  final view = WidgetsBinding.instance.platformDispatcher.views.first;
-  final shortest = view.physicalSize.shortestSide / view.devicePixelRatio;
-  await SystemChrome.setPreferredOrientations(
-    shortest >= Metrics.tabletShortestSide ? const [] : const [DeviceOrientation.portraitUp],
-  );
 
   final store = await ProfileStore.open();
   // M1: stubbed ads and console analytics. M3 swaps in AdMob and Firebase
@@ -55,12 +49,29 @@ class LiftLoadApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: LL.theme(),
         // Large system text is honoured up to 1.3x; past that rows would break.
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
-          ),
-          child: child!,
-        ),
+        builder: (context, child) {
+          _fitOrientation(MediaQuery.sizeOf(context));
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+            ),
+            child: child!,
+          );
+        },
         home: HomeScreen(controller: controller),
       );
+}
+
+/// Phones stay portrait; tablets may rotate and get the two-pane layout.
+/// Decided from the laid-out size rather than at startup, where Android can
+/// still report a zero window, and re-decided when the window changes size
+/// (a foldable opening). Unknown sizes leave rotation alone.
+bool? _rotates;
+
+void _fitOrientation(Size size) {
+  if (size.isEmpty) return;
+  final rotates = size.shortestSide >= Metrics.tabletShortestSide;
+  if (rotates == _rotates) return;
+  _rotates = rotates;
+  SystemChrome.setPreferredOrientations(rotates ? const [] : const [DeviceOrientation.portraitUp]);
 }

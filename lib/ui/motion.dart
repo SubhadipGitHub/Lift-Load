@@ -70,10 +70,10 @@ abstract final class IdleClock {
 }
 
 /// Idle life for a waiting figure: a gentle sway and breathing bob, de-synced
-/// by [seed], plus a blink every few seconds. The child is rebuilt with the
-/// current blink state; the sway is a transform over a repaint boundary, so
-/// figures repaint only when a blink starts or ends.
-class IdleSway extends StatelessWidget {
+/// by [seed], plus a blink every few seconds. The sway is a transform around
+/// a cached child, and the child (the figure) is rebuilt only when a blink
+/// starts or ends, so an idle lobby costs a repaint per frame, not a rebuild.
+class IdleSway extends StatefulWidget {
   const IdleSway({super.key, required this.seed, required this.builder, this.amplitude = 1});
 
   final int seed;
@@ -81,25 +81,62 @@ class IdleSway extends StatelessWidget {
   final Widget Function(BuildContext context, bool blink) builder;
 
   @override
-  Widget build(BuildContext context) {
+  State<IdleSway> createState() => _IdleSwayState();
+}
+
+class _IdleSwayState extends State<IdleSway> {
+  ValueListenable<double>? _clock;
+  final ValueNotifier<bool> _blink = ValueNotifier(false);
+
+  double get _phase => (widget.seed * 0.618) % 1.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     final clock = IdleClock.of(context);
-    if (clock == null) return builder(context, false);
-    final phase = (seed * 0.618) % 1.0;
-    final blinkEvery = 3.2 + (seed * 0.37) % 2.6;
-    return ValueListenableBuilder<double>(
-      valueListenable: clock,
-      builder: (context, t, _) {
-        final sway = math.sin((t / 2.9 + phase) * 2 * math.pi) * 0.022 * amplitude;
-        final bob = (math.sin((t / 1.6 + phase) * 2 * math.pi) + 1) * 0.6 * amplitude;
-        final blink = (t + phase * blinkEvery) % blinkEvery < 0.13;
+    if (clock == _clock) return;
+    _clock?.removeListener(_tick);
+    _clock = clock;
+    _clock?.addListener(_tick);
+    if (clock == null) _blink.value = false;
+  }
+
+  void _tick() {
+    final blinkEvery = 3.2 + (widget.seed * 0.37) % 2.6;
+    _blink.value = (_clock!.value + _phase * blinkEvery) % blinkEvery < 0.13;
+  }
+
+  @override
+  void dispose() {
+    _clock?.removeListener(_tick);
+    _blink.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final clock = _clock;
+    if (clock == null) return widget.builder(context, false);
+    return AnimatedBuilder(
+      animation: clock,
+      builder: (context, child) {
+        final t = clock.value;
+        final sway = math.sin((t / 2.9 + _phase) * 2 * math.pi) * 0.022 * widget.amplitude;
+        final bob = (math.sin((t / 1.6 + _phase) * 2 * math.pi) + 1) * 0.6 * widget.amplitude;
         return Transform(
           alignment: Alignment.bottomCenter,
           transform: Matrix4.identity()
             ..translateByDouble(0, -bob, 0, 1)
             ..rotateZ(sway),
-          child: RepaintBoundary(child: builder(context, blink)),
+          child: child,
         );
       },
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _blink,
+          builder: (context, blink, _) => widget.builder(context, blink),
+        ),
+      ),
     );
   }
 }
