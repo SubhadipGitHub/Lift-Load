@@ -25,7 +25,8 @@ GameController controller(DebugAnalytics analytics, {Level Function(int)? levelF
 /// A World 2 lobby with every wide figure and every cargo prop in it.
 Level variety(Venue venue, LiftKind kind, Scenario? scenario) {
   var id = 0;
-  Resident r(Floor f, ResidentType t, [Cargo cargo = Cargo.none]) => Resident(id: ++id, type: t, floor: f, cargo: cargo);
+  Resident r(Floor f, ResidentType t, [Cargo cargo = Cargo.none]) =>
+      Resident(id: ++id, type: t, floor: f, cargo: cargo);
   const c = Floor.coral, t = Floor.teal, b = Floor.blue;
   return Level(
     number: 90,
@@ -39,11 +40,22 @@ Level variety(Venue venue, LiftKind kind, Scenario? scenario) {
     scenario: scenario,
     lockedLane: scenario == Scenario.maintenance ? 3 : null,
     lockedUntilTrip: scenario == Scenario.maintenance ? 3 : 0,
-    arrivals: scenario == Scenario.rushHour ? [Arrival(afterTrip: 3, lane: 0, resident: r(t, ResidentType.kid))] : const [],
+    arrivals:
+        scenario == Scenario.rushHour ? [Arrival(afterTrip: 3, lane: 0, resident: r(t, ResidentType.kid))] : const [],
     queues: [
-      [r(c, ResidentType.bellhop), r(t, ResidentType.uncle, Cargo.cylinder), r(b, ResidentType.kid), r(c, ResidentType.aunty)],
+      [
+        r(c, ResidentType.bellhop),
+        r(t, ResidentType.uncle, Cargo.cylinder),
+        r(b, ResidentType.kid),
+        r(c, ResidentType.aunty)
+      ],
       [r(c, ResidentType.wheelchair), r(b, ResidentType.officeW, Cargo.suitcase), r(t, ResidentType.guard)],
-      [r(c, ResidentType.pram), r(t, ResidentType.puffer), r(b, ResidentType.grandpa, Cargo.waterCan), r(c, ResidentType.gym)],
+      [
+        r(c, ResidentType.pram),
+        r(t, ResidentType.puffer),
+        r(b, ResidentType.grandpa, Cargo.waterCan),
+        r(c, ResidentType.gym)
+      ],
       [r(t, ResidentType.rider, Cargo.waterCan), r(c, ResidentType.student), r(b, ResidentType.officeM)],
     ],
   );
@@ -71,4 +83,3 @@ Widget app(Widget home, {bool animate = false, double textScale = 1}) => Materia
       ),
       home: home,
     );
-

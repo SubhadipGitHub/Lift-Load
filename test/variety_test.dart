@@ -32,7 +32,8 @@ Level hand(
     lockedLane: lockedLane,
     lockedUntilTrip: lockedUntilTrip,
     arrivals: [
-      for (final (after, lane, f, ty) in arrivals) Arrival(afterTrip: after, lane: lane, resident: Resident(id: ++id, type: ty, floor: f)),
+      for (final (after, lane, f, ty) in arrivals)
+        Arrival(afterTrip: after, lane: lane, resident: Resident(id: ++id, type: ty, floor: f)),
     ],
   );
 }
@@ -61,9 +62,16 @@ void main() {
 
     test('cargo counts on the gauge and can snap the cable', () {
       // 104 + 30, 104 + 30 = 268 of 280; one more cylinder carrier crashes.
-      final g = LiftGame(hand([
-        [(c, ResidentType.uncle, Cargo.cylinder), (c, ResidentType.uncle, Cargo.cylinder), (c, ResidentType.kid, none)],
-      ], capacity: 280, floors: const [c]));
+      final g = LiftGame(hand(
+          [
+            [
+              (c, ResidentType.uncle, Cargo.cylinder),
+              (c, ResidentType.uncle, Cargo.cylinder),
+              (c, ResidentType.kid, none)
+            ],
+          ],
+          capacity: 280,
+          floors: const [c]));
       board(g, 0);
       board(g, 0);
       expect(g.load, 268);
@@ -87,8 +95,17 @@ void main() {
       expect(Formulas.liftCapacity(360, LiftKind.service), 504);
       expect(Formulas.liftCapacity(360, LiftKind.express), 360);
       final g = LiftGame(hand([
-        [(c, ResidentType.kid, none), (t, ResidentType.kid, none), (c, ResidentType.kid, none), (t, ResidentType.kid, none)],
-      ], schedule: const [LiftKind.normal, LiftKind.old, LiftKind.service]));
+        [
+          (c, ResidentType.kid, none),
+          (t, ResidentType.kid, none),
+          (c, ResidentType.kid, none),
+          (t, ResidentType.kid, none)
+        ],
+      ], schedule: const [
+        LiftKind.normal,
+        LiftKind.old,
+        LiftKind.service
+      ]));
       expect(g.liftKind, LiftKind.normal);
       expect(g.capacity, 360);
       board(g, 0);
@@ -105,7 +122,11 @@ void main() {
       // Old lift: 270. Uncle 104 + guard 96 = 200 (74%, light); + aunty 80 = 280 > 270.
       final g = LiftGame(hand([
         [(c, ResidentType.uncle, none), (c, ResidentType.guard, none), (c, ResidentType.aunty, none)],
-      ], floors: const [c], schedule: const [LiftKind.old]));
+      ], floors: const [
+        c
+      ], schedule: const [
+        LiftKind.old
+      ]));
       board(g, 0);
       board(g, 0);
       expect(g.zone, LoadZone.light);
@@ -117,7 +138,13 @@ void main() {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none), (t, ResidentType.kid, none), (b, ResidentType.kid, none)],
         [(c, ResidentType.kid, none)],
-      ], floors: const [c, t, b], schedule: const [LiftKind.express]));
+      ], floors: const [
+        c,
+        t,
+        b
+      ], schedule: const [
+        LiftKind.express
+      ]));
       expect(g.liftFloors, [c, t]);
       board(g, 0); // coral
       g.tapQueue(0);
@@ -134,14 +161,23 @@ void main() {
     test('an express with one floor left serves just that floor', () {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none), (c, ResidentType.kid, none)],
-      ], floors: const [c, t], schedule: const [LiftKind.express]));
+      ], floors: const [
+        c,
+        t
+      ], schedule: const [
+        LiftKind.express
+      ]));
       expect(g.liftFloors, [c]);
     });
 
     test('running out of trips on the way to an express continues into it', () {
-      final g = LiftGame(hand([
-        [(c, ResidentType.kid, none), (t, ResidentType.kid, none), (b, ResidentType.kid, none)],
-      ], floors: const [c, t, b], trips: 1, schedule: const [LiftKind.normal, LiftKind.express]));
+      final g = LiftGame(hand(
+          [
+            [(c, ResidentType.kid, none), (t, ResidentType.kid, none), (b, ResidentType.kid, none)],
+          ],
+          floors: const [c, t, b],
+          trips: 1,
+          schedule: const [LiftKind.normal, LiftKind.express]));
       board(g, 0);
       sendAndArrive(g);
       expect(g.failKind, FailKind.outOfTrips);
@@ -152,8 +188,18 @@ void main() {
 
     test('repair after a crash on an express keeps both floors', () {
       final g = LiftGame(hand([
-        [(c, ResidentType.uncle, none), (t, ResidentType.uncle, none), (c, ResidentType.uncle, none), (t, ResidentType.uncle, none)],
-      ], floors: const [c, t], schedule: const [LiftKind.express]));
+        [
+          (c, ResidentType.uncle, none),
+          (t, ResidentType.uncle, none),
+          (c, ResidentType.uncle, none),
+          (t, ResidentType.uncle, none)
+        ],
+      ], floors: const [
+        c,
+        t
+      ], schedule: const [
+        LiftKind.express
+      ]));
       for (var i = 0; i < 3; i++) {
         board(g, 0);
       }
@@ -172,7 +218,10 @@ void main() {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none), (c, ResidentType.kid, none)],
         [(c, ResidentType.aunty, none), (t, ResidentType.kid, none)],
-      ], floors: const [c, t], lockedLane: 0, lockedUntilTrip: 1));
+      ], floors: const [
+        c,
+        t
+      ], lockedLane: 0, lockedUntilTrip: 1));
       g.tapQueue(0);
       expect(g.selection, isNull);
       board(g, 1);
@@ -187,7 +236,10 @@ void main() {
       final g = LiftGame(hand([
         [(t, ResidentType.kid, none)],
         [(c, ResidentType.kid, none)],
-      ], floors: const [c, t], lockedLane: 0, lockedUntilTrip: 5));
+      ], floors: const [
+        c,
+        t
+      ], lockedLane: 0, lockedUntilTrip: 5));
       expect(g.liftFloors, [c]);
       board(g, 1);
       sendAndArrive(g);
@@ -200,7 +252,10 @@ void main() {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none)],
         [(t, ResidentType.kid, none), (t, ResidentType.kid, none), (c, ResidentType.kid, none)],
-      ], floors: const [c, t], bench: 1, lockedLane: 0, lockedUntilTrip: 3));
+      ], floors: const [
+        c,
+        t
+      ], bench: 1, lockedLane: 0, lockedUntilTrip: 3));
       expect(g.liftFloors, [c]);
       g.tapQueue(1);
       g.tapBench(0);
@@ -214,7 +269,10 @@ void main() {
       final g = LiftGame(hand([
         [(t, ResidentType.kid, none)],
         [(t, ResidentType.kid, none), (t, ResidentType.kid, none), (c, ResidentType.kid, none)],
-      ], floors: const [c, t], bench: 1, lockedLane: 0, lockedUntilTrip: 3));
+      ], floors: const [
+        c,
+        t
+      ], bench: 1, lockedLane: 0, lockedUntilTrip: 3));
       g.tapQueue(1);
       g.tapBench(0);
       expect(g.failKind, FailKind.jam);
@@ -228,7 +286,13 @@ void main() {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none), (c, ResidentType.kid, none)],
         [(t, ResidentType.kid, none)],
-      ], floors: const [c, t], arrivals: const [(1, 1, c, ResidentType.aunty), (2, 0, t, ResidentType.kid)]));
+      ], floors: const [
+        c,
+        t
+      ], arrivals: const [
+        (1, 1, c, ResidentType.aunty),
+        (2, 0, t, ResidentType.kid)
+      ]));
       expect(g.remainingTotal, 5);
       expect(g.pendingArrivals, hasLength(2));
       board(g, 0);
@@ -241,7 +305,12 @@ void main() {
     test('the level is not won while arrivals are still to come', () {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none)],
-      ], floors: const [c, t], arrivals: const [(4, 0, t, ResidentType.kid)]));
+      ], floors: const [
+        c,
+        t
+      ], arrivals: const [
+        (4, 0, t, ResidentType.kid)
+      ]));
       board(g, 0);
       sendAndArrive(g);
       // Lobby emptied before trip 4: the wave arrives now instead.

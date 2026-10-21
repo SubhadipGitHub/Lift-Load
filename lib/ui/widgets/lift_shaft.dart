@@ -5,6 +5,7 @@ import '../../game/engine.dart';
 import '../../game/scenario.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../motion.dart';
 import '../painters/cabin_painter.dart';
 import '../painters/floor_shape_painter.dart';
 import '../painters/lobby_painter.dart';
@@ -25,6 +26,8 @@ class LiftShaft extends StatelessWidget {
     required this.onTapLift,
     required this.onSend,
     this.doorOpen = 1,
+    this.cabinKey,
+    this.hiddenIds = const {},
   });
 
   final LiftGame game;
@@ -35,6 +38,12 @@ class LiftShaft extends StatelessWidget {
 
   /// Cabin doors: 0 closed, 1 open. Driven by the send animation.
   final double doorOpen;
+
+  /// Marks the cabin interior, where walking residents land.
+  final Key? cabinKey;
+
+  /// Riders still walking in: drawn invisible until they land.
+  final Set<int> hiddenIds;
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +130,15 @@ class LiftShaft extends StatelessWidget {
                         offset: Offset(0, cabinDy),
                         child: Transform.rotate(
                           angle: cabinTilt,
-                          child: _Cabin(game: game, crashed: crashed, hint: hint, doorOpen: doorOpen, onTap: onTapLift),
+                          child: _Cabin(
+                            game: game,
+                            crashed: crashed,
+                            hint: hint,
+                            doorOpen: doorOpen,
+                            interiorKey: cabinKey,
+                            hiddenIds: hiddenIds,
+                            onTap: onTapLift,
+                          ),
                         ),
                       ),
                     ),
@@ -257,6 +274,8 @@ class _Cabin extends StatelessWidget {
     required this.crashed,
     required this.hint,
     required this.doorOpen,
+    required this.interiorKey,
+    required this.hiddenIds,
     required this.onTap,
   });
 
@@ -264,6 +283,8 @@ class _Cabin extends StatelessWidget {
   final bool crashed;
   final bool hint;
   final double doorOpen;
+  final Key? interiorKey;
+  final Set<int> hiddenIds;
   final VoidCallback onTap;
 
   @override
@@ -322,6 +343,7 @@ class _Cabin extends StatelessWidget {
               SizedBox(height: 5 * s),
               Expanded(
                 child: ClipRRect(
+                  key: interiorKey,
                   borderRadius: BorderRadius.circular(10 * s),
                   child: CustomPaint(
                     painter: CabinInteriorPainter(alarm: crashed),
@@ -368,7 +390,18 @@ class _Cabin extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 for (final r in riders)
-                                  Align(widthFactor: 0.68, child: ResidentFigure.of(r, height: m.cabinFigure)),
+                                  Align(
+                                    widthFactor: 0.68,
+                                    child: Opacity(
+                                      opacity: hiddenIds.contains(r.id) ? 0 : 1,
+                                      child: IdleSway(
+                                        seed: r.id,
+                                        amplitude: 0.5,
+                                        builder: (context, blink) =>
+                                            ResidentFigure.of(r, height: m.cabinFigure, blink: blink),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),

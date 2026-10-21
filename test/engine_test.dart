@@ -47,14 +47,18 @@ void main() {
     test('tap without a selection does nothing', () {
       final g = LiftGame(tiny([
         [(c, ResidentType.kid)],
-      ], floors: const [c]));
+      ], floors: const [
+        c
+      ]));
       expect(g.tapLift(), BoardResult.noSelection);
     });
 
     test('boarding adds hidden weight and reports the zone', () {
       final g = LiftGame(tiny([
         [(c, ResidentType.uncle), (c, ResidentType.aunty)],
-      ], floors: const [c]));
+      ], floors: const [
+        c
+      ]));
       g.tapQueue(0);
       expect(g.tapLift(), BoardResult.boarded);
       expect(g.load, 104);
@@ -68,7 +72,9 @@ void main() {
     test('going over capacity snaps the cable, then fails as a crash', () {
       final g = LiftGame(tiny([
         [(c, ResidentType.uncle), (c, ResidentType.uncle), (c, ResidentType.officeM)],
-      ], floors: const [c]));
+      ], floors: const [
+        c
+      ]));
       for (var i = 0; i < 2; i++) {
         g.tapQueue(0);
         g.tapLift();
@@ -85,7 +91,9 @@ void main() {
     test('repair after a crash returns the last rider to their lane', () {
       final g = LiftGame(tiny([
         [(c, ResidentType.uncle), (c, ResidentType.uncle), (c, ResidentType.officeM)],
-      ], floors: const [c]));
+      ], floors: const [
+        c
+      ]));
       for (var i = 0; i < 3; i++) {
         g.tapQueue(0);
         g.tapLift();
@@ -123,7 +131,9 @@ void main() {
       // 104 + 92 + 74 = 270 of 280 → 96%.
       final g = LiftGame(tiny([
         [(c, ResidentType.uncle), (c, ResidentType.gym), (c, ResidentType.officeM)],
-      ], floors: const [c]));
+      ], floors: const [
+        c
+      ]));
       for (var i = 0; i < 3; i++) {
         g.tapQueue(0);
         g.tapLift();
@@ -137,7 +147,9 @@ void main() {
     test('half-empty trips earn nothing and running out of trips fails', () {
       final g = LiftGame(tiny([
         [(c, ResidentType.kid), (c, ResidentType.kid)],
-      ], floors: const [c], trips: 1));
+      ], floors: const [
+        c
+      ], trips: 1));
       g.tapQueue(0);
       g.tapLift();
       expect(g.send(), TripRating.halfEmpty);
@@ -153,7 +165,9 @@ void main() {
     test('cannot send an empty lift', () {
       final g = LiftGame(tiny([
         [(c, ResidentType.kid)],
-      ], floors: const [c]));
+      ], floors: const [
+        c
+      ]));
       expect(g.canSend, isFalse);
       expect(g.send(), isNull);
     });
@@ -205,7 +219,13 @@ void main() {
     test('a jam continue adds enough seats to dig out the nearest match', () {
       // Lift is coral; the only coral is 2 deep behind teal kids.
       final g = LiftGame(tiny([
-        [(t, ResidentType.kid), (t, ResidentType.kid), (t, ResidentType.kid), (t, ResidentType.kid), (c, ResidentType.kid)],
+        [
+          (t, ResidentType.kid),
+          (t, ResidentType.kid),
+          (t, ResidentType.kid),
+          (t, ResidentType.kid),
+          (c, ResidentType.kid)
+        ],
       ], bench: 2));
       g.tapQueue(0);
       g.tapBench(0);
@@ -265,7 +285,9 @@ void main() {
     // 92 + 86 + 74 + 30 = 282 > 280, the four-person trap.
     final g = LiftGame(tiny([
       [(c, ResidentType.gym), (c, ResidentType.rider), (c, ResidentType.officeM), (c, ResidentType.kid)],
-    ], floors: const [c]));
+    ], floors: const [
+      c
+    ]));
     BoardResult last = BoardResult.noSelection;
     for (var i = 0; i < 4; i++) {
       g.tapQueue(0);

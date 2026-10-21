@@ -8,7 +8,6 @@ import 'package:lift_load/game/scenario.dart';
 import 'package:lift_load/game/venue.dart';
 import 'package:lift_load/services/analytics_service.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
-import 'package:lift_load/ui/theme.dart';
 
 import 'helpers.dart';
 
@@ -74,7 +73,10 @@ void main() {
         const [],
         const [],
       ],
-      arrivals: [Arrival(afterTrip: 1, lane: 2, resident: r(Floor.teal)), Arrival(afterTrip: 1, lane: 3, resident: r(Floor.coral))],
+      arrivals: [
+        Arrival(afterTrip: 1, lane: 2, resident: r(Floor.teal)),
+        Arrival(afterTrip: 1, lane: 3, resident: r(Floor.coral))
+      ],
     );
     final c = controller(DebugAnalytics(), levelFor: (_) => level);
     await pumpPlay(tester, c);
@@ -127,8 +129,10 @@ void main() {
     addTearDown(tester.view.reset);
     final c = controller(DebugAnalytics());
     c.startLevel();
-    await tester.pumpWidget(MaterialApp(theme: LL.theme(), home: const Scaffold(body: Text('home'))));
-    tester.state<NavigatorState>(find.byType(Navigator)).push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
+    await tester.pumpWidget(app(const Scaffold(body: Text('home'))));
+    tester
+        .state<NavigatorState>(find.byType(Navigator))
+        .push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
     await tester.pumpAndSettle();
 
     c.tapQueue(0);
@@ -152,8 +156,10 @@ void main() {
   testWidgets('leaving an untouched level is free and does not ask', (tester) async {
     final c = controller(DebugAnalytics());
     c.startLevel();
-    await tester.pumpWidget(MaterialApp(theme: LL.theme(), home: const Scaffold(body: Text('home'))));
-    tester.state<NavigatorState>(find.byType(Navigator)).push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
+    await tester.pumpWidget(app(const Scaffold(body: Text('home'))));
+    tester
+        .state<NavigatorState>(find.byType(Navigator))
+        .push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Back to the tower'));
     await tester.pumpAndSettle();

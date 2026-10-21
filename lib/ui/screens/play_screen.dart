@@ -1,12 +1,19 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import '../../game/cast.dart';
 import '../../game/engine.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../motion.dart';
+import '../painters/resident_painter.dart';
 import '../theme.dart';
+import '../widgets/effects.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
 import '../widgets/pressable.dart';
+import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 
 /// The level screen. Owns the cabin animations: when the engine enters
@@ -21,13 +28,32 @@ class PlayScreen extends StatefulWidget {
   State<PlayScreen> createState() => _PlayScreenState();
 }
 
-class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateMixin {
+class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   late final AnimationController _anim = AnimationController(vsync: this);
+  late final AnimationController _doors = AnimationController(vsync: this, value: 1);
+  late final AnimationController _shake = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
   Animation<double> _dy = const AlwaysStoppedAnimation(0);
   Animation<double> _tilt = const AlwaysStoppedAnimation(0);
   Phase? _lastPhase;
 
+  /// Where things are on screen, for walks and effects.
+  final GlobalKey _stackKey = GlobalKey();
+  final List<GlobalKey> _laneKeys = List.generate(4, (_) => GlobalKey());
+  final List<GlobalKey> _seatKeys = [];
+  final GlobalKey _cabinKey = GlobalKey();
+  final GlobalKey _coinKey = GlobalKey();
+  final GlobalKey<EffectsLayerState> _effects = GlobalKey();
+
+  /// Residents walking right now, and the ids whose destination copy is
+  /// hidden until they land.
+  final List<_Flight> _flights = [];
+  final Set<int> _hidden = {};
+
   GameController get c => widget.controller;
+  bool get _still => reduceMotion(context);
+
+  /// Walk duration: the same for every resident (weights stay hidden).
+  static const int flightMs = 260;
 
   @override
   void initState() {
@@ -43,6 +69,8 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
       old.controller.removeListener(_onChange);
       _lastPhase = c.game.phase;
       _snapHome();
+      _flights.clear();
+      _hidden.clear();
       c.addListener(_onChange);
     }
   }
@@ -51,10 +79,30 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
   void dispose() {
     c.removeListener(_onChange);
     _anim.dispose();
+    _doors.dispose();
+    _shake.dispose();
     super.dispose();
   }
 
+  GlobalKey _seatKey(int i) {
+    while (_seatKeys.length <= i) {
+      _seatKeys.add(GlobalKey());
+    }
+    return _seatKeys[i];
+  }
+
+  Rect? _rectOf(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject() as RenderBox?;
+    final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || stack == null || !box.attached || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero, ancestor: stack) & box.size;
+  }
+
   void _onChange() {
+    final motions = c.takeMotions();
+    final reward = c.takeReward();
+    if (!mounted) return;
+    if (!_still) _startFlights(motions);
     final phase = c.hasGame ? c.game.phase : null;
     final was = _lastPhase;
     _lastPhase = phase;
@@ -64,16 +112,40 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     }
     switch (phase) {
       case Phase.departing:
-        _run(from: 0, to: -300, ms: 500, curve: Curves.easeInCubic).then((_) => c.finishSend());
+        if (reward > 0) _coinBurst(reward);
+        _doorsTo(0, 180).then((_) => _run(from: 0, to: -300, ms: 500, curve: Curves.easeInCubic)).then((_) {
+          if (mounted) c.finishSend();
+        });
       case Phase.falling:
-        _run(from: 0, to: 340, tiltTo: -0.09, ms: 1000, curve: Curves.easeInQuad).then((_) => c.finishCrash());
-      case Phase.playing when was == Phase.departing || was == Phase.failed:
-        // A new lift drops in from above, or the repaired lift springs back.
-        _run(from: was == Phase.departing ? -300 : 120, to: 0, ms: 450, curve: Curves.easeOutBack);
+        // Let the last rider land, then the cable goes.
+        void drop() {
+          if (!mounted) return;
+          _crashEffects();
+          _run(from: 0, to: 340, tiltTo: -0.09, ms: 1000, curve: Curves.easeInQuad).then((_) {
+            if (mounted) c.finishCrash();
+          });
+        }
+
+        if (_still) {
+          drop();
+        } else {
+          Future<void>.delayed(const Duration(milliseconds: flightMs), drop);
+        }
+      case Phase.playing when was == Phase.departing:
+        // The next lift drops in, then opens its doors.
+        _doors.value = 0;
+        _run(from: -300, to: 0, ms: 450, curve: Curves.easeOutBack).then((_) => _doorsTo(1, 180));
+      case Phase.playing when was == Phase.failed:
+        // The repaired lift springs back.
+        _doors.value = 1;
+        _run(from: 120, to: 0, ms: 450, curve: Curves.easeOutBack);
       case Phase.playing:
         _snapHome();
-      case Phase.won || Phase.failed || null:
-        if (phase == Phase.won) _snapHome();
+      case Phase.won:
+        _snapHome();
+        _celebrate();
+      case Phase.failed || null:
+        break;
     }
     setState(() {});
   }
@@ -82,6 +154,7 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     _anim.stop();
     _dy = const AlwaysStoppedAnimation(0);
     _tilt = const AlwaysStoppedAnimation(0);
+    _doors.value = 1;
   }
 
   Future<void> _run(
@@ -90,9 +163,76 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     _dy = Tween(begin: from, end: to).animate(curved);
     _tilt = Tween(begin: 0.0, end: tiltTo).animate(curved);
     _anim
-      ..duration = Duration(milliseconds: ms)
+      ..duration = Duration(milliseconds: _still ? 0 : ms)
       ..reset();
     return _anim.forward().orCancel.catchError((Object _) {});
+  }
+
+  Future<void> _doorsTo(double target, int ms) =>
+      _doors.animateTo(target, duration: Duration(milliseconds: _still ? 0 : ms)).orCancel.catchError((Object _) {});
+
+  void _startFlights(List<Motion> motions) {
+    if (motions.isEmpty) return;
+    final m = Metrics.of(context);
+    for (final mo in motions) {
+      final from = mo.from.fromBench ? _rectOf(_seatKey(mo.from.index)) : _rectOf(_laneKeys[mo.from.index]);
+      final seat = mo.to.seat;
+      final to = seat != null ? _rectOf(_seatKey(seat)) : _rectOf(_cabinKey);
+      if (from == null || to == null) continue;
+      final fromHeight = mo.from.fromBench ? m.benchFigure : m.laneFigure;
+      final toHeight = seat != null ? m.benchFigure : m.cabinFigure;
+      _hidden.add(mo.resident.id);
+      _flights.add(_Flight(
+        resident: mo.resident,
+        // Feet positions: the bottom of a seat, the cabin floor, or just under
+        // the floor tag at the front of a lane.
+        from: mo.from.fromBench
+            ? from.bottomCenter - Offset(0, 6 * m.scale)
+            : from.topCenter + Offset(0, 18 * m.scale + fromHeight),
+        to: to.bottomCenter - Offset(0, (seat != null ? 6 : 14) * m.scale),
+        fromHeight: fromHeight,
+        toHeight: toHeight,
+      ));
+    }
+  }
+
+  void _landed(_Flight f) {
+    if (!mounted) return;
+    setState(() {
+      _flights.remove(f);
+      if (!_flights.any((o) => o.resident.id == f.resident.id)) _hidden.remove(f.resident.id);
+    });
+  }
+
+  void _coinBurst(int coins) {
+    if (_still) return;
+    final cabin = _rectOf(_cabinKey);
+    final chip = _rectOf(_coinKey);
+    if (cabin == null) return;
+    _effects.currentState?.add(Burst(
+      kind: BurstKind.coins,
+      origin: cabin.center,
+      target: chip?.center,
+      count: coins >= 15 ? 14 : 8,
+      label: '+$coins',
+    ));
+  }
+
+  void _crashEffects() {
+    if (_still) return;
+    _shake.forward(from: 0);
+    final cabin = _rectOf(_cabinKey);
+    if (cabin != null) {
+      _effects.currentState?.add(Burst(kind: BurstKind.sparks, origin: cabin.topCenter, count: 22));
+    }
+  }
+
+  void _celebrate() {
+    if (_still) return;
+    final stack = _rectOf(_stackKey);
+    if (stack == null) return;
+    final lastOfVenue = c.game.level.number == c.game.level.venue.lastLevel;
+    _effects.currentState?.add(Burst(kind: BurstKind.confetti, origin: stack.topCenter, count: lastOfVenue ? 140 : 70));
   }
 
   /// Back from the HUD or the system: confirm first when it costs a life.
@@ -120,11 +260,14 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     final g = c.game;
     final m = Metrics.of(context);
     final shaft = AnimatedBuilder(
-      animation: _anim,
+      animation: Listenable.merge([_anim, _doors]),
       builder: (context, _) => LiftShaft(
         game: g,
         cabinDy: _dy.value * m.scale,
         cabinTilt: _tilt.value,
+        doorOpen: _doors.value,
+        cabinKey: _cabinKey,
+        hiddenIds: _hidden,
         onTapLift: c.tapLift,
         onSend: c.send,
       ),
@@ -168,9 +311,24 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
         ),
       ),
     );
-    final hud = _Hud(c: c, onBack: _leave);
-    final bench = BenchRow(game: g, onTapSeat: c.tapBench);
-    final lanes = QueueLanes(game: g, onTapLane: c.tapQueue);
+    final hud = _Hud(c: c, onBack: _leave, coinKey: _coinKey);
+    final bench = BenchRow(
+      game: g,
+      onTapSeat: c.tapBench,
+      seatKeys: [for (var i = 0; i < g.bench.length; i++) _seatKey(i)],
+      hiddenIds: _hidden,
+      shakeSerial: c.refused?.fromBench == true ? c.refuseSerial : 0,
+      shakeSeat: c.refused?.fromBench == true ? c.refused!.index : null,
+    );
+    final lanes = QueueLanes(
+      game: g,
+      onTapLane: c.tapQueue,
+      laneKeys: _laneKeys,
+      shakeSerial: c.refused?.fromBench == false ? c.refuseSerial : 0,
+      shakeLane: c.refused?.fromBench == false ? c.refused!.index : null,
+      coneSerial: c.coneSerial,
+      coneLane: c.coneLane,
+    );
     // The lobby floor always reaches the bottom of its area, and scrolls when
     // the queues are longer than the screen.
     final lanesArea = LayoutBuilder(
@@ -246,19 +404,34 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
       },
       child: Scaffold(
         body: SafeArea(
-          child: Stack(
-            children: [
-              Positioned.fill(child: body),
-              if (g.phase == Phase.failed)
-                FailSheet(
-                  c: c,
-                  onHome: () {
-                    c.quitToHome();
-                    Navigator.of(context).pop();
-                  },
+          child: IdleClockScope(
+            child: Stack(
+              key: _stackKey,
+              children: [
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _shake,
+                    builder: (context, child) {
+                      final v = _shake.value;
+                      final dx = _shake.isAnimating ? math.sin(v * 38) * 9 * (1 - v) : 0.0;
+                      return Transform.translate(offset: Offset(dx, dx.abs() * 0.3), child: child);
+                    },
+                    child: body,
+                  ),
                 ),
-              if (g.phase == Phase.won) WinSheet(c: c),
-            ],
+                for (final f in _flights) _FlightView(key: ObjectKey(f), flight: f, onDone: () => _landed(f)),
+                if (g.phase == Phase.failed)
+                  FailSheet(
+                    c: c,
+                    onHome: () {
+                      c.quitToHome();
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                if (g.phase == Phase.won) WinSheet(c: c),
+                Positioned.fill(child: EffectsLayer(key: _effects)),
+              ],
+            ),
           ),
         ),
       ),
@@ -266,11 +439,68 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
   }
 }
 
+class _Flight {
+  _Flight(
+      {required this.resident, required this.from, required this.to, required this.fromHeight, required this.toHeight});
+
+  final Resident resident;
+
+  /// Feet positions in the play screen's stack.
+  final Offset from, to;
+  final double fromHeight, toHeight;
+}
+
+/// A resident walking on a low arc from a lane or seat to a seat or the
+/// cabin, with a little step bob. Same speed for everyone.
+class _FlightView extends StatefulWidget {
+  const _FlightView({super.key, required this.flight, required this.onDone});
+
+  final _Flight flight;
+  final VoidCallback onDone;
+
+  @override
+  State<_FlightView> createState() => _FlightViewState();
+}
+
+class _FlightViewState extends State<_FlightView> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: _PlayScreenState.flightMs),
+  )..forward().whenComplete(widget.onDone);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final f = widget.flight;
+          final t = Curves.easeInOut.transform(_c.value);
+          final h = f.fromHeight + (f.toHeight - f.fromHeight) * t;
+          final feet = Offset.lerp(f.from, f.to, t)! -
+              Offset(0, 26 * math.sin(math.pi * t) + 2.5 * math.sin(t * math.pi * 6).abs());
+          final w = h / 120 * ResidentLook.designWidth(f.resident.type, f.resident.cargo);
+          return Positioned(
+            left: feet.dx - w / 2,
+            top: feet.dy - h,
+            child: IgnorePointer(child: ResidentFigure.of(f.resident, height: h)),
+          );
+        },
+      );
+}
+
 class _Hud extends StatelessWidget {
-  const _Hud({required this.c, required this.onBack});
+  const _Hud({required this.c, required this.onBack, required this.coinKey});
 
   final GameController c;
   final VoidCallback onBack;
+
+  /// The coin chip, where coin bursts fly to.
+  final GlobalKey coinKey;
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +549,12 @@ class _Hud extends StatelessWidget {
                   children: [
                     _Chip(icon: Icons.favorite_rounded, color: LL.alarm, text: '${c.profile.lives}'),
                     SizedBox(width: 6 * m.scale),
-                    _Chip(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${c.profile.coins}'),
+                    _Chip(
+                      key: coinKey,
+                      icon: Icons.monetization_on_rounded,
+                      color: LL.brass,
+                      text: '${c.profile.coins}',
+                    ),
                   ],
                 ),
               ),
@@ -332,7 +567,7 @@ class _Hud extends StatelessWidget {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({required this.icon, required this.color, required this.text});
+  const _Chip({super.key, required this.icon, required this.color, required this.text});
 
   final IconData icon;
   final Color color;

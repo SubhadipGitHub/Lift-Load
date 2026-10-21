@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -9,6 +10,7 @@ import '../../game/scenario.dart';
 import '../../game/venue.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../motion.dart';
 import '../painters/sky_painter.dart';
 import '../theme.dart';
 import '../widgets/resident_figure.dart';
@@ -115,10 +117,13 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontSize: m.font(14), fontWeight: FontWeight.w800, color: LL.brass),
             ),
           ),
-        PrimaryButton(
-          label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
-          height: 62 * m.scale,
-          onPressed: hasLives ? _play : null,
+        _Pulse(
+          active: hasLives,
+          child: PrimaryButton(
+            label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
+            height: 62 * m.scale,
+            onPressed: hasLives ? _play : null,
+          ),
         ),
         if (!hasLives && c.canAdForLife) ...[
           SizedBox(height: 10 * m.scale),
@@ -182,10 +187,29 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+    final sky = VenueStyle.of(Venue.of(p.level));
     return Scaffold(
-      body: CustomPaint(
-        painter: SkyPainter(style: VenueStyle.of(Venue.of(p.level))),
-        child: SafeArea(child: Center(child: body)),
+      body: IdleClockScope(
+        child: Builder(builder: (context) {
+          final clock = IdleClock.of(context);
+          final content = SafeArea(child: Center(child: body));
+          if (clock == null) return CustomPaint(painter: SkyPainter(style: sky), child: content);
+          // Clouds drift across in a minute; stars twinkle every few seconds.
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: clock,
+                    builder: (context, t, _) =>
+                        CustomPaint(painter: SkyPainter(style: sky, drift: (t / 60) % 1, twinkle: (t / 4) % 1)),
+                  ),
+                ),
+              ),
+              content,
+            ],
+          );
+        }),
       ),
     );
   }
@@ -218,6 +242,26 @@ String _scenarioName(Scenario s) => switch (s) {
       Scenario.powerCut => 'a power cut',
       Scenario.rushHour => 'rush hour',
     };
+
+/// A slow breathing scale that invites a tap. Still under reduced motion.
+class _Pulse extends StatelessWidget {
+  const _Pulse({required this.child, required this.active});
+
+  final Widget child;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final clock = active ? IdleClock.of(context) : null;
+    if (clock == null) return child;
+    return ValueListenableBuilder<double>(
+      valueListenable: clock,
+      child: child,
+      builder: (context, t, child) =>
+          Transform.scale(scale: 1 + 0.025 * (0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.8)), child: child),
+    );
+  }
+}
 
 class _Stat extends StatelessWidget {
   const _Stat({required this.icon, required this.color, required this.text});

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
@@ -6,6 +8,7 @@ import '../../game/formulas.dart';
 import '../../game/scenario.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../motion.dart';
 import '../painters/lobby_painter.dart';
 import '../theme.dart';
 import 'resident_figure.dart';
@@ -13,10 +16,28 @@ import 'resident_figure.dart';
 /// Bench seats: tap a seated resident to select them, tap an empty seat to
 /// park the selected queue resident.
 class BenchRow extends StatelessWidget {
-  const BenchRow({super.key, required this.game, required this.onTapSeat});
+  const BenchRow({
+    super.key,
+    required this.game,
+    required this.onTapSeat,
+    this.seatKeys = const [],
+    this.hiddenIds = const {},
+    this.shakeSerial = 0,
+    this.shakeSeat,
+  });
 
   final LiftGame game;
   final ValueChanged<int> onTapSeat;
+
+  /// One key per seat, so walks can find where a seat is on screen.
+  final List<Key> seatKeys;
+
+  /// Residents still walking onto the bench: drawn invisible until they land.
+  final Set<int> hiddenIds;
+
+  /// A refused bench resident shakes their head.
+  final int shakeSerial;
+  final int? shakeSeat;
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +63,17 @@ class BenchRow extends StatelessWidget {
               for (var i = 0; i < game.bench.length; i++) ...[
                 if (i > 0) SizedBox(width: (game.bench.length > 6 ? 4 : 8) * m.scale),
                 Expanded(
-                  child: _Seat(
-                    resident: game.bench[i],
-                    selected: game.selection == Selection.bench(i),
-                    seatHint: seating && game.bench[i] == null,
-                    enabled: playing,
-                    onTap: () => onTapSeat(i),
+                  child: Shake(
+                    serial: i == shakeSeat ? shakeSerial : 0,
+                    child: _Seat(
+                      key: i < seatKeys.length ? seatKeys[i] : null,
+                      resident: game.bench[i],
+                      selected: game.selection == Selection.bench(i),
+                      seatHint: seating && game.bench[i] == null,
+                      hidden: game.bench[i] != null && hiddenIds.contains(game.bench[i]!.id),
+                      enabled: playing,
+                      onTap: () => onTapSeat(i),
+                    ),
                   ),
                 ),
               ],
@@ -60,15 +86,18 @@ class BenchRow extends StatelessWidget {
 }
 
 class _Seat extends StatelessWidget {
-  const _Seat(
-      {required this.resident,
-      required this.selected,
-      required this.seatHint,
-      required this.enabled,
-      required this.onTap});
+  const _Seat({
+    super.key,
+    required this.resident,
+    required this.selected,
+    required this.seatHint,
+    required this.hidden,
+    required this.enabled,
+    required this.onTap,
+  });
 
   final Resident? resident;
-  final bool selected, seatHint, enabled;
+  final bool selected, seatHint, hidden, enabled;
   final VoidCallback onTap;
 
   @override
@@ -90,14 +119,9 @@ class _Seat extends StatelessWidget {
       bg = Colors.transparent;
       border = const Color(0xFF5A5592);
     }
-    return Semantics(
-      button: true,
-      label: r == null ? 'Empty bench seat' : 'Bench: ${GameController.describe(r)}',
-      selected: selected,
-      child: GestureDetector(
-        onTap: enabled ? onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+    final clock = seatHint ? IdleClock.of(context) : null;
+    Widget seat(Color border) => AnimatedContainer(
+          duration: motionMs(context, 150),
           height: m.seatHeight,
           decoration: BoxDecoration(
             color: bg,
@@ -110,7 +134,16 @@ class _Seat extends StatelessWidget {
                   children: [
                     FloorTag(floor: r.floor, compact: true, scale: m.scale),
                     Flexible(
-                      child: FittedBox(fit: BoxFit.scaleDown, child: ResidentFigure.of(r, height: m.benchFigure)),
+                      child: Opacity(
+                        opacity: hidden ? 0 : 1,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: IdleSway(
+                            seed: r.id,
+                            builder: (context, blink) => ResidentFigure.of(r, height: m.benchFigure, blink: blink),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 )
@@ -122,7 +155,21 @@ class _Seat extends StatelessWidget {
                       ),
                     )
                   : null,
-        ),
+        );
+    return Semantics(
+      button: true,
+      label: r == null ? 'Empty bench seat' : 'Bench: ${GameController.describe(r)}',
+      selected: selected,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        // A free seat that can take the selection breathes its border.
+        child: clock == null
+            ? seat(border)
+            : ValueListenableBuilder<double>(
+                valueListenable: clock,
+                builder: (context, t, _) =>
+                    seat(border.withValues(alpha: 0.55 + 0.45 * (0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.1)))),
+              ),
       ),
     );
   }
@@ -133,10 +180,28 @@ class _Seat extends StatelessWidget {
 /// The floor takes the venue's look, and the lobby scenario shows here:
 /// cones on a closed lane, shadows in a power cut, the next rush-hour wave.
 class QueueLanes extends StatelessWidget {
-  const QueueLanes({super.key, required this.game, required this.onTapLane});
+  const QueueLanes({
+    super.key,
+    required this.game,
+    required this.onTapLane,
+    this.laneKeys = const [],
+    this.shakeSerial = 0,
+    this.shakeLane,
+    this.coneSerial = 0,
+    this.coneLane,
+  });
 
   final LiftGame game;
   final ValueChanged<int> onTapLane;
+
+  /// One key per lane column, so walks can find where a lane is on screen.
+  final List<Key> laneKeys;
+
+  /// A refused lane front shakes their head; tapped cones wobble.
+  final int shakeSerial;
+  final int? shakeLane;
+  final int coneSerial;
+  final int? coneLane;
 
   @override
   Widget build(BuildContext context) {
@@ -182,17 +247,27 @@ class QueueLanes extends StatelessWidget {
                   for (var lane = 0; lane < lanes.length; lane++)
                     Expanded(
                       child: Stack(
+                        key: lane < laneKeys.length ? laneKeys[lane] : null,
                         children: [
                           Column(
                             children: [
                               for (var i = 0; i < lanes[lane].length && i < visible; i++)
-                                _QueueSlot(
-                                  resident: lanes[lane][i],
+                                // Keyed by resident, so each one slides up as the
+                                // queue moves rather than the figures swapping.
+                                _StepIn(
+                                  key: ValueKey(lanes[lane][i].id),
                                   depth: i,
-                                  front: i == 0 && playing && !game.isLaneLocked(lane),
-                                  selected: i == 0 && game.selection == Selection.queue(lane),
-                                  dimmed: powerCut && i >= Formulas.powerCutDepth,
-                                  onTap: () => onTapLane(lane),
+                                  child: Shake(
+                                    serial: i == 0 && lane == shakeLane ? shakeSerial : 0,
+                                    child: _QueueSlot(
+                                      resident: lanes[lane][i],
+                                      depth: i,
+                                      front: i == 0 && playing && !game.isLaneLocked(lane),
+                                      selected: i == 0 && game.selection == Selection.queue(lane),
+                                      dimmed: powerCut && i >= Formulas.powerCutDepth,
+                                      onTap: () => onTapLane(lane),
+                                    ),
+                                  ),
                                 ),
                               if (lanes[lane].length > visible)
                                 Text('+${lanes[lane].length - visible} waiting', style: ink),
@@ -207,7 +282,11 @@ class QueueLanes extends StatelessWidget {
                             Positioned.fill(
                               child: GestureDetector(
                                 onTap: () => onTapLane(lane),
-                                child: _Cones(tripsLeft: game.tripsUntilLaneOpens),
+                                child: Shake(
+                                  serial: lane == coneLane ? coneSerial : 0,
+                                  distance: 8,
+                                  child: _Cones(tripsLeft: game.tripsUntilLaneOpens),
+                                ),
                               ),
                             ),
                         ],
@@ -349,7 +428,11 @@ class _QueueSlot extends StatelessWidget {
                 SizedBox(height: 1 * m.scale),
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: ResidentFigure.of(resident, height: m.laneFigure, dimmed: dimmed),
+                  child: IdleSway(
+                    seed: resident.id,
+                    builder: (context, blink) =>
+                        ResidentFigure.of(resident, height: m.laneFigure, dimmed: dimmed, blink: blink && !dimmed),
+                  ),
                 ),
               ],
             ),
@@ -358,4 +441,69 @@ class _QueueSlot extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Slides a lane slot into place when its resident moves up the queue (or
+/// first comes into view), instead of snapping. Still under reduced motion.
+class _StepIn extends StatefulWidget {
+  const _StepIn({super.key, required this.depth, required this.child});
+
+  final int depth;
+  final Widget child;
+
+  @override
+  State<_StepIn> createState() => _StepInState();
+}
+
+class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
+
+  /// Slots to travel, in units of this slot's own height (positive = from below).
+  double _from = 0;
+  bool _fadeIn = false;
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // Someone new appearing at the back of the visible queue walks in.
+    if (widget.depth > 0 && !reduceMotion(context)) {
+      _from = 0.6;
+      _fadeIn = true;
+      _c.forward(from: 0);
+    } else {
+      _c.value = 1;
+    }
+  }
+
+  @override
+  void didUpdateWidget(_StepIn old) {
+    super.didUpdateWidget(old);
+    if (widget.depth < old.depth && !reduceMotion(context)) {
+      _from = (old.depth - widget.depth).toDouble();
+      _fadeIn = false;
+      _c.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        child: widget.child,
+        builder: (context, child) {
+          final t = Curves.easeOutCubic.transform(_c.value);
+          return Opacity(
+            opacity: _fadeIn ? t : 1,
+            child: FractionalTranslation(translation: Offset(0, _from * (1 - t)), child: child),
+          );
+        },
+      );
 }
