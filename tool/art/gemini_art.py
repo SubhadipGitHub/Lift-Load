@@ -185,9 +185,14 @@ def _key_out(img):
     a = np.asarray(img.convert("RGB")).astype(np.float32)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     # How much greener than the other channels a pixel is: about 0 on the character (an olive kurta scores
-    # around 30), 255 on the pure-green backdrop.
+    # around 30), high on the backdrop. Gemini rarely paints a true #00FF00 (the app gives about (45, 170, 40),
+    # greenness ~120), so the thresholds come from the backdrop's own border rather than a fixed value.
     greenness = g - np.maximum(r, b)
-    alpha = np.clip(1.0 - (greenness - 40.0) / 80.0, 0.0, 1.0)
+    border = np.concatenate([greenness[:8].ravel(), greenness[-8:].ravel(), greenness[:, :8].ravel(),
+                             greenness[:, -8:].ravel()])
+    bg = max(60.0, float(np.median(border)))
+    clear, solid = 0.75 * bg, max(35.0, 0.35 * bg)
+    alpha = np.clip((clear - greenness) / (clear - solid), 0.0, 1.0)
     # Despill only the soft edge, where the backdrop bled in; solid greens on the character stay as drawn.
     edge = (alpha < 1.0) & (greenness > 0)
     g = np.where(edge, np.maximum(r, b), g)
