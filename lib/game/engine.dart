@@ -33,8 +33,7 @@ class Selection {
   final int index;
 
   @override
-  bool operator ==(Object other) =>
-      other is Selection && other.fromBench == fromBench && other.index == index;
+  bool operator ==(Object other) => other is Selection && other.fromBench == fromBench && other.index == index;
 
   @override
   int get hashCode => Object.hash(fromBench, index);
@@ -254,8 +253,7 @@ class LiftGame {
 
   /// Residents for [f] in the lobby now (lanes and bench).
   int remainingFor(Floor f) =>
-      _queues.fold(0, (a, q) => a + q.where((r) => r.floor == f).length) +
-      _bench.where((r) => r?.floor == f).length;
+      _queues.fold(0, (a, q) => a + q.where((r) => r.floor == f).length) + _bench.where((r) => r?.floor == f).length;
 
   /// Everyone still to deliver, including residents yet to arrive.
   int get remainingTotal => _queues.fold(0, (a, q) => a + q.length) + benchUsed + _pendingArrivals.length;

@@ -89,8 +89,7 @@ class Level {
   static Level conceptSlice() {
     var id = 0;
     List<Resident> lane(List<(Floor, ResidentType)> spec) => [
-          for (final (floor, type) in spec)
-            Resident(id: ++id, type: type, floor: floor),
+          for (final (floor, type) in spec) Resident(id: ++id, type: type, floor: floor),
         ];
     const c = Floor.coral, t = Floor.teal, b = Floor.blue;
     const kid = ResidentType.kid,
