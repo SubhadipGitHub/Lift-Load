@@ -1,60 +1,124 @@
 import 'package:flutter/services.dart';
 
 import '../game/engine.dart';
+import '../game/venue.dart';
 
 /// Turns game events into haptics and sound cues.
 ///
-/// Sound: the eight OGG cues (tick, ding, creak, snap, thud, coin, refuse,
-/// fanfare) are recorded in M4; [SfxPlayer] is the hook they plug into.
+/// Every cue is a fixed sound per event. Nothing depends on who is moving or
+/// how heavy they are; the creak follows the gauge zone, which the player
+/// already sees.
 class FeedbackService {
-  FeedbackService({SfxPlayer? sfx}) : _sfx = sfx ?? const SilentSfx();
+  FeedbackService({SfxPlayer? sfx, this.hapticsOn = true}) : _sfx = sfx ?? const SilentAudio();
 
   final SfxPlayer _sfx;
+
+  /// Player setting; sounds are switched in the audio service itself.
+  bool hapticsOn;
+
+  void _haptic(Future<void> Function() f) {
+    if (hapticsOn) f();
+  }
 
   void on(GameEvent e) {
     switch (e) {
       case SelectedEvent():
-        HapticFeedback.selectionClick();
-        _sfx.play(Sfx.tick);
+        _haptic(HapticFeedback.selectionClick);
+        _sfx.play(Sfx.select);
       case SeatedEvent():
-        HapticFeedback.lightImpact();
-        _sfx.play(Sfx.thud);
+        _haptic(HapticFeedback.lightImpact);
+        _sfx.play(Sfx.seat);
       case RefusedEvent():
-        HapticFeedback.lightImpact();
+        _haptic(HapticFeedback.lightImpact);
         _sfx.play(Sfx.refuse);
       case BoardedEvent(:final zone):
-        HapticFeedback.lightImpact();
-        _sfx.play(zone == LoadZone.limit ? Sfx.creak : Sfx.tick);
+        _haptic(HapticFeedback.lightImpact);
+        _sfx.play(zone == LoadZone.limit ? Sfx.creak : Sfx.board);
       case OverloadEvent():
-        HapticFeedback.heavyImpact();
+        _haptic(HapticFeedback.heavyImpact);
         _sfx.play(Sfx.snap);
-      case SentEvent():
-        HapticFeedback.mediumImpact();
+      case SentEvent(:final coins):
+        _haptic(HapticFeedback.mediumImpact);
+        _sfx.play(Sfx.doorClose);
+        if (coins > 0) _sfx.play(Sfx.coin);
+      case LiftArrivedEvent():
         _sfx.play(Sfx.ding);
       case ArrivalsEvent():
-        HapticFeedback.lightImpact();
-        _sfx.play(Sfx.thud);
+        _haptic(HapticFeedback.lightImpact);
+        _sfx.play(Sfx.chime);
       case LaneOpenedEvent():
-        HapticFeedback.selectionClick();
+        _haptic(HapticFeedback.selectionClick);
+        _sfx.play(Sfx.clank);
+      case ScalePreviewEvent():
         _sfx.play(Sfx.tick);
       case WonEvent():
-        HapticFeedback.mediumImpact();
+        _haptic(HapticFeedback.mediumImpact);
         _sfx.play(Sfx.fanfare);
-      case ScalePreviewEvent() || LiftArrivedEvent() || FailedEvent() || ContinuedEvent():
-        break;
+      case FailedEvent(:final kind):
+        _haptic(HapticFeedback.heavyImpact);
+        _sfx.play(kind == FailKind.crash ? Sfx.crash : Sfx.fail);
+      case ContinuedEvent():
+        _sfx.play(Sfx.doorOpen);
     }
+  }
+
+  /// A plain UI tap (buttons, toggles).
+  void tap() {
+    _haptic(HapticFeedback.selectionClick);
+    _sfx.play(Sfx.ui);
   }
 }
 
-enum Sfx { tick, ding, creak, snap, thud, coin, refuse, fanfare }
+/// Sound cues; [file] is the asset under assets/sfx/.
+enum Sfx {
+  tick('tick'),
+  select('select'),
+  seat('seat'),
+  board('board'),
+  doorClose('door_close'),
+  doorOpen('door_open'),
+  ding('ding'),
+  creak('creak'),
+  snap('snap'),
+  crash('crash'),
+  coin('coin'),
+  refuse('refuse'),
+  fanfare('fanfare'),
+  fail('fail'),
+  chime('chime'),
+  clank('clank'),
+  ui('ui');
+
+  const Sfx(this.file);
+  final String file;
+}
 
 abstract interface class SfxPlayer {
   void play(Sfx cue);
 }
 
-class SilentSfx implements SfxPlayer {
-  const SilentSfx();
+/// Everything the game asks of audio: cues, venue music, and the player's
+/// switches. M1 tests use [SilentAudio]; the app uses `AudioService`.
+abstract interface class GameAudio implements SfxPlayer {
+  set soundOn(bool on);
+  set musicOn(bool on);
+
+  /// Start (or keep) the venue's music loop.
+  void playVenue(Venue venue);
+}
+
+class SilentAudio implements GameAudio {
+  const SilentAudio();
 
   @override
   void play(Sfx cue) {}
+
+  @override
+  set soundOn(bool on) {}
+
+  @override
+  set musicOn(bool on) {}
+
+  @override
+  void playVenue(Venue venue) {}
 }

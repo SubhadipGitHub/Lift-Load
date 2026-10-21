@@ -16,6 +16,9 @@ class Profile {
     required this.winStreak,
     required this.adsRemoved,
     required this.rewarded,
+    this.soundOn = true,
+    this.musicOn = true,
+    this.hapticsOn = true,
   });
 
   factory Profile.fresh(DateTime now) => Profile(
@@ -40,6 +43,11 @@ class Profile {
   bool adsRemoved;
   final RewardedBudget rewarded;
 
+  /// Settings sheet switches.
+  bool soundOn;
+  bool musicOn;
+  bool hapticsOn;
+
   /// Apply life regeneration up to [now].
   void regenLives(DateTime now) {
     if (lives >= Formulas.maxLives) {
@@ -49,9 +57,7 @@ class Profile {
     final gained = now.difference(livesStampedAt).inSeconds ~/ Formulas.lifeRegen.inSeconds;
     if (gained <= 0) return;
     lives = (lives + gained).clamp(0, Formulas.maxLives).toInt();
-    livesStampedAt = lives >= Formulas.maxLives
-        ? now
-        : livesStampedAt.add(Formulas.lifeRegen * gained);
+    livesStampedAt = lives >= Formulas.maxLives ? now : livesStampedAt.add(Formulas.lifeRegen * gained);
   }
 
   /// Time until the next life, or null when full.
@@ -79,6 +85,9 @@ class Profile {
         'adsRemoved': adsRemoved,
         'rewardedDay': rewarded.day,
         'rewardedUsed': rewarded.used,
+        'soundOn': soundOn,
+        'musicOn': musicOn,
+        'hapticsOn': hapticsOn,
       };
 
   static Profile fromJson(Map<String, dynamic> j, DateTime now) {
@@ -97,6 +106,10 @@ class Profile {
             for (final e in (j['rewardedUsed'] as Map<String, dynamic>).entries) e.key: (e.value as num).toInt(),
           },
         ),
+        // Saves from before the settings existed default to everything on.
+        soundOn: j['soundOn'] as bool? ?? true,
+        musicOn: j['musicOn'] as bool? ?? true,
+        hapticsOn: j['hapticsOn'] as bool? ?? true,
       );
     } on Object {
       return Profile.fresh(now);

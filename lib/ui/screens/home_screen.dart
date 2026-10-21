@@ -15,6 +15,7 @@ import '../painters/sky_painter.dart';
 import '../theme.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
+import '../widgets/settings_sheet.dart';
 import 'play_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -83,6 +84,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _Stat(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${p.coins}'),
         SizedBox(width: 6 * m.scale),
         _Stat(icon: Icons.scale_rounded, color: LL.brass, text: '${p.scales}'),
+        IconButton(
+          tooltip: 'Settings',
+          onPressed: () => showSettingsSheet(context, c),
+          iconSize: 24 * m.textScale,
+          icon: const Icon(Icons.settings_rounded, color: LL.lilac),
+        ),
       ],
     );
     final title = Column(

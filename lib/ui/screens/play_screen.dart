@@ -15,6 +15,7 @@ import '../widgets/lobby.dart';
 import '../widgets/pressable.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
+import '../widgets/settings_sheet.dart';
 
 /// The level screen. Owns the cabin animations: when the engine enters
 /// [Phase.departing] or [Phase.falling], this screen animates the cabin and
@@ -538,7 +539,13 @@ class _Hud extends StatelessWidget {
                 style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.lilac),
               ),
             ),
-            SizedBox(width: 6 * m.scale),
+            IconButton(
+              tooltip: 'Settings',
+              onPressed: () => showSettingsSheet(context, c),
+              iconSize: 22 * m.textScale,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.settings_rounded, color: LL.lilac),
+            ),
             // Lives and coins shrink before they overflow on the narrowest phones.
             Flexible(
               child: FittedBox(

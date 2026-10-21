@@ -16,6 +16,7 @@ with this file. Logged through `AnalyticsService` (`DebugAnalytics` in M1, Fireb
 | `rewarded_offer_accepted` | placement, level | Player taps a rewarded button | Opt-in rate |
 | `rewarded_complete` | placement | SDK reports reward earned | Rewarded views per DAU (≥ 2.5) |
 | `interstitial_shown` | level | Interstitial displayed | Ad load vs retention |
+| `setting_changed` | setting (sound / music / haptics), on | A settings toggle is flipped | How many mute, and whether muters churn faster |
 
 The cast learnability check for Gate A: the share of `overload` events caused by the gym regular should fall as
 players pass level 60; if it does not, the "liar" is unfair and needs a stronger visual cue. The same check applies to

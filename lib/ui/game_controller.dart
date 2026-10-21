@@ -22,20 +22,25 @@ class GameController extends ChangeNotifier {
     required this.ads,
     required this.analytics,
     this.store,
+    GameAudio? audio,
     FeedbackService? feedback,
     InterstitialPolicy? interstitials,
     DateTime Function()? clock,
     Level Function(int number)? levelFor,
-  })  : feedback = feedback ?? FeedbackService(),
+  })  : audio = audio ?? const SilentAudio(),
+        feedback = feedback ?? FeedbackService(sfx: audio),
         interstitials = interstitials ?? InterstitialPolicy(clock: clock),
         _clock = clock ?? DateTime.now,
-        _levelFor = levelFor ?? LevelGenerator.generate;
+        _levelFor = levelFor ?? LevelGenerator.generate {
+    _applySettings();
+  }
 
   final Profile profile;
   final ProfileStore? store;
   final AdsService ads;
   final AnalyticsService analytics;
   final FeedbackService feedback;
+  final GameAudio audio;
   final InterstitialPolicy interstitials;
   final DateTime Function() _clock;
   final Level Function(int) _levelFor;
@@ -75,6 +80,28 @@ class GameController extends ChangeNotifier {
 
   // ── Level lifecycle ──
 
+  // ── Settings ──
+
+  void _applySettings() {
+    audio
+      ..soundOn = profile.soundOn
+      ..musicOn = profile.musicOn;
+    feedback.hapticsOn = profile.hapticsOn;
+  }
+
+  void setSound(bool on) => _setting(() => profile.soundOn = on, 'sound', on);
+  void setMusic(bool on) => _setting(() => profile.musicOn = on, 'music', on);
+  void setHaptics(bool on) => _setting(() => profile.hapticsOn = on, 'haptics', on);
+
+  void _setting(void Function() apply, String name, bool on) {
+    apply();
+    _applySettings();
+    analytics.log('setting_changed', {'setting': name, 'on': on});
+    _save();
+    feedback.tap();
+    notifyListeners();
+  }
+
   void startLevel() {
     _motions.clear();
     _pendingRewardCoins = 0;
@@ -87,6 +114,7 @@ class GameController extends ChangeNotifier {
     message = debutTip(game.level.number) ??
         scenarioTip(game.level.scenario) ??
         'Tap a resident, then the lift or a bench seat';
+    audio.playVenue(game.level.venue);
     analytics.log('level_start', {
       'level': game.level.number,
       'difficulty': game.level.difficulty.name,

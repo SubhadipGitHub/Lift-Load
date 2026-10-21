@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'services/ads_service.dart';
 import 'services/analytics_service.dart';
+import 'services/audio_service.dart';
 import 'services/profile.dart';
 import 'ui/game_controller.dart';
 import 'ui/layout.dart';
@@ -24,11 +27,19 @@ Future<void> main() async {
   final ads = StubAdsService();
   await ads.init();
 
+  // Synthesized cues and venue music. Loading runs in the background so the
+  // first frame is not held up; music starts on the first Play tap.
+  final audio = AudioService();
+  unawaited(audio.init());
+  // Quiet in the background, back on return.
+  AppLifecycleListener(onHide: audio.pause, onShow: audio.resume);
+
   final controller = GameController(
     profile: store.load(DateTime.now()),
     store: store,
     ads: ads,
     analytics: DebugAnalytics(),
+    audio: audio,
   );
   runApp(LiftLoadApp(controller: controller));
 }
