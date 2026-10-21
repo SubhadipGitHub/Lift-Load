@@ -208,7 +208,7 @@
       "design_height": 100,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a delivery rider, sturdy average build. Wearing plain mustard-yellow jacket with no logo, dark trousers, a plain mustard-yellow scooter helmet worn on the head, holding a plain cardboard parcel.",
+      "prompt": "a grown delivery rider in his thirties of sturdy, stocky build: broad chest and shoulders, a visible round tummy under the jacket, thick arms and thick legs; clearly wider and heavier than a slim office worker, though not as round as a heavy-set uncle Wearing plain mustard-yellow jacket with no logo, dark trousers, a plain mustard-yellow scooter helmet worn on the head, holding a plain cardboard parcel.",
       "weight_read": "medium-heavy; sturdy",
       "skin": {
         "name": "medium tan-brown",
@@ -232,7 +232,7 @@
       "design_height": 102,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a security guard, solid stocky build with a firm belly. Wearing navy blue uniform shirt and trousers with a plain navy peaked cap, black boots, a short baton on the belt, no badge text.",
+      "prompt": "a security guard in his forties, heavy-set and stocky: thick neck, broad chest, a firm round belly over the belt, thick arms and thick legs; clearly wider and heavier than a delivery rider, though a little less round than a heavy-set uncle Wearing navy blue uniform shirt and trousers with a plain navy peaked cap, black boots, a short baton on the belt, no badge text.",
       "weight_read": "heavy; stocky and solid",
       "skin": {
         "name": "brown",
