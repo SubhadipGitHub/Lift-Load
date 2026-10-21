@@ -58,8 +58,18 @@ class GameController extends ChangeNotifier {
   /// place) or a coned-off lane is tapped ([coneLane] wobbles).
   int refuseSerial = 0;
   Selection? refused;
+  int? _refusedId;
   int coneSerial = 0;
   int? coneLane;
+
+  /// [refused], but only while the refused resident still stands there, so
+  /// whoever steps up next does not replay their head-shake.
+  Selection? get refusedSpot {
+    final r = refused;
+    if (r == null || !hasGame) return null;
+    final here = r.fromBench ? game.bench[r.index] : game.queues[r.index].firstOrNull;
+    return here?.id == _refusedId ? r : null;
+  }
 
   /// Coins a send just earned, for the coin burst; cleared when taken.
   int _pendingRewardCoins = 0;
@@ -106,6 +116,7 @@ class GameController extends ChangeNotifier {
     _motions.clear();
     _pendingRewardCoins = 0;
     refused = null;
+    _refusedId = null;
     coneLane = null;
     _game = LiftGame(_levelFor(profile.level));
     _lobbyNews = '';
@@ -367,6 +378,7 @@ class GameController extends ChangeNotifier {
         case RefusedEvent(:final resident, :final liftFloors):
           refuseSerial++;
           refused = _from;
+          _refusedId = resident.id;
           message = 'This lift goes to ${floorList(liftFloors)}. They live on ${resident.floor.label}.';
         case BoardedEvent(:final resident, :final zone):
           if (_from case final from?) _motions.add(Motion(resident, from, const MotionTarget.cabin()));

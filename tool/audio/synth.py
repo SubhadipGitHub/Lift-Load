@@ -4,10 +4,13 @@
 All audio is generated here from code (numpy), deterministically, so it
 carries no licence and can be regenerated or retuned:
 
-    python3 tool/audio/synth.py            # writes assets/sfx/*.mp3, assets/music/*.mp3
+    python3 tool/audio/synth.py   # writes assets/sfx/*.mp3, assets/music/*.{ogg,mp3}
 
-Needs numpy and ffmpeg (libmp3lame). MP3 because it plays on Android, Chrome
-and iOS Safari alike.
+Needs numpy and ffmpeg (libmp3lame, libvorbis). Cues are MP3 because it plays
+on Android, Chrome and iOS Safari alike. Music loops also get an Ogg Vorbis
+copy: MP3 carries encoder delay and padding, so a looping MP3 clicks or gaps at
+the seam, while Vorbis loops gaplessly on Android. The app plays .ogg natively
+and .mp3 on the web, where older Safari has no Vorbis.
 
 Hidden-weight rule: every cue is a fixed sound. Nothing here depends on who
 boards or how heavy they are; the creak follows the gauge zone only.
@@ -270,7 +273,9 @@ def music_loop(name: str) -> np.ndarray:
 
 # ── Output ──────────────────────────────────────────────────────────────────
 
-def write_mp3(samples: np.ndarray, path: str, bitrate: str) -> None:
+MP3 = ["-codec:a", "libmp3lame"]
+
+def write_audio(samples: np.ndarray, path: str, codec_args: list[str]) -> None:
     pcm = (np.clip(samples, -1, 1) * 32767).astype("<i2")
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         with wave.open(tmp.name, "wb") as w:
@@ -279,8 +284,8 @@ def write_mp3(samples: np.ndarray, path: str, bitrate: str) -> None:
             w.setframerate(SR)
             w.writeframes(pcm.tobytes())
         subprocess.run(
-            ["ffmpeg", "-loglevel", "error", "-y", "-i", tmp.name, "-ac", "1", "-codec:a", "libmp3lame",
-             "-b:a", bitrate, "-map_metadata", "-1", path],
+            ["ffmpeg", "-loglevel", "error", "-y", "-i", tmp.name, "-ac", "1", *codec_args,
+             "-map_metadata", "-1", "-fflags", "+bitexact", path],
             check=True,
         )
         os.unlink(tmp.name)
@@ -290,9 +295,11 @@ def main() -> int:
     os.makedirs(SFX_DIR, exist_ok=True)
     os.makedirs(MUSIC_DIR, exist_ok=True)
     for name, sig in sfx().items():
-        write_mp3(normalize(sig, -1.5), os.path.join(SFX_DIR, f"{name}.mp3"), "96k")
+        write_audio(normalize(sig, -1.5), os.path.join(SFX_DIR, f"{name}.mp3"), MP3 + ["-b:a", "96k"])
     for name in VENUES:
-        write_mp3(normalize(music_loop(name), -4), os.path.join(MUSIC_DIR, f"{name}.mp3"), "64k")
+        loop = normalize(music_loop(name), -4)
+        write_audio(loop, os.path.join(MUSIC_DIR, f"{name}.mp3"), MP3 + ["-b:a", "64k"])
+        write_audio(loop, os.path.join(MUSIC_DIR, f"{name}.ogg"), ["-codec:a", "libvorbis", "-q:a", "2"])
     return 0
 
 

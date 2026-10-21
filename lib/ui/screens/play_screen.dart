@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../../game/engine.dart';
+import '../../game/formulas.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
@@ -37,6 +38,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Animation<double> _tilt = const AlwaysStoppedAnimation(0);
   Phase? _lastPhase;
 
+  /// Bumped on every phase change, controller swap and dispose; see [_live].
+  int _seq = 0;
+
   /// Where things are on screen, for walks and effects.
   final GlobalKey _stackKey = GlobalKey();
   final List<GlobalKey> _laneKeys = List.generate(4, (_) => GlobalKey());
@@ -68,6 +72,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     super.didUpdateWidget(old);
     if (old.controller != widget.controller) {
       old.controller.removeListener(_onChange);
+      _seq++;
       _lastPhase = c.game.phase;
       _snapHome();
       _flights.clear();
@@ -79,6 +84,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     c.removeListener(_onChange);
+    _seq++;
     _anim.dispose();
     _doors.dispose();
     _shake.dispose();
@@ -111,31 +117,15 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       setState(() {});
       return;
     }
+    final seq = ++_seq;
     switch (phase) {
       case Phase.departing:
         if (reward > 0) _coinBurst(reward);
-        _doorsTo(0, 180).then((_) => _run(from: 0, to: -300, ms: 500, curve: Curves.easeInCubic)).then((_) {
-          if (mounted) c.finishSend();
-        });
+        _depart(seq);
       case Phase.falling:
-        // Let the last rider land, then the cable goes.
-        void drop() {
-          if (!mounted) return;
-          _crashEffects();
-          _run(from: 0, to: 340, tiltTo: -0.09, ms: 1000, curve: Curves.easeInQuad).then((_) {
-            if (mounted) c.finishCrash();
-          });
-        }
-
-        if (_still) {
-          drop();
-        } else {
-          Future<void>.delayed(const Duration(milliseconds: flightMs), drop);
-        }
+        _fall(seq);
       case Phase.playing when was == Phase.departing:
-        // The next lift drops in, then opens its doors.
-        _doors.value = 0;
-        _run(from: -300, to: 0, ms: 450, curve: Curves.easeOutBack).then((_) => _doorsTo(1, 180));
+        _arrive(seq);
       case Phase.playing when was == Phase.failed:
         // The repaired lift springs back.
         _doors.value = 1;
@@ -149,6 +139,39 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         break;
     }
     setState(() {});
+  }
+
+  /// True while the cabin sequence started at [seq] is still the current one:
+  /// a later phase change, a controller swap or dispose makes it stale, and a
+  /// stale sequence stops before touching the controllers or the engine.
+  bool _live(int seq) => mounted && seq == _seq;
+
+  /// Doors close (after a rider still walking in lands), the cabin rises, and
+  /// the engine moves on to the next lift.
+  Future<void> _depart(int seq) async {
+    if (_flights.isNotEmpty) await Future<void>.delayed(const Duration(milliseconds: flightMs));
+    if (!_live(seq)) return;
+    await _doorsTo(0, 180);
+    if (!_live(seq)) return;
+    await _run(from: 0, to: -300, ms: 500, curve: Curves.easeInCubic);
+    if (_live(seq)) c.finishSend();
+  }
+
+  /// Let the last rider land, then the cable goes. Still (reduced motion) it
+  /// runs without waiting, so no timer is left pending.
+  Future<void> _fall(int seq) async {
+    if (!_still) await Future<void>.delayed(const Duration(milliseconds: flightMs));
+    if (!_live(seq)) return;
+    _crashEffects();
+    await _run(from: 0, to: 340, tiltTo: -0.09, ms: 1000, curve: Curves.easeInQuad);
+    if (_live(seq)) c.finishCrash();
+  }
+
+  /// The next lift drops in, then opens its doors.
+  Future<void> _arrive(int seq) async {
+    _doors.value = 0;
+    await _run(from: -300, to: 0, ms: 450, curve: Curves.easeOutBack);
+    if (_live(seq)) await _doorsTo(1, 180);
   }
 
   void _snapHome() {
@@ -214,7 +237,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       kind: BurstKind.coins,
       origin: cabin.center,
       target: chip?.center,
-      count: coins >= 15 ? 14 : 8,
+      count: coins >= Formulas.perfectTripCoins ? 14 : 8,
       label: '+$coins',
     ));
   }
@@ -313,20 +336,21 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       ),
     );
     final hud = _Hud(c: c, onBack: _leave, coinKey: _coinKey);
+    final refused = c.refusedSpot;
     final bench = BenchRow(
       game: g,
       onTapSeat: c.tapBench,
       seatKeys: [for (var i = 0; i < g.bench.length; i++) _seatKey(i)],
       hiddenIds: _hidden,
-      shakeSerial: c.refused?.fromBench == true ? c.refuseSerial : 0,
-      shakeSeat: c.refused?.fromBench == true ? c.refused!.index : null,
+      shakeSerial: refused?.fromBench == true ? c.refuseSerial : 0,
+      shakeSeat: refused?.fromBench == true ? refused!.index : null,
     );
     final lanes = QueueLanes(
       game: g,
       onTapLane: c.tapQueue,
       laneKeys: _laneKeys,
-      shakeSerial: c.refused?.fromBench == false ? c.refuseSerial : 0,
-      shakeLane: c.refused?.fromBench == false ? c.refused!.index : null,
+      shakeSerial: refused?.fromBench == false ? c.refuseSerial : 0,
+      shakeLane: refused?.fromBench == false ? refused!.index : null,
       coneSerial: c.coneSerial,
       coneLane: c.coneLane,
     );
