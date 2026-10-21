@@ -40,6 +40,7 @@ API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateC
 # tallest figure (104) lands at 624 px. Props share the resident scale. Scenes: fixed frames.
 RESIDENT_PX_PER_UNIT = 6
 PROP_HEIGHT_PX = 300
+RIM_PX = 4  # width of the edge band that gets despilled, in source pixels
 SCENE_SIZE = {"9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
 
 REFERENCE_NOTE = ("Use the attached reference image only for rendering style, lighting, materials and level of "
@@ -54,7 +55,11 @@ def full_prompt(pack: dict, a: dict) -> str:
     if a["kind"] == "resident_blink":
         return a["prompt"]
     style = pack["style"]["resident" if a["kind"] == "resident" else a["kind"]]
-    parts = [a["prompt"], style]
+    # Skin tones come from ResidentLook (lib/ui/painters/resident_painter.dart), the owner's cast. Left unsaid,
+    # Gemini picks its own: the first gym regular came back pale where the design is the deepest brown.
+    skin = a.get("skin")
+    body = a["prompt"] + (f" Skin tone: {skin['name']}, close to {skin['hex']}." if skin else "")
+    parts = [body, style]
     if a.get("reference"):
         parts.append(REFERENCE_NOTE)
     return "\n\n".join(parts)
@@ -185,12 +190,29 @@ def _key_out(img):
     a = np.asarray(img.convert("RGB")).astype(np.float32)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     # How much greener than the other channels a pixel is: about 0 on the character (an olive kurta scores
-    # around 30), 255 on the pure-green backdrop.
+    # around 30), high on the backdrop. Gemini rarely paints a true #00FF00 (the app gives about (45, 170, 40),
+    # greenness ~120), so the thresholds come from the backdrop's own border rather than a fixed value.
     greenness = g - np.maximum(r, b)
-    alpha = np.clip(1.0 - (greenness - 40.0) / 80.0, 0.0, 1.0)
-    # Despill only the soft edge, where the backdrop bled in; solid greens on the character stay as drawn.
-    edge = (alpha < 1.0) & (greenness > 0)
-    g = np.where(edge, np.maximum(r, b), g)
+    border = np.concatenate([greenness[:8].ravel(), greenness[-8:].ravel(), greenness[:, :8].ravel(),
+                             greenness[:, -8:].ravel()])
+    bg = max(60.0, float(np.median(border)))
+    clear, solid = 0.75 * bg, max(35.0, 0.35 * bg)
+    alpha = np.clip((clear - greenness) / (clear - solid), 0.0, 1.0)
+    # Despill the rim of the figure, where the backdrop bled into the edge pixels (worst on pale clothes: the
+    # grandpa's cream kurta kept a green outline). The rim is every pixel within a few pixels of the cleared
+    # background; there, any green above the red/blue level is spill. Away from the rim, greens on the character
+    # (the uncle's olive kurta) stay exactly as drawn.
+    clear_bg = alpha < 0.5
+    rim = clear_bg.copy()
+    for _ in range(RIM_PX):
+        grown = rim.copy()
+        grown[1:, :] |= rim[:-1, :]
+        grown[:-1, :] |= rim[1:, :]
+        grown[:, 1:] |= rim[:, :-1]
+        grown[:, :-1] |= rim[:, 1:]
+        rim = grown
+    spill = (rim | (alpha < 1.0)) & (greenness > 0)
+    g = np.where(spill, np.maximum(r, b), g)
     rgba = np.dstack([r, g, b, alpha * 255.0]).clip(0, 255).astype(np.uint8)
     return Image.fromarray(rgba, "RGBA")
 

@@ -17,7 +17,11 @@
       "aspect": "2:3",
       "reference": null,
       "prompt": "a small cheerful schoolkid, about 9 years old, short and slight, thin arms and legs. Wearing white short-sleeved school shirt, navy shorts, black school shoes, a small backpack on both shoulders, short dark hair.",
-      "weight_read": "lightest; clearly the smallest"
+      "weight_read": "lightest; clearly the smallest",
+      "skin": {
+        "name": "warm medium tan",
+        "hex": "#C98E66"
+      }
     },
     {
       "id": "resident_kid_blink",
@@ -37,7 +41,11 @@
       "aspect": "2:3",
       "reference": "resident_kid",
       "prompt": "a slim college student in their late teens, narrow shoulders, lanky. Wearing orange t-shirt, blue jeans, white sneakers, messy dark hair, holding a phone.",
-      "weight_read": "light; slim"
+      "weight_read": "light; slim",
+      "skin": {
+        "name": "deep medium brown",
+        "hex": "#8D5A3B"
+      }
     },
     {
       "id": "resident_student_blink",
@@ -57,7 +65,11 @@
       "aspect": "2:3",
       "reference": "resident_kid",
       "prompt": "a slim young office worker woman, average height, light build. Wearing lavender long-sleeved blouse, dark knee-length skirt, maroon flats, long dark hair, a laptop held under her left arm.",
-      "weight_read": "light-medium; slim"
+      "weight_read": "light-medium; slim",
+      "skin": {
+        "name": "light warm",
+        "hex": "#E0AC85"
+      }
     },
     {
       "id": "resident_officeW_blink",
@@ -76,8 +88,12 @@
       "design_height": 102,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "an office worker man in his thirties, average build with a very slight tummy. Wearing pale blue long-sleeved formal shirt with a tie, grey trousers, brown shoes, short dark hair.",
-      "weight_read": "medium; average build"
+      "prompt": "a grown office worker man in his mid-thirties, clearly an adult and not a teenager, of sturdy average build: solid, slightly broad shoulders, a visible small round tummy and thicker arms and legs than a slim student. Wearing pale blue long-sleeved formal shirt with a tie, grey trousers, brown shoes, short dark hair.",
+      "weight_read": "medium; average build",
+      "skin": {
+        "name": "medium brown",
+        "hex": "#B07A55"
+      }
     },
     {
       "id": "resident_officeM_blink",
@@ -97,7 +113,11 @@
       "aspect": "2:3",
       "reference": "resident_kid",
       "prompt": "a warm middle-aged Indian aunty, short, round and solid build with wide hips and a soft tummy. Wearing mustard-yellow blouse and magenta saree, hair in a bun, carrying two cloth shopping bags.",
-      "weight_read": "medium-heavy; short but round"
+      "weight_read": "medium-heavy; short but round",
+      "skin": {
+        "name": "warm brown",
+        "hex": "#A86F4C"
+      }
     },
     {
       "id": "resident_aunty_blink",
@@ -116,8 +136,12 @@
       "design_height": 94,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a kindly elderly grandfather, slightly stooped, thin and wiry with a small tummy. Wearing cream long kurta and white pyjama trousers, bald with white side hair, leaning on a wooden walking stick.",
-      "weight_read": "light-medium; thin despite his age"
+      "prompt": "a kindly elderly Indian grandfather, slightly stooped, thin and wiry with slim arms and legs, a flat stomach and no belly at all. Wearing cream long kurta and white pyjama trousers, bald with white side hair, leaning on a wooden walking stick.",
+      "weight_read": "light-medium; thin despite his age",
+      "skin": {
+        "name": "warm medium tan",
+        "hex": "#C08A63"
+      }
     },
     {
       "id": "resident_grandpa_blink",
@@ -136,8 +160,12 @@
       "design_height": 100,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a jolly middle-aged uncle, broad and very heavy-set with a big round belly and wide hips. Wearing olive-green long kurta, dark trousers, thick moustache, short dark hair.",
-      "weight_read": "heavy; the belly must be unmistakable"
+      "prompt": "a jolly middle-aged Indian uncle, broad and very heavy-set with a big round belly and wide hips. Wearing olive-green long kurta, dark trousers, thick moustache, short dark hair.",
+      "weight_read": "heavy; the belly must be unmistakable",
+      "skin": {
+        "name": "brown",
+        "hex": "#9C6644"
+      }
     },
     {
       "id": "resident_uncle_blink",
@@ -156,8 +184,12 @@
       "design_height": 104,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a tall fit young gym-goer, broad shoulders but a lean narrow waist and lean legs; athletic, NOT bulky, NOT a bodybuilder. Wearing black sleeveless gym top, grey athletic shorts, white trainers, short fade haircut, a gym duffel bag on one shoulder.",
-      "weight_read": "deceptively heavy; must look lean and light (this is a 'liar' type)"
+      "prompt": "a tall fit young gym-goer built like a sprinter or swimmer: broad shoulders, slim arms with only light definition, a narrow waist and slim legs; athletic and lean, NOT bulky, NOT a bodybuilder, no big muscles. Wearing black sleeveless gym top, grey athletic shorts, white trainers, short fade haircut, a gym duffel bag on one shoulder.",
+      "weight_read": "deceptively heavy; must look lean and light (this is a 'liar' type)",
+      "skin": {
+        "name": "deep brown",
+        "hex": "#7A4A2C"
+      }
     },
     {
       "id": "resident_gym_blink",
@@ -176,8 +208,12 @@
       "design_height": 100,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a delivery rider, sturdy average build. Wearing plain mustard-yellow jacket with no logo, dark trousers, a plain mustard-yellow scooter helmet worn on the head, holding a plain cardboard parcel.",
-      "weight_read": "medium-heavy; sturdy"
+      "prompt": "a grown delivery rider in his thirties of sturdy, stocky build: broad chest and shoulders, a visible round tummy under the jacket, thick arms and thick legs; clearly wider and heavier than a slim office worker, though not as round as a heavy-set uncle Wearing plain mustard-yellow jacket with no logo, dark trousers, a plain mustard-yellow scooter helmet worn on the head, holding a plain cardboard parcel.",
+      "weight_read": "medium-heavy; sturdy",
+      "skin": {
+        "name": "medium tan-brown",
+        "hex": "#B88360"
+      }
     },
     {
       "id": "resident_rider_blink",
@@ -196,8 +232,12 @@
       "design_height": 102,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a security guard, solid stocky build with a firm belly. Wearing navy blue uniform shirt and trousers with a plain navy peaked cap, black boots, a short baton on the belt, no badge text.",
-      "weight_read": "heavy; stocky and solid"
+      "prompt": "a security guard in his forties, heavy-set and stocky: thick neck, broad chest, a firm round belly over the belt, thick arms and thick legs; clearly wider and heavier than a delivery rider, though a little less round than a heavy-set uncle Wearing navy blue uniform shirt and trousers with a plain navy peaked cap, black boots, a short baton on the belt, no badge text.",
+      "weight_read": "heavy; stocky and solid",
+      "skin": {
+        "name": "brown",
+        "hex": "#9C6644"
+      }
     },
     {
       "id": "resident_guard_blink",
@@ -217,7 +257,11 @@
       "aspect": "2:3",
       "reference": "resident_kid",
       "prompt": "a hospital patient seated in a wheelchair, average build, a light blanket over the knees. Wearing pale blue hospital shirt and trousers, short grey hair, seated in a sturdy grey wheelchair seen from the front.",
-      "weight_read": "heaviest of the early cast together with the chair; chair must be clearly visible"
+      "weight_read": "heaviest of the early cast together with the chair; chair must be clearly visible",
+      "skin": {
+        "name": "warm medium tan",
+        "hex": "#C08A63"
+      }
     },
     {
       "id": "resident_wheelchair_blink",
@@ -237,7 +281,11 @@
       "aspect": "2:3",
       "reference": "resident_kid",
       "prompt": "a slight skinny teenager made to look big by a huge puffy jacket: thin legs, small face, narrow neck. Wearing very puffy quilted orange winter jacket with the hood up, dark skinny trousers, white sneakers.",
-      "weight_read": "deceptively light; the jacket is huge but the kid inside is small (this is a 'liar' type)"
+      "weight_read": "deceptively light; the jacket is huge but the kid inside is small (this is a 'liar' type)",
+      "skin": {
+        "name": "medium brown",
+        "hex": "#B07A55"
+      }
     },
     {
       "id": "resident_puffer_blink",
@@ -257,7 +305,11 @@
       "aspect": "3:4",
       "reference": "resident_kid",
       "prompt": "a young parent of average build pushing a baby pram beside them. Wearing dusty-pink long-sleeved top, navy trousers, long brown hair, a navy baby pram with a hood at their side (baby hidden inside).",
-      "weight_read": "medium-heavy with the pram"
+      "weight_read": "medium-heavy with the pram",
+      "skin": {
+        "name": "light warm",
+        "hex": "#E0AC85"
+      }
     },
     {
       "id": "resident_pram_blink",
@@ -277,7 +329,11 @@
       "aspect": "3:4",
       "reference": "resident_kid",
       "prompt": "a hotel bellhop of average build pushing a brass luggage trolley stacked with suitcases. Wearing deep red bellhop uniform with brass buttons and a matching pillbox hat, black trousers, a brass luggage cart at their side.",
-      "weight_read": "heaviest; the loaded trolley must read clearly"
+      "weight_read": "heaviest; the loaded trolley must read clearly",
+      "skin": {
+        "name": "deep medium brown",
+        "hex": "#8D5A3B"
+      }
     },
     {
       "id": "resident_bellhop_blink",
