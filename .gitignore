@@ -35,3 +35,4 @@ results/
 
 # Gemini art pack working files (tool/art/gemini_art.py); chosen files move into assets/ in an integration PR
 /art/
+__pycache__/
