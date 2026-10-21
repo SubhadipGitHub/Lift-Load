@@ -3,6 +3,7 @@ import 'package:lift_load/game/cast.dart';
 import 'package:lift_load/game/engine.dart';
 import 'package:lift_load/game/formulas.dart';
 import 'package:lift_load/game/level.dart';
+import 'package:lift_load/game/scenario.dart';
 
 /// Builds a tiny level: lanes given as (floor, type) pairs, front first.
 Level tiny(
@@ -213,9 +214,10 @@ void main() {
     expect(last, BoardResult.overloaded);
   });
 
-  test('upcomingFloors skips cleared floors', () {
+  test('upcomingLifts follows the rotation', () {
     final g = LiftGame(Level.conceptSlice());
     expect(g.liftFloor, Floor.coral);
-    expect(g.upcomingFloors(3), [Floor.teal, Floor.blue, Floor.coral]);
+    expect(g.upcomingLifts(3).map((s) => s.floors.single), [Floor.teal, Floor.blue, Floor.coral]);
+    expect(g.upcomingLifts(3).map((s) => s.kind), everyElement(LiftKind.normal));
   });
 }

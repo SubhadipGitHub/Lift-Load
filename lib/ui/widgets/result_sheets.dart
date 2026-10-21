@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../game/engine.dart';
 import '../../game/formulas.dart';
+import '../../game/venue.dart';
 import '../game_controller.dart';
 import '../theme.dart';
 
@@ -191,6 +192,10 @@ class WinSheet extends StatelessWidget {
         const SizedBox(height: 8),
         Text('${g.tripsUsed} trips · ${g.perfects} perfect loads',
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: LL.inkSoft)),
+        if (g.level.number == g.level.venue.lastLevel) ...[
+          const SizedBox(height: 12),
+          _BuildingComplete(venue: g.level.venue),
+        ],
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -208,6 +213,35 @@ class WinSheet extends StatelessWidget {
         ],
         PrimaryButton(label: 'Continue', onPressed: c.adInFlight ? null : c.nextLevel),
       ],
+    );
+  }
+}
+
+/// Shown on the win sheet for the last level of a venue.
+class _BuildingComplete extends StatelessWidget {
+  const _BuildingComplete({required this.venue});
+
+  final Venue venue;
+
+  @override
+  Widget build(BuildContext context) {
+    final next = venue.index + 1 < Venue.values.length ? Venue.values[venue.index + 1] : null;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(color: LL.ink, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        children: [
+          Text('${venue.displayName} complete!',
+              textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 18, color: LL.brass)),
+          const SizedBox(height: 4),
+          Text(
+            next == null ? 'Every building delivered. The hotel stays open for more.' : 'Next stop: ${next.displayName}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: LL.cream),
+          ),
+        ],
+      ),
     );
   }
 }

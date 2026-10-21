@@ -4,14 +4,18 @@
 /// level, a human can. Its trip count is the level's par, and the trip
 /// budget is par + slack (see [Formulas.trips]).
 ///
+/// The bot plays through [LiftGame] itself, so every rule the player meets
+/// (lift kinds, express floors, coned-off lanes, late arrivals, jams) is the
+/// rule the bot meets.
+///
 /// Strategy per lift:
-///   1. Board the heaviest reachable resident for this floor that fits.
+///   1. Board the heaviest reachable resident for this lift that fits.
 ///   2. When nobody fits and the load is below green, bench the front of the
 ///      lane whose nearest matching (and fitting) resident is shallowest.
 ///   3. Otherwise send. An empty lift with nothing reachable is a jam.
 library;
 
-import 'cast.dart';
+import 'engine.dart';
 import 'formulas.dart';
 import 'level.dart';
 
@@ -28,94 +32,85 @@ class SolveResult {
 
 abstract final class Solver {
   static SolveResult solve(Level level, {int stepLimit = 20000}) {
-    final queues = [for (final q in level.queues) List.of(q)];
-    final bench = <Resident>[];
-    final cap = level.capacity;
-    final greenKg = Formulas.greenFraction * cap;
-    final order = level.floors;
-
-    int remaining(Floor f) =>
-        queues.fold(0, (a, q) => a + q.where((r) => r.floor == f).length) +
-        bench.where((r) => r.floor == f).length;
-
-    Floor? next(Floor? after) {
-      final start = after == null ? -1 : order.indexOf(after);
-      for (var step = 1; step <= order.length; step++) {
-        final f = order[(start + step) % order.length];
-        if (remaining(f) > 0) return f;
-      }
-      return null;
-    }
-
-    var floor = remaining(order.first) > 0 ? order.first : next(order.first);
-    var trips = 0;
+    final g = LiftGame(level, recordEvents: false);
     var maxBench = 0;
     var steps = 0;
-
-    while (floor != null) {
-      var load = 0;
-      while (steps++ < stepLimit) {
-        // 1. Heaviest reachable match that fits.
-        Resident? best;
-        int? bestBench;
-        int? bestLane;
-        for (var i = 0; i < bench.length; i++) {
-          final r = bench[i];
-          if (r.floor == floor && load + r.kg <= cap && (best == null || r.kg > best.kg)) {
-            best = r;
-            bestBench = i;
-            bestLane = null;
-          }
-        }
-        for (var i = 0; i < queues.length; i++) {
-          if (queues[i].isEmpty) continue;
-          final r = queues[i].first;
-          if (r.floor == floor && load + r.kg <= cap && (best == null || r.kg > best.kg)) {
-            best = r;
-            bestLane = i;
-            bestBench = null;
-          }
-        }
-        if (best != null) {
-          if (bestBench != null) {
-            bench.removeAt(bestBench);
-          } else {
-            queues[bestLane!].removeAt(0);
-          }
-          load += best.kg;
-          continue;
-        }
-        if (load >= greenKg) break;
-
-        // 2. Dig: bench a blocker to expose a fitting match.
-        if (bench.length < level.benchSize) {
-          int? digLane;
-          var digDepth = 1 << 30;
-          for (var i = 0; i < queues.length; i++) {
-            final q = queues[i];
-            if (q.isEmpty || q.first.floor == floor) continue;
-            for (var d = 0; d < q.length; d++) {
-              if (q[d].floor == floor && load + q[d].kg <= cap) {
-                if (d < digDepth) {
-                  digDepth = d;
-                  digLane = i;
-                }
-                break;
-              }
-            }
-          }
-          if (digLane != null) {
-            bench.add(queues[digLane].removeAt(0));
-            if (bench.length > maxBench) maxBench = bench.length;
-            continue;
-          }
-        }
-        break;
+    while (g.phase == Phase.playing && steps++ < stepLimit) {
+      if (_boardBest(g)) continue;
+      if (g.riders.isNotEmpty && g.load >= Formulas.greenFraction * g.capacity) {
+        _send(g);
+        continue;
       }
-      if (load == 0) return SolveResult(cleared: false, trips: trips, maxBenchUsed: maxBench);
-      trips++;
-      floor = next(floor);
+      if (_dig(g)) {
+        if (g.benchUsed > maxBench) maxBench = g.benchUsed;
+        continue;
+      }
+      if (g.riders.isEmpty) break;
+      _send(g);
     }
-    return SolveResult(cleared: true, trips: trips, maxBenchUsed: maxBench);
+    return SolveResult(cleared: g.phase == Phase.won, trips: g.tripsUsed, maxBenchUsed: maxBench);
+  }
+
+  static void _send(LiftGame g) {
+    g.send();
+    g.finishSend();
+  }
+
+  /// 1. Heaviest selectable resident for this lift that fits.
+  static bool _boardBest(LiftGame g) {
+    final bench = g.bench;
+    var bestKg = -1;
+    int? bestSeat;
+    int? bestLane;
+    for (var i = 0; i < bench.length; i++) {
+      final r = bench[i];
+      if (r != null && g.goesTo(r.floor) && g.load + r.kg <= g.capacity && r.kg > bestKg) {
+        bestKg = r.kg;
+        bestSeat = i;
+        bestLane = null;
+      }
+    }
+    for (var i = 0; i < Formulas.queues; i++) {
+      if (g.laneLength(i) == 0 || g.isLaneLocked(i)) continue;
+      final r = g.laneAt(i, 0);
+      if (g.goesTo(r.floor) && g.load + r.kg <= g.capacity && r.kg > bestKg) {
+        bestKg = r.kg;
+        bestLane = i;
+        bestSeat = null;
+      }
+    }
+    if (bestSeat != null) {
+      g.tapBench(bestSeat);
+    } else if (bestLane != null) {
+      g.tapQueue(bestLane);
+    } else {
+      return false;
+    }
+    g.tapLift();
+    return true;
+  }
+
+  /// 2. Bench a blocker to expose a fitting match.
+  static bool _dig(LiftGame g) {
+    final seat = g.bench.indexOf(null);
+    if (seat < 0) return false;
+    int? digLane;
+    var digDepth = 1 << 30;
+    for (var i = 0; i < Formulas.queues; i++) {
+      final n = g.laneLength(i);
+      if (n == 0 || g.isLaneLocked(i) || g.goesTo(g.laneAt(i, 0).floor)) continue;
+      for (var d = 0; d < n && d < digDepth; d++) {
+        final r = g.laneAt(i, d);
+        if (g.goesTo(r.floor) && g.load + r.kg <= g.capacity) {
+          digDepth = d;
+          digLane = i;
+          break;
+        }
+      }
+    }
+    if (digLane == null) return false;
+    g.tapQueue(digLane);
+    g.tapBench(seat);
+    return true;
   }
 }

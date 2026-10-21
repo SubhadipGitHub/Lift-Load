@@ -10,6 +10,7 @@ library;
 import 'cast.dart';
 import 'formulas.dart';
 import 'level.dart';
+import 'scenario.dart';
 
 enum Phase { playing, departing, falling, won, failed }
 
@@ -39,6 +40,15 @@ class Selection {
   int get hashCode => Object.hash(fromBench, index);
 }
 
+/// One lift visit: the floor(s) it serves and what kind of cabin it is.
+class LiftStop {
+  const LiftStop(this.floors, this.kind);
+
+  /// One floor, or two for an express.
+  final List<Floor> floors;
+  final LiftKind kind;
+}
+
 // ── Events ────────────────────────────────────────────────────────────────
 
 sealed class GameEvent {
@@ -57,9 +67,9 @@ class SeatedEvent extends GameEvent {
 }
 
 class RefusedEvent extends GameEvent {
-  const RefusedEvent(this.resident, this.liftFloor);
+  const RefusedEvent(this.resident, this.liftFloors);
   final Resident resident;
-  final Floor liftFloor;
+  final List<Floor> liftFloors;
 }
 
 class BoardedEvent extends GameEvent {
@@ -74,16 +84,30 @@ class OverloadEvent extends GameEvent {
 }
 
 class SentEvent extends GameEvent {
-  const SentEvent(this.floor, this.rating, this.coins, this.riders);
-  final Floor floor;
+  const SentEvent(this.floors, this.kind, this.rating, this.coins, this.riders);
+  final List<Floor> floors;
+  final LiftKind kind;
   final TripRating rating;
   final int coins;
   final int riders;
 }
 
 class LiftArrivedEvent extends GameEvent {
-  const LiftArrivedEvent(this.floor);
-  final Floor floor;
+  const LiftArrivedEvent(this.floors, this.kind);
+  final List<Floor> floors;
+  final LiftKind kind;
+}
+
+/// Rush hour: [count] residents joined the lanes.
+class ArrivalsEvent extends GameEvent {
+  const ArrivalsEvent(this.count);
+  final int count;
+}
+
+/// Maintenance finished: [lane] can be selected again.
+class LaneOpenedEvent extends GameEvent {
+  const LaneOpenedEvent(this.lane);
+  final int lane;
 }
 
 class ScalePreviewEvent extends GameEvent {
@@ -124,25 +148,31 @@ class _Snapshot {
 }
 
 class LiftGame {
-  LiftGame(this.level)
-      : _queues = [for (final q in level.queues) List.of(q)],
+  /// [recordEvents] is false for the solver bot, which never drains them.
+  LiftGame(this.level, {bool recordEvents = true})
+      : _record = recordEvents,
+        _queues = [for (final q in level.queues) List.of(q)],
         _bench = List<Resident?>.filled(level.benchSize, null, growable: true),
-        tripsTotal = level.trips,
-        liftFloor = level.floors.first {
-    if (remainingFor(liftFloor) == 0) {
-      final first = _nextFloor(liftFloor);
-      if (first == null) throw ArgumentError('Level has no residents');
-      liftFloor = first;
-    }
+        _pendingArrivals = List.of(level.arrivals),
+        _lockedLane = level.lockedLane,
+        tripsTotal = level.trips {
+    final first = _stopAfter(null, 0);
+    if (first == null) throw ArgumentError('Level has no residents');
+    _setStop(first);
   }
 
   final Level level;
+  final bool _record;
   final List<List<Resident>> _queues;
   final List<Resident?> _bench;
   final List<Resident> _riders = [];
+  final List<Arrival> _pendingArrivals;
   final List<GameEvent> _events = [];
+  int? _lockedLane;
 
-  Floor liftFloor;
+  /// Floors the waiting lift serves: one, or two for an express.
+  late List<Floor> liftFloors;
+  late LiftKind liftKind;
   int load = 0;
   int tripsUsed = 0;
   int tripsTotal;
@@ -162,19 +192,40 @@ class LiftGame {
 
   TripRating? _pendingRating;
   int _pendingCoins = 0;
-  Floor? _pendingNext;
+  LiftStop? _pendingStop;
   _Snapshot? _beforeCrash;
 
   // ── Read-only views ──
   List<List<Resident>> get queues => List.unmodifiable(_queues.map(List<Resident>.unmodifiable));
   List<Resident?> get bench => List.unmodifiable(_bench);
   List<Resident> get riders => List.unmodifiable(_riders);
-  int get capacity => level.capacity;
+
+  /// The first (or only) floor of the waiting lift.
+  Floor get liftFloor => liftFloors.first;
+
+  /// Capacity of the waiting lift, which depends on its [liftKind].
+  int get capacity => Formulas.liftCapacity(level.capacity, liftKind);
   double get loadFraction => load / capacity;
   int get tripsLeft => tripsTotal - tripsUsed;
   int get levelCoins => Formulas.baseCoins(level.number) + tripCoins;
   bool get canSend => phase == Phase.playing && _riders.isNotEmpty;
   int get benchUsed => _bench.where((r) => r != null).length;
+
+  /// Cheap lane access for the solver bot (no list copies).
+  int laneLength(int lane) => _queues[lane].length;
+  Resident laneAt(int lane, int depth) => _queues[lane][depth];
+
+  /// Maintenance: the coned-off lane, while it is closed.
+  int? get lockedLane => _lockedLane;
+  bool isLaneLocked(int lane) => _lockedLane == lane;
+
+  /// Trips still to run before the coned-off lane opens.
+  int get tripsUntilLaneOpens => level.lockedUntilTrip - tripsUsed;
+
+  /// Rush hour: residents still to arrive, in order.
+  List<Arrival> get pendingArrivals => List.unmodifiable(_pendingArrivals);
+
+  bool goesTo(Floor f) => liftFloors.contains(f);
 
   LoadZone get zone => zoneFor(load);
 
@@ -195,22 +246,23 @@ class LiftGame {
     return q.isEmpty ? null : q.first;
   }
 
+  /// Residents for [f] in the lobby now (lanes and bench).
   int remainingFor(Floor f) =>
       _queues.fold(0, (a, q) => a + q.where((r) => r.floor == f).length) +
       _bench.where((r) => r?.floor == f).length;
 
-  int get remainingTotal =>
-      _queues.fold(0, (a, q) => a + q.length) + benchUsed;
+  /// Everyone still to deliver, including residents yet to arrive.
+  int get remainingTotal => _queues.fold(0, (a, q) => a + q.length) + benchUsed + _pendingArrivals.length;
 
-  /// Next floors after the current lift, up to [count], skipping cleared ones.
-  List<Floor> upcomingFloors(int count) {
-    final out = <Floor>[];
-    var prev = liftFloor;
+  /// The next [count] lifts after the waiting one, as the lobby stands now.
+  List<LiftStop> upcomingLifts(int count) {
+    final out = <LiftStop>[];
+    var prev = liftFloors.last;
     for (var i = 0; i < count; i++) {
-      final n = _nextFloor(prev);
-      if (n == null) break;
-      out.add(n);
-      prev = n;
+      final stop = _stopAfter(prev, tripsUsed + 1 + i);
+      if (stop == null) break;
+      out.add(stop);
+      prev = stop.floors.last;
     }
     return out;
   }
@@ -224,7 +276,7 @@ class LiftGame {
   // ── Player actions ──
 
   void tapQueue(int lane) {
-    if (phase != Phase.playing || _queues[lane].isEmpty) return;
+    if (phase != Phase.playing || _queues[lane].isEmpty || isLaneLocked(lane)) return;
     final s = Selection.queue(lane);
     ghostLoad = null;
     if (selection == s) {
@@ -232,7 +284,7 @@ class LiftGame {
       return;
     }
     selection = s;
-    _events.add(SelectedEvent(_queues[lane].first));
+    _emit(SelectedEvent(_queues[lane].first));
   }
 
   BenchResult tapBench(int seat) {
@@ -246,7 +298,7 @@ class LiftGame {
         return BenchResult.deselected;
       }
       selection = s;
-      _events.add(SelectedEvent(occupant));
+      _emit(SelectedEvent(occupant));
       return BenchResult.selected;
     }
     final s = selection;
@@ -254,7 +306,7 @@ class LiftGame {
     final mover = _queues[s.index].removeAt(0);
     _bench[seat] = mover;
     selection = null;
-    _events.add(SeatedEvent(mover, seat));
+    _emit(SeatedEvent(mover, seat));
     _checkJam();
     return BenchResult.seated;
   }
@@ -264,8 +316,8 @@ class LiftGame {
     final s = selection;
     final r = selected;
     if (s == null || r == null) return BoardResult.noSelection;
-    if (r.floor != liftFloor) {
-      _events.add(RefusedEvent(r, liftFloor));
+    if (!goesTo(r.floor)) {
+      _emit(RefusedEvent(r, List.unmodifiable(liftFloors)));
       return BoardResult.wrongFloor;
     }
     final before = _Snapshot(this);
@@ -281,10 +333,10 @@ class LiftGame {
     if (load > capacity) {
       _beforeCrash = before;
       phase = Phase.falling;
-      _events.add(OverloadEvent(r));
+      _emit(OverloadEvent(r));
       return BoardResult.overloaded;
     }
-    _events.add(BoardedEvent(r, zone));
+    _emit(BoardedEvent(r, zone));
     return BoardResult.boarded;
   }
 
@@ -292,9 +344,9 @@ class LiftGame {
   /// the booster inventory and only calls this when one is available.
   bool previewScale() {
     final r = selected;
-    if (phase != Phase.playing || r == null || r.floor != liftFloor) return false;
+    if (phase != Phase.playing || r == null || !goesTo(r.floor)) return false;
     ghostLoad = load + r.kg;
-    _events.add(ScalePreviewEvent(r));
+    _emit(ScalePreviewEvent(r));
     return true;
   }
 
@@ -318,7 +370,7 @@ class LiftGame {
     selection = null;
     ghostLoad = null;
     phase = Phase.departing;
-    _events.add(SentEvent(liftFloor, rating, coins, _riders.length));
+    _emit(SentEvent(List.unmodifiable(liftFloors), liftKind, rating, coins, _riders.length));
     return rating;
   }
 
@@ -333,21 +385,28 @@ class LiftGame {
     _riders.clear();
     load = 0;
     tripsUsed++;
-    final next = _nextFloor(liftFloor);
+    final served = liftFloors.last;
+    _admitArrivals(all: false);
+    if (_lockedLane != null && tripsUsed >= level.lockedUntilTrip) _openLane();
+    var next = _stopAfter(served, tripsUsed);
+    if (next == null && (_pendingArrivals.isNotEmpty || _lockedLane != null)) {
+      // Only late arrivals or the coned-off lane are left: bring them in now
+      // rather than leave the lift with nowhere to go.
+      _admitArrivals(all: true);
+      if (_lockedLane != null) _openLane();
+      next = _stopAfter(served, tripsUsed);
+    }
     if (next == null) {
       phase = Phase.won;
-      _events.add(WonEvent(levelCoins, tripsUsed, perfects));
+      _emit(WonEvent(levelCoins, tripsUsed, perfects));
       return;
     }
     if (tripsUsed >= tripsTotal) {
-      _pendingNext = next;
+      _pendingStop = next;
       _fail(FailKind.outOfTrips);
       return;
     }
-    liftFloor = next;
-    phase = Phase.playing;
-    _events.add(LiftArrivedEvent(next));
-    _checkJam();
+    _arrive(next);
   }
 
   /// Call when the crash animation completes.
@@ -379,45 +438,108 @@ class LiftGame {
         _beforeCrash = null;
       case FailKind.outOfTrips:
         tripsTotal += Formulas.adTripsBonus;
-        liftFloor = _pendingNext ?? liftFloor;
-        _pendingNext = null;
       case FailKind.jam:
         _bench.add(null);
     }
     if (viaAd) adContinueUsed = true;
     failKind = null;
     phase = Phase.playing;
-    _events.add(ContinuedEvent(kind));
-    if (kind == FailKind.outOfTrips) _events.add(LiftArrivedEvent(liftFloor));
+    _emit(ContinuedEvent(kind));
+    if (kind == FailKind.outOfTrips) {
+      final next = _pendingStop!;
+      _pendingStop = null;
+      _arrive(next);
+    }
   }
 
   // ── Internals ──
+
+  void _emit(GameEvent e) {
+    if (_record) _events.add(e);
+  }
 
   void _fail(FailKind kind) {
     phase = Phase.failed;
     failKind = kind;
     selection = null;
     ghostLoad = null;
-    _events.add(FailedEvent(kind));
+    _emit(FailedEvent(kind));
   }
 
-  Floor? _nextFloor(Floor after) {
+  void _setStop(LiftStop stop) {
+    liftFloors = stop.floors;
+    liftKind = stop.kind;
+  }
+
+  void _arrive(LiftStop stop) {
+    _setStop(stop);
+    phase = Phase.playing;
+    _emit(LiftArrivedEvent(List.unmodifiable(stop.floors), stop.kind));
+    _checkJam();
+  }
+
+  void _admitArrivals({required bool all}) {
+    var count = 0;
+    while (_pendingArrivals.isNotEmpty && (all || _pendingArrivals.first.afterTrip <= tripsUsed)) {
+      final a = _pendingArrivals.removeAt(0);
+      _queues[a.lane].add(a.resident);
+      count++;
+    }
+    if (count > 0) _emit(ArrivalsEvent(count));
+  }
+
+  void _openLane() {
+    final lane = _lockedLane!;
+    _lockedLane = null;
+    _emit(LaneOpenedEvent(lane));
+  }
+
+  /// Residents for [f] the lift can actually reach: open lanes and bench.
+  /// Lifts are routed by this, so a lift never comes for people behind the
+  /// cones or people who have not arrived yet.
+  bool _reachable(Floor f) {
+    for (var i = 0; i < _queues.length; i++) {
+      if (i == _lockedLane) continue;
+      for (final r in _queues[i]) {
+        if (r.floor == f) return true;
+      }
+    }
+    return _bench.any((r) => r?.floor == f);
+  }
+
+  Floor? _nextFloor(Floor? after) {
     final order = level.floors;
-    final start = order.indexOf(after);
+    final start = after == null ? -1 : order.indexOf(after);
     for (var step = 1; step <= order.length; step++) {
       final f = order[(start + step) % order.length];
-      if (remainingFor(f) > 0) return f;
+      if (_reachable(f)) return f;
     }
     return null;
   }
 
+  /// The lift that follows one that served up to [after], as trip
+  /// [tripIndex]. An express adds the next floor in rotation, if any.
+  LiftStop? _stopAfter(Floor? after, int tripIndex) {
+    final kind = level.kindForTrip(tripIndex);
+    final first = _nextFloor(after);
+    if (first == null) return null;
+    if (kind == LiftKind.express) {
+      final second = _nextFloor(first);
+      if (second != null && second != first) return LiftStop([first, second], kind);
+    }
+    return LiftStop([first], kind);
+  }
+
   /// Jammed: the lift is empty, every seat is taken, and nobody who can be
-  /// selected is going to this lift's floor.
+  /// selected is going to one of this lift's floors.
   void _checkJam() {
     if (phase != Phase.playing || _riders.isNotEmpty) return;
     final benchFull = !_bench.contains(null);
-    final frontMatch = _queues.any((q) => q.isNotEmpty && q.first.floor == liftFloor);
-    final benchMatch = _bench.any((r) => r?.floor == liftFloor);
+    var frontMatch = false;
+    for (var i = 0; i < _queues.length; i++) {
+      if (i != _lockedLane && _queues[i].isNotEmpty && goesTo(_queues[i].first.floor)) frontMatch = true;
+    }
+    final benchMatch = _bench.any((r) => r != null && goesTo(r.floor));
     if (benchFull && !frontMatch && !benchMatch) _fail(FailKind.jam);
   }
 }

@@ -1,17 +1,21 @@
 /// Seeded level generator. Same level number → same level, on every device.
 ///
-/// Draws residents from the unlocked cast, deals them into lanes, and asks
-/// the [Solver] to prove the layout clears. The first solvable attempt wins
-/// and its par sets the trip budget. If 60 attempts fail, the bench grows by
-/// one seat (up to two times) before giving up.
+/// Draws residents from the unlocked cast (weighted by the venue), hands out
+/// cargo, deals them into lanes, adds the level's lift schedule and lobby
+/// scenario, and asks the [Solver] to prove the layout clears. The first
+/// solvable attempt wins and its par sets the trip budget. If 60 attempts
+/// fail, the bench grows by one seat (up to two times) before giving up.
 library;
 
 import 'dart:math' as math;
 
 import 'cast.dart';
+import 'debuts.dart';
 import 'formulas.dart';
 import 'level.dart';
+import 'scenario.dart';
 import 'solver.dart';
+import 'venue.dart';
 
 abstract final class LevelGenerator {
   static const int baseSeed = 7919;
@@ -23,14 +27,29 @@ abstract final class LevelGenerator {
     final floorCount = Formulas.floors(number);
     final count = Formulas.residents(number);
     final capacity = Formulas.capacity(number);
-    final types = ResidentType.unlockedAt(number);
-    final introduced = ResidentType.introducedAt(number);
+    final venue = Venue.of(number);
+    final schedule = Formulas.liftSchedule(number);
+    final scenario = Formulas.scenario(number);
     final floors = _rotation(number, floorCount);
 
     for (var extraSeats = 0; extraSeats <= 2; extraSeats++) {
       for (var attempt = 0; attempt < attemptsPerBench; attempt++) {
         final seed = baseSeed * 1000 + number * 97 + attempt + extraSeats * 10007;
         final rng = math.Random(seed);
+        final picks = _cast(rng, number, count, floors, venue);
+        final arrivals = <Arrival>[];
+        if (scenario == Scenario.rushHour) {
+          // The last waves of the cast arrive later instead of waiting now.
+          final later = picks.sublist(picks.length - Formulas.rushWaveSize * Formulas.rushWaveTrips.length);
+          picks.removeRange(picks.length - later.length, picks.length);
+          for (var i = 0; i < later.length; i++) {
+            arrivals.add(Arrival(
+              afterTrip: Formulas.rushWaveTrips[i ~/ Formulas.rushWaveSize],
+              lane: rng.nextInt(Formulas.queues),
+              resident: later[i],
+            ));
+          }
+        }
         final draft = Level(
           number: number,
           capacity: capacity,
@@ -38,8 +57,14 @@ abstract final class LevelGenerator {
           benchSize: Formulas.bench(number) + extraSeats,
           difficulty: difficulty,
           floors: floors,
-          queues: _deal(rng, count, floors, types, introduced),
+          queues: _deal(picks),
           seed: seed,
+          venue: venue,
+          liftSchedule: schedule,
+          scenario: scenario,
+          lockedLane: scenario == Scenario.maintenance ? rng.nextInt(Formulas.queues) : null,
+          lockedUntilTrip: scenario == Scenario.maintenance ? Formulas.maintenanceTrips : 0,
+          arrivals: arrivals,
         );
         final result = Solver.solve(draft);
         if (result.cleared) {
@@ -61,25 +86,51 @@ abstract final class LevelGenerator {
     return List.unmodifiable([for (var i = 0; i < k; i++) all[(start + i) % all.length]]);
   }
 
-  static List<List<Resident>> _deal(
-    math.Random rng,
-    int count,
-    List<Floor> floors,
-    List<ResidentType> types,
-    ResidentType? introduced,
-  ) {
-    final picks = <(Floor, ResidentType)>[];
+  /// Draws [count] residents, shuffled. A debuting type appears at least
+  /// three times; a debuting cargo is carried at least three times.
+  static List<Resident> _cast(math.Random rng, int number, int count, List<Floor> floors, Venue venue) {
+    final types = ResidentType.unlockedAt(number);
+    final cargos = Cargo.unlockedAt(number);
+    final debut = Debut.at(number);
+    final newType = debut is TypeDebut ? debut.type : null;
+    var cargoDebutsLeft = debut is CargoDebut ? Formulas.debutMinimum : 0;
+
+    T weighted<T>(List<T> items, int Function(T) weight) {
+      final total = items.fold(0, (a, t) => a + weight(t));
+      var roll = rng.nextInt(total);
+      for (final t in items) {
+        roll -= weight(t);
+        if (roll < 0) return t;
+      }
+      return items.last;
+    }
+
+    final picks = <(Floor, ResidentType, Cargo)>[];
     for (var i = 0; i < count; i++) {
       final floor = floors[i % floors.length];
-      // A newly unlocked type appears at least three times on its debut.
-      final type = (introduced != null && i < 3) ? introduced : types[rng.nextInt(types.length)];
-      picks.add((floor, type));
+      final type = (newType != null && i < Formulas.debutMinimum) ? newType : weighted(types, venue.weightOf);
+      var cargo = Cargo.none;
+      if (type.canCarry && cargos.isNotEmpty) {
+        if (cargoDebutsLeft > 0) {
+          cargo = (debut as CargoDebut).cargo;
+          cargoDebutsLeft--;
+        } else if (rng.nextDouble() < Formulas.cargoChance) {
+          cargo = weighted(cargos, venue.cargoWeightOf);
+        }
+      }
+      picks.add((floor, type, cargo));
     }
     picks.shuffle(rng);
+    return [
+      for (var i = 0; i < picks.length; i++)
+        Resident(id: i + 1, floor: picks[i].$1, type: picks[i].$2, cargo: picks[i].$3),
+    ];
+  }
+
+  static List<List<Resident>> _deal(List<Resident> picks) {
     final lanes = List.generate(Formulas.queues, (_) => <Resident>[]);
     for (var i = 0; i < picks.length; i++) {
-      final (floor, type) = picks[i];
-      lanes[i % Formulas.queues].add(Resident(id: i + 1, type: type, floor: floor));
+      lanes[i % Formulas.queues].add(picks[i]);
     }
     return lanes;
   }
