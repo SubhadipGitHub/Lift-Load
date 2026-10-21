@@ -101,8 +101,8 @@ pairs who must ride together; residents in a hurry.
 | Placement | Format | Reward | Cap |
 | --- | --- | --- | --- |
 | Crash fail | Rewarded | Repair: last rider returns to where they stood | 1 per attempt, then 300 coins |
-| Out of trips | Rewarded | +2 trips | 1 per attempt, then 300 coins |
-| Lobby jam | Rewarded | +1 bench seat | 1 per attempt, then 300 coins |
+| Out of trips | Rewarded | +2 trips, plus the bench seats the next lift needs if it would arrive jammed | 1 per attempt, then 300 coins |
+| Lobby jam | Rewarded | Bench seats enough to dig out the nearest resident for this lift (usually 1) | 1 per attempt, then 300 coins |
 | Win | Rewarded | Level coins ×3 | 1 per level |
 | Before a Hard level | Rewarded | 2 free Scale uses | 1 per Hard level |
 | 0 lives | Rewarded | +1 life | 3 per day |

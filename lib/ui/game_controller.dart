@@ -347,12 +347,13 @@ class GameController extends ChangeNotifier {
             'kind': kind.name,
             'trips_used': game.tripsUsed,
           });
-        case ContinuedEvent(:final kind):
+        case ContinuedEvent(:final kind, :final seatsAdded):
           _lifeSpentForThisFail = false;
+          final seats = seatsLabel(seatsAdded);
           message = switch (kind) {
             FailKind.crash => 'Lift repaired. They are back where they stood',
-            FailKind.outOfTrips => '+${Formulas.adTripsBonus} trips',
-            FailKind.jam => '+1 bench seat',
+            FailKind.outOfTrips => '+${Formulas.adTripsBonus} trips${seats.isEmpty ? '' : ' and $seats'}',
+            FailKind.jam => seats,
           };
       }
     }
@@ -364,6 +365,9 @@ class GameController extends ChangeNotifier {
   /// Accessibility label for a resident: type, cargo and floor, never weight.
   static String describe(Resident r) =>
       '${r.type.displayName}${r.cargo == Cargo.none ? '' : ' with a ${r.cargo.displayName}'} going to ${r.floor.label}';
+
+  /// "+1 bench seat", "+2 bench seats", or empty for none.
+  static String seatsLabel(int n) => n <= 0 ? '' : '+$n bench ${n == 1 ? 'seat' : 'seats'}';
 
   /// "2F" or "2F and 5F".
   static String floorList(List<Floor> floors) => floors.map((f) => f.label).join(' and ');

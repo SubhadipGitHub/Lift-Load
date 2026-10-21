@@ -201,6 +201,66 @@ void main() {
     });
   });
 
+  group('continues always work', () {
+    test('a jam continue adds enough seats to dig out the nearest match', () {
+      // Lift is coral; the only coral is 2 deep behind teal kids.
+      final g = LiftGame(tiny([
+        [(t, ResidentType.kid), (t, ResidentType.kid), (t, ResidentType.kid), (t, ResidentType.kid), (c, ResidentType.kid)],
+      ], bench: 2));
+      g.tapQueue(0);
+      g.tapBench(0);
+      g.tapQueue(0);
+      g.tapBench(1);
+      expect(g.failKind, FailKind.jam);
+      expect(g.continueSeats, 2);
+      g.continueAfterFail(viaAd: true);
+      expect(g.bench, hasLength(4));
+      expect(g.drainEvents().whereType<ContinuedEvent>().single.seatsAdded, 2);
+      g.tapQueue(0);
+      g.tapBench(2);
+      g.tapQueue(0);
+      g.tapBench(3);
+      expect(g.phase, Phase.playing);
+      g.tapQueue(0);
+      expect(g.tapLift(), BoardResult.boarded);
+    });
+
+    test('+2 trips into a lift that would jam also adds the seats it needs', () {
+      final g = LiftGame(tiny([
+        [(c, ResidentType.kid), (c, ResidentType.kid), (t, ResidentType.kid)],
+        [(c, ResidentType.kid)],
+      ], bench: 1, trips: 1));
+      g.tapQueue(1);
+      g.tapBench(0); // bench full with a coral kid; fine while the lift is coral
+      g.tapQueue(0);
+      g.tapLift();
+      g.send();
+      g.finishSend();
+      expect(g.failKind, FailKind.outOfTrips);
+      // Next lift is teal: bench full, teal is 1 deep. Without a seat it jams.
+      expect(g.continueSeats, 1);
+      g.continueAfterFail(viaAd: true);
+      expect(g.phase, Phase.playing);
+      expect(g.liftFloor, t);
+      expect(g.tripsLeft, Formulas.adTripsBonus);
+      expect(g.bench, hasLength(2));
+    });
+
+    test('+2 trips adds no seats when the next lift is fine', () {
+      final g = LiftGame(tiny([
+        [(c, ResidentType.kid), (t, ResidentType.kid)],
+      ], trips: 1));
+      g.tapQueue(0);
+      g.tapLift();
+      g.send();
+      g.finishSend();
+      expect(g.failKind, FailKind.outOfTrips);
+      expect(g.continueSeats, 0);
+      g.continueAfterFail(viaAd: true);
+      expect(g.bench, hasLength(2));
+    });
+  });
+
   test('the concept slice traps four-person loads: gym+rider+officeM+kid crashes', () {
     // 92 + 86 + 74 + 30 = 282 > 280, the "MAX 4 PERSONS" trap.
     final g = LiftGame(tiny([

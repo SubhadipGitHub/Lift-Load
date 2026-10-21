@@ -128,8 +128,11 @@ class FailedEvent extends GameEvent {
 }
 
 class ContinuedEvent extends GameEvent {
-  const ContinuedEvent(this.kind);
+  const ContinuedEvent(this.kind, {this.seatsAdded = 0});
   final FailKind kind;
+
+  /// Bench seats the continue added (jam, or +2 trips into a jam).
+  final int seatsAdded;
 }
 
 // ── State machine ─────────────────────────────────────────────────────────
@@ -193,6 +196,7 @@ class LiftGame {
   TripRating? _pendingRating;
   int _pendingCoins = 0;
   LiftStop? _pendingStop;
+  int _continueSeats = 0;
   _Snapshot? _beforeCrash;
 
   // ── Read-only views ──
@@ -417,8 +421,15 @@ class LiftGame {
     _fail(FailKind.crash);
   }
 
+  /// Bench seats the continue for the current fail adds: for a jam, enough
+  /// to dig out the nearest resident for this lift; for +2 trips, the same
+  /// for the lift it hands over, if that lift would arrive jammed. Shown on
+  /// the fail sheet before the player pays, so the continue always works.
+  int get continueSeats => phase == Phase.failed ? _continueSeats : 0;
+
   /// Applies the continue for the current fail: repair the lift (the
-  /// overloading rider returns to where they stood), +2 trips, or +1 seat.
+  /// overloading rider returns to where they stood), +2 trips, or bench
+  /// seats ([continueSeats]).
   void continueAfterFail({required bool viaAd}) {
     if (phase != Phase.failed) return;
     final kind = failKind!;
@@ -441,12 +452,17 @@ class LiftGame {
       case FailKind.outOfTrips:
         tripsTotal += Formulas.adTripsBonus;
       case FailKind.jam:
-        _bench.add(null);
+        break;
     }
+    final seats = _continueSeats;
+    for (var i = 0; i < seats; i++) {
+      _bench.add(null);
+    }
+    _continueSeats = 0;
     if (viaAd) adContinueUsed = true;
     failKind = null;
     phase = Phase.playing;
-    _emit(ContinuedEvent(kind));
+    _emit(ContinuedEvent(kind, seatsAdded: seats));
     if (kind == FailKind.outOfTrips) {
       final next = _pendingStop!;
       _pendingStop = null;
@@ -461,6 +477,11 @@ class LiftGame {
   }
 
   void _fail(FailKind kind) {
+    _continueSeats = switch (kind) {
+      FailKind.jam => _seatsToUnjam(liftFloors),
+      FailKind.outOfTrips => _seatsToUnjam(_pendingStop!.floors),
+      FailKind.crash => 0,
+    };
     phase = Phase.failed;
     failKind = kind;
     selection = null;
@@ -547,10 +568,34 @@ class LiftGame {
     _fail(FailKind.jam);
   }
 
-  bool _canBoardNow() {
+  bool _canBoardNow() => _canBoardFor(liftFloors);
+
+  bool _canBoardFor(List<Floor> floors) {
     for (var i = 0; i < _queues.length; i++) {
-      if (i != _lockedLane && _queues[i].isNotEmpty && goesTo(_queues[i].first.floor)) return true;
+      if (i != _lockedLane && _queues[i].isNotEmpty && floors.contains(_queues[i].first.floor)) return true;
     }
-    return _bench.any((r) => r != null && goesTo(r.floor));
+    return _bench.any((r) => r != null && floors.contains(r.floor));
+  }
+
+  /// Seats an empty lift for [floors] needs before it is not jammed: 0 if it
+  /// is not jammed now, else the depth of the shallowest matching resident
+  /// in an open lane (bench that many blockers and they reach the front).
+  int _seatsToUnjam(List<Floor> floors) {
+    if (_bench.contains(null) || _canBoardFor(floors)) return 0;
+    final locked = _lockedLane;
+    if (locked != null && _queues[locked].isNotEmpty && floors.contains(_queues[locked].first.floor)) return 0;
+    var best = 1 << 30;
+    for (var i = 0; i < _queues.length; i++) {
+      if (i == locked) continue;
+      for (var d = 1; d < _queues[i].length && d < best; d++) {
+        if (floors.contains(_queues[i][d].floor)) {
+          best = d;
+          break;
+        }
+      }
+    }
+    // Lifts are only routed to reachable floors, so a match always exists;
+    // one seat is the floor if that ever changes.
+    return best == 1 << 30 ? 1 : best;
   }
 }
