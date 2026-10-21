@@ -58,12 +58,11 @@ abstract final class Solver {
 
   /// 1. Heaviest selectable resident for this lift that fits.
   static bool _boardBest(LiftGame g) {
-    final bench = g.bench;
     var bestKg = -1;
     int? bestSeat;
     int? bestLane;
-    for (var i = 0; i < bench.length; i++) {
-      final r = bench[i];
+    for (var i = 0; i < g.benchLength; i++) {
+      final r = g.benchAt(i);
       if (r != null && g.goesTo(r.floor) && g.load + r.kg <= g.capacity && r.kg > bestKg) {
         bestKg = r.kg;
         bestSeat = i;
@@ -92,7 +91,10 @@ abstract final class Solver {
 
   /// 2. Bench a blocker to expose a fitting match.
   static bool _dig(LiftGame g) {
-    final seat = g.bench.indexOf(null);
+    var seat = -1;
+    for (var i = 0; i < g.benchLength && seat < 0; i++) {
+      if (g.benchAt(i) == null) seat = i;
+    }
     if (seat < 0) return false;
     int? digLane;
     var digDepth = 1 << 30;

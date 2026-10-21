@@ -210,7 +210,7 @@ void main() {
       expect(g.drainEvents().whereType<LaneOpenedEvent>(), hasLength(1));
     });
 
-    test('a jam with nothing behind the cones either still fails', () {
+    test('a jam with nothing useful behind the cones still fails, and the lane stays closed', () {
       final g = LiftGame(hand([
         [(t, ResidentType.kid, none)],
         [(t, ResidentType.kid, none), (t, ResidentType.kid, none), (c, ResidentType.kid, none)],
@@ -218,6 +218,8 @@ void main() {
       g.tapQueue(1);
       g.tapBench(0);
       expect(g.failKind, FailKind.jam);
+      expect(g.isLaneLocked(0), isTrue);
+      expect(g.drainEvents().whereType<LaneOpenedEvent>(), isEmpty);
     });
   });
 

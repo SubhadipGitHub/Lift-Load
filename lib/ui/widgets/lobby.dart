@@ -100,7 +100,7 @@ class _Seat extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     FloorTag(floor: r.floor, compact: true),
-                    ResidentFigure.of(r, height: 52),
+                    FittedBox(fit: BoxFit.scaleDown, child: ResidentFigure.of(r, height: 52)),
                   ],
                 )
               : seatHint
@@ -241,7 +241,7 @@ class _Cones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: 'Lane closed for maintenance, opens in $tripsLeft trips',
+        label: 'Lane closed for maintenance, opens in $tripsLeft ${tripsLeft == 1 ? 'trip' : 'trips'}',
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(

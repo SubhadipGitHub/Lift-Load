@@ -34,8 +34,9 @@ class FloorPatternPainter extends CustomPainter {
           }
         }
       case FloorPattern.stripes:
+        final band = Paint()..color = style.floorLine;
         for (var y = 12.0; y < size.height; y += 44) {
-          canvas.drawRect(Rect.fromLTWH(0, y, size.width, 6), Paint()..color = style.floorLine);
+          canvas.drawRect(Rect.fromLTWH(0, y, size.width, 6), band);
         }
       case FloorPattern.marble:
         for (var x = -size.height; x < size.width; x += 46) {

@@ -49,6 +49,10 @@ class GameController extends ChangeNotifier {
   bool tripleClaimed = false;
   TripRating? _lastRating;
   int _lastRatingCoins = 0;
+
+  /// Lobby news from the last send (rush-hour wave, lane opened), shown
+  /// ahead of the "lift arriving" line instead of being overwritten by it.
+  String _lobbyNews = '';
   bool _lifeSpentForThisFail = false;
 
   DateTime get now => _clock();
@@ -57,6 +61,7 @@ class GameController extends ChangeNotifier {
 
   void startLevel() {
     _game = LiftGame(_levelFor(profile.level));
+    _lobbyNews = '';
     tripleClaimed = false;
     _lifeSpentForThisFail = false;
     message = debutTip(game.level.number) ?? scenarioTip(game.level.scenario) ?? 'Tap a resident, then the lift or a bench seat';
@@ -102,7 +107,7 @@ class GameController extends ChangeNotifier {
   // ── Player input ──
 
   void tapQueue(int lane) {
-    if (game.isLaneLocked(lane)) {
+    if (game.phase == Phase.playing && game.isLaneLocked(lane)) {
       final n = game.tripsUntilLaneOpens;
       message = 'Closed for maintenance. Opens in $n ${n == 1 ? 'trip' : 'trips'}';
       notifyListeners();
@@ -297,16 +302,20 @@ class GameController extends ChangeNotifier {
             null => '',
           };
           _lastRating = null;
+          final news = _lobbyNews;
+          _lobbyNews = '';
           final lift = switch (kind) {
             LiftKind.normal => 'Lift',
             LiftKind.old => 'Old lift (it takes less)',
             LiftKind.service => 'Service lift (it takes more)',
             LiftKind.express => 'Express',
           };
-          message = '$verdict$lift to ${floorList(floors)} arriving';
+          message = '$news$verdict$lift to ${floorList(floors)} arriving';
         case ArrivalsEvent(:final count):
+          _lobbyNews += 'Rush hour: +$count in the queues · ';
           message = 'Rush hour! $count more residents joined the queues';
         case LaneOpenedEvent(:final lane):
+          _lobbyNews += 'Lane ${lane + 1} open · ';
           message = 'Maintenance done. Lane ${lane + 1} is open';
         case ScalePreviewEvent():
           message = 'The dashed needle shows where the load would land';

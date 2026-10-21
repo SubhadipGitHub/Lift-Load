@@ -214,6 +214,8 @@ class LiftGame {
   /// Cheap lane access for the solver bot (no list copies).
   int laneLength(int lane) => _queues[lane].length;
   Resident laneAt(int lane, int depth) => _queues[lane][depth];
+  int get benchLength => _bench.length;
+  Resident? benchAt(int seat) => _bench[seat];
 
   /// Maintenance: the coned-off lane, while it is closed.
   int? get lockedLane => _lockedLane;
@@ -537,9 +539,10 @@ class LiftGame {
   void _checkJam() {
     if (phase != Phase.playing || _riders.isNotEmpty || _bench.contains(null)) return;
     if (_canBoardNow()) return;
-    if (_lockedLane != null) {
+    final locked = _lockedLane;
+    if (locked != null && _queues[locked].isNotEmpty && goesTo(_queues[locked].first.floor)) {
       _openLane();
-      if (_canBoardNow()) return;
+      return;
     }
     _fail(FailKind.jam);
   }

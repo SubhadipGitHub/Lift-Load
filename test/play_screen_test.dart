@@ -101,6 +101,35 @@ void main() {
     expect(find.text('Opens in\n3 trips'), findsOneWidget);
   }, timeout: const Timeout(Duration(seconds: 60)));
 
+  testWidgets('a rush-hour wave is announced, not hidden by the arriving lift', (tester) async {
+    var id = 100;
+    Resident r(Floor f) => Resident(id: ++id, type: ResidentType.kid, floor: f);
+    final level = Level(
+      number: 87,
+      capacity: 360,
+      trips: 10,
+      benchSize: 4,
+      difficulty: Difficulty.normal,
+      floors: const [Floor.coral, Floor.teal],
+      scenario: Scenario.rushHour,
+      queues: [
+        [r(Floor.coral)],
+        [r(Floor.teal)],
+        const [],
+        const [],
+      ],
+      arrivals: [Arrival(afterTrip: 1, lane: 2, resident: r(Floor.teal)), Arrival(afterTrip: 1, lane: 3, resident: r(Floor.coral))],
+    );
+    final c = controller(DebugAnalytics(), levelFor: (_) => level);
+    await pumpPlay(tester, c);
+    c.tapQueue(0);
+    c.tapLift();
+    c.send();
+    await tester.pumpAndSettle();
+    expect(c.message, contains('Rush hour: +2'));
+    expect(c.message, contains('arriving'));
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
   testWidgets('board, send, and the next lift arrives', (tester) async {
     final analytics = DebugAnalytics();
     final c = controller(analytics);

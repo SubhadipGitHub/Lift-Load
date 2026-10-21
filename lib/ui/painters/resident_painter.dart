@@ -623,13 +623,15 @@ class ResidentPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true;
-    for (final layer in [...fig.layers, ..._cargoCache.putIfAbsent(cargo, () => _cargoLayers(cargo))]) {
-      if (layer.stroke > 0) {
-        canvas.drawPath(layer.path, stroke
-          ..color = layer.color
-          ..strokeWidth = layer.stroke);
-      } else {
-        canvas.drawPath(layer.path, fill..color = layer.color);
+    for (final layers in [fig.layers, _cargoCache.putIfAbsent(cargo, () => _cargoLayers(cargo))]) {
+      for (final layer in layers) {
+        if (layer.stroke > 0) {
+          canvas.drawPath(layer.path, stroke
+            ..color = layer.color
+            ..strokeWidth = layer.stroke);
+        } else {
+          canvas.drawPath(layer.path, fill..color = layer.color);
+        }
       }
     }
     canvas.restore();
