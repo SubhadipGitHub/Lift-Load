@@ -1,7 +1,7 @@
 # Lift Load MVP: PRD
 
-Version 1.1, 2026-10-21. Owner: Subhadip. Living copy of the claude.ai doc "Lift Load MVP — PRD", with the
-simulation-driven changes marked v1.1.
+Version 1.2, 2026-10-21. Owner: Subhadip. Living copy of the claude.ai doc "Lift Load MVP — PRD", with the
+simulation-driven changes marked v1.1 and the variety pass marked v1.2 (see "v1.2 Variety and depth").
 
 ## Problem
 
@@ -36,8 +36,12 @@ Fail (crash, out of trips, jam), Win, Shop, Settings; lives, coins, Scale, Repai
 win streak; AdMob rewarded and interstitial; Remove Ads and two packs via Play Billing; Firebase Analytics for every
 gate metric; offline-first local save.
 
-Out: metro mode and the Tower Transit hybrid; Tower Race, battle pass, leaderboards, cloud save; special residents
-(VIP, twins, grandma, watchman); iOS; paid UA before Gate B.
+**v1.2 In:** five venues across levels 1–100; 14 resident types (adds security guard, wheelchair patient, puffer-jacket
+teen, parent with pram, bellhop); three cargo props; World 2 (L61–100) lift kinds and lobby scenarios; a venue map on
+Home.
+
+Out: metro mode and the Tower Transit hybrid; Tower Race, battle pass, leaderboards, cloud save; VIP and twins
+(pairs are queued, see "Queued"); iOS; paid UA before Gate B.
 
 ## Locked game rules
 
@@ -58,8 +62,38 @@ All live in `lib/game/formulas.dart`.
 - Coins: 20 + 2⌊L/5⌋ + 8 per green trip + 15 per perfect trip.
 - Sawtooth: L mod 10 = 0 Hard, L mod 25 = 0 Super Hard, L mod 10 = 1 breather. Levels that introduce a new type are
   always breathers, and the new type appears at least three times.
-- Cast unlocks: schoolkid, office goer (two builds) at L1; aunty L9; student L17; uncle L26; grandpa L33; delivery
-  rider L41; gym regular (the "liar") L49.
+- Cast unlocks: schoolkid, office goer (two builds) at L1; aunty L9; student L17; **v1.2** security guard L23; uncle
+  L26; grandpa L33; delivery rider L41; **v1.2** wheelchair patient L43; **v1.2** teen in a puffer jacket (the inverse
+  liar: looks heavy, is light) L45; gym regular (the "liar") L49; **v1.2** parent with pram L63; bellhop with trolley
+  L83.
+
+## v1.2 Variety and depth
+
+Why: by about L20 a player knows all nine fixed weights, and every level looked and played the same. v1.2 extends the
+learning curve (more people, cargo) and adds planning against a visible schedule (lift kinds, lobby scenarios). Levels
+1–60 keep the core rules so Gate A still measures the weight-guessing thesis; the structural changes live in World 2.
+
+- **Debuts.** One new thing per level, on a breather, never on a multiple of 10 or 25, and seen at least three times:
+  water can L13, suitcase L21, guard L23, gas cylinder L37, wheelchair L43, puffer teen L45, old lift L61, pram L63,
+  service lift L65, maintenance L67, express L71, power cut L77, bellhop L83, rush hour L87.
+- **Venues** (20 levels each): Sunrise Towers (housing society), Skyline Offices, Lakeside Hospital, Bazaar Mall,
+  Starlight Hotel. Each has its own lobby look, a prop, and a crowd mix (spawn weights in `lib/game/venue.dart`). The
+  hotel runs on past L100.
+- **Cargo.** Water can, suitcase, gas cylinder, each a fixed hidden extra weight. Adults carry one 25% of the time once
+  unlocked; kids and anyone pushing a chair, pram or trolley never do.
+- **Lift kinds (L61+).** Each level repeats a pattern such as normal-normal-old or normal-old-normal-express, at most
+  two non-normal kinds, first lift always normal. Old lift: 0.75 × capacity. Service lift: 1.4 × capacity. Express: this
+  floor plus the next in rotation. Shown in the NEXT strip and on the cabin.
+- **Lobby scenarios (L61+).** At most one per level, never on Super Hard or another debut. Maintenance: one lane is
+  coned off for the first 3 trips. Power cut: residents at depth 2 or deeper are shadows (floor tags still shown).
+  Rush hour: two waves of 4 residents join after trips 3 and 6.
+- **No soft-locks.** Lifts are routed only to residents the player can reach. If only coned-off or not-yet-arrived
+  residents remain, the lane opens early or the wave arrives at once.
+- **Solver.** The greedy bot now plays through the engine itself, so every rule above is proven solvable for all 100
+  levels (`test/generator_test.dart`).
+
+**Queued (not in v1.2):** a best-play solver for tighter Hard levels and stars per level; cabin spots (max riders);
+pairs who must ride together; residents in a hurry.
 
 ## Monetization
 

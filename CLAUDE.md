@@ -19,14 +19,20 @@ Owner: Subhadip. Read this file, then `.claude/memory/progress.md`, at the start
 ## Locked game rules (changing one reopens docs/PRD.md)
 
 1. Four lanes of residents. Only lane fronts and bench residents can be selected.
-2. A selected resident goes to an empty bench seat or into the waiting lift. A lift for another floor refuses them.
-3. **Weight is never shown.** Each `ResidentType` has one fixed hidden `kg`. No number, bar, or icon may reveal it.
-4. The gauge shows only current load, in zones: grey < 75% of capacity, green ≥ 75%, red > 100%. No numbers.
-5. Boarding past capacity snaps the cable: the lift drops and the level fails (`FailKind.crash`).
+2. A selected resident goes to an empty bench seat or into the waiting lift. A lift refuses anyone not going to one of
+   its floors.
+3. **Weight is never shown.** Each `ResidentType` and each `Cargo` has one fixed hidden `kg`; a resident weighs type +
+   cargo. No number, bar, or icon may reveal either.
+4. The gauge shows only current load, in zones of this lift's capacity: grey < 75%, green ≥ 75%, red > 100%. No
+   numbers.
+5. Boarding past this lift's capacity snaps the cable: the lift drops and the level fails (`FailKind.crash`).
 6. Send needs ≥ 1 rider, uses one trip, scores grey 0 / green +8 / ≥ 95% perfect +15 coins.
-7. The next lift serves the next floor in rotation that still has residents.
+7. The next lift serves the next floor in rotation that still has reachable residents; an express also serves the
+   floor after it.
 8. Win when everyone is delivered. Fail on crash, out of trips, or jam (bench full, nothing boardable, lift empty).
 9. No Undo (it would reveal weights). The Scale booster previews one resident as a dashed ghost needle.
+10. World 2 (L61+) variety is always visible in advance: lift kinds (old, service, express) in the NEXT strip, the one
+    lobby scenario (maintenance, power cut, rush hour) on the lobby floor. Levels 1–60 use neither.
 
 ## Stack
 
@@ -35,9 +41,9 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 
 | Path | What lives there |
 | --- | --- |
-| `lib/game/` | Pure-Dart rules: `cast.dart` (types, hidden kg), `formulas.dart` (every tuning number), `engine.dart` (state machine + events), `solver.dart` (greedy bot), `generator.dart` (seeded levels) |
+| `lib/game/` | Pure-Dart rules: `cast.dart` (types, cargo, hidden kg), `venue.dart` (five buildings, crowd mix), `scenario.dart` (lift kinds, lobby scenarios), `debuts.dart` (what is new on each level), `formulas.dart` (every tuning number), `engine.dart` (state machine + events), `solver.dart` (greedy bot that plays through the engine), `generator.dart` (seeded levels) |
 | `lib/services/` | `ad_policy.dart` (interstitial gating, rewarded caps), `ads_service.dart`, `analytics_service.dart`, `profile.dart`, `feedback_service.dart` |
-| `lib/ui/` | `game_controller.dart` (only bridge from widgets to engine), `painters/` (parametric resident bodies, gauge), `widgets/`, `screens/` |
+| `lib/ui/` | `game_controller.dart` (only bridge from widgets to engine), `theme.dart` (palette, `VenueStyle`, `LiftKindStyle`), `painters/` (parametric resident bodies, vehicles, cargo, gauge, lobby floors), `widgets/`, `screens/` |
 | `tool/simulate.dart` | Prints the level table: par, trips, bench, floors per level |
 | `docs/` | `PRD.md`, `analytics.md`, `concept/` notes |
 | `.claude/` | `agents/`, `skills/`, `memory/` |
@@ -53,6 +59,8 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 - Interstitials only through `InterstitialPolicy.shouldShowAfterWin`. Never after a fail. Never for payers.
 - No real metro, society or brand names or logos anywhere (app, assets, store listing).
 - Engine changes need engine tests; formula changes need `test/generator_test.dart` green and an updated level table.
+- Every debut (type, cargo, lift kind, scenario) lands on its own level, never a multiple of 10 or 25, and is a
+  breather (`Debut.at`, enforced by `test/generator_test.dart`).
 
 ## Commands
 
@@ -60,7 +68,7 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 flutter pub get
 flutter analyze --no-fatal-infos
 flutter test                      # engine, generator, ad policy, widget, architecture tests
-dart run tool/simulate.dart 1 60  # level table
+dart run tool/simulate.dart 1 100 # level table
 flutter run -d chrome             # play in the browser (ads stubbed)
 flutter run -d <android-device>
 ```

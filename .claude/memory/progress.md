@@ -3,6 +3,28 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-21 · v1.2 variety pass (branch ccr-445849fc-sjvxbg)
+
+**Done**
+- PRD v1.2 signed off in chat: venues, five new types, cargo, World 2 lift kinds and scenarios. CLAUDE.md rules 2, 3,
+  4, 7 amended, rule 10 added.
+- Engine: per-trip capacity, express floors, coned-off lane, rush-hour arrivals, reachable-only routing (no
+  soft-locks). Solver now plays through the engine.
+- Generator: 100 levels, venue spawn weights, cargo, one debut per level with ≥ 3 sightings.
+- UI: venue floors, walls and props; five new looks (seated wheelchair, pram, trolley), cargo props, power-cut
+  shadow; lift-kind cabins and NEXT chips; cones and rush-hour banner; Home skyline map; building-complete banner.
+- Tests: 50 green locally (Flutter 3.47.7): variety engine tests, generator 1–100, every venue × kind × scenario
+  renders without overflow, shadow-width guard.
+
+**Open**
+- Art is parametric and checked only in test screenshots; needs a look on a real device.
+- Tuning of World 2 (old lift share, scenario frequency) is untested with people.
+
+**Next**
+1. Play the PR web build at L13, L23, L43, L45, L61, L65, L67, L71, L77, L87.
+2. Gate A with levels 1–60.
+3. Queued depth: best-play solver, trap Hard levels, stars, cabin spots, pairs, hurry residents.
+
 ## 2026-10-21 · M1 scaffold
 
 **Done**
