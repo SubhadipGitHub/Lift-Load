@@ -73,11 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     children: [
                       _Stat(icon: Icons.favorite_rounded, color: LL.alarm, text: '${p.lives}'),
-                      if (next != null) ...[
-                        const SizedBox(width: 6),
-                        Text('next in ${_countdown(next)}', style: const TextStyle(fontSize: 12, color: LL.lilac, fontWeight: FontWeight.w700)),
-                      ],
-                      const Spacer(),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          next == null ? '' : 'next in ${_countdown(next)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: LL.lilac, fontWeight: FontWeight.w700),
+                        ),
+                      ),
                       _Stat(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${p.coins}'),
                       const SizedBox(width: 6),
                       _Stat(icon: Icons.scale_rounded, color: LL.brass, text: '${p.scales}'),

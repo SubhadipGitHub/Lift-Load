@@ -173,8 +173,15 @@ class _Hud extends StatelessWidget {
               child: Text('Lv ${g.level.number}', style: LL.display.copyWith(fontSize: 19, color: LL.ink)),
             ),
             const SizedBox(width: 8),
-            Text('Trips left ${g.tripsLeft}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: LL.lilac)),
-            const Spacer(),
+            Expanded(
+              child: Text(
+                'Trips left ${g.tripsLeft}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: LL.lilac),
+              ),
+            ),
+            const SizedBox(width: 6),
             _Chip(icon: Icons.favorite_rounded, color: LL.alarm, text: '${c.profile.lives}'),
             const SizedBox(width: 6),
             _Chip(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${c.profile.coins}'),

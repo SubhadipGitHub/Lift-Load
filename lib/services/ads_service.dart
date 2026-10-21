@@ -35,13 +35,15 @@ class StubAdsService implements AdsService {
   @override
   Future<bool> showRewarded(RewardedPlacement placement) async {
     debugPrint('[ads] rewarded ${placement.name} (stub)');
-    await Future<void>.delayed(delay);
+    // No timer for a zero delay: widget tests run in fake time, where an
+    // unpumped timer would never fire.
+    if (delay > Duration.zero) await Future<void>.delayed(delay);
     return grantReward;
   }
 
   @override
   Future<void> showInterstitial() async {
     debugPrint('[ads] interstitial (stub)');
-    await Future<void>.delayed(delay);
+    if (delay > Duration.zero) await Future<void>.delayed(delay);
   }
 }

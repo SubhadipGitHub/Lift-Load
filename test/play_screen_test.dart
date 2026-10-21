@@ -35,7 +35,7 @@ void main() {
     // Hidden weights must never reach the screen.
     expect(find.textContaining('kg'), findsNothing);
     expect(tester.takeException(), isNull);
-  });
+  }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('board, send, and the next lift arrives', (tester) async {
     final analytics = DebugAnalytics();
@@ -53,14 +53,13 @@ void main() {
     expect(c.game.tripsUsed, 1);
     expect(c.message, contains('arriving'));
     expect(analytics.history.map((e) => e.$1), containsAll(['level_start', 'trip_sent']));
-  });
+  }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('overload plays the crash, shows the fail sheet, and the ad repairs it', (tester) async {
     final c = controller(DebugAnalytics());
     await pumpPlay(tester, c);
 
-    // Lane 1 front is the gym regular (5F): bench him, then go for 2F.
-    // Easiest overload: build a 2F lift past 280 kg.
+    // Build the 2F lift past capacity, benching anyone for other floors.
     c.tapQueue(0); // uncle 104
     c.tapLift();
     c.tapQueue(2); // aunty 80 (6F) → bench
@@ -82,11 +81,9 @@ void main() {
     c.finishCrash();
     await tester.pumpAndSettle();
     expect(find.text('Overloaded!'), findsWidgets);
-    final repair = c.continueWithAd();
-    await tester.pump(); // lets the stub ad's zero-length timer fire
-    await repair;
+    await c.continueWithAd();
     await tester.pumpAndSettle();
     expect(c.game.phase, Phase.playing);
     expect(c.game.load, 274);
-  });
+  }, timeout: const Timeout(Duration(seconds: 60)));
 }

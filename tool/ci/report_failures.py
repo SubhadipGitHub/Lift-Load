@@ -19,6 +19,8 @@ with open(sys.argv[1], encoding="utf-8") as fh:
         t = e.get("type")
         if t == "testStart":
             names[e["test"]["id"]] = e["test"]["name"]
+        elif t == "print" and "EXCEPTION CAUGHT" in e.get("message", ""):
+            errors.setdefault(e["testID"], []).append(e["message"][:1800])
         elif t == "error":
             errors.setdefault(e["testID"], []).append((e.get("error", "") + "\n" + e.get("stackTrace", ""))[:1800])
         elif t == "testDone" and e.get("result") != "success" and not e.get("hidden"):

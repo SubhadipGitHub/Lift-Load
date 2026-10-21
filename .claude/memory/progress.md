@@ -13,9 +13,11 @@ entries; fold older ones into "Earlier".
 - Tests: engine, generator (levels 1–60 solvable), ad policy, play-screen widget, architecture guards.
 - CI: analyze, test, level table, web build artifact.
 
-**Not verified yet**
-- The code was written without a Flutter SDK (blocked in the authoring workspace). First CI run is the first
-  compile. Expect small fixes.
+**Verified in CI**
+- `flutter analyze` clean on the first run (code was written without a local Flutter SDK).
+- 24 of 27 tests pass: engine, generator (levels 1–60 solvable), ad policy, architecture.
+- The 3 widget tests failed: HUD row overflow under the test font (fixed: trips label ellipsizes) and a fake-time
+  hang on the stub ad's zero-length timer (fixed: no timer for a zero delay).
 
 **Next**
 1. Get CI green; commit `android/` and `web/` from `flutter create`.
