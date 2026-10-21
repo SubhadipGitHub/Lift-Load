@@ -84,7 +84,8 @@ class VenuePropPainter extends CustomPainter {
           canvas.drawCircle(Offset(x, y), r, fill);
         }
         fill.color = const Color(0xFFC0703A);
-        canvas.drawPath(Path()..addPolygon(const [Offset(10, 34), Offset(30, 34), Offset(27, 54), Offset(13, 54)], true), fill);
+        canvas.drawPath(
+            Path()..addPolygon(const [Offset(10, 34), Offset(30, 34), Offset(27, 54), Offset(13, 54)], true), fill);
       case VenueProp.cooler:
         fill.color = const Color(0xFF9FD3F0);
         canvas.drawRRect(RRect.fromLTRBR(13, 4, 27, 22, const Radius.circular(4)), fill);

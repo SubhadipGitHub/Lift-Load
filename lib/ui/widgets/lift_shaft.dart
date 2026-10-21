@@ -5,10 +5,13 @@ import '../../game/engine.dart';
 import '../../game/scenario.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../painters/cabin_painter.dart';
 import '../painters/floor_shape_painter.dart';
 import '../painters/lobby_painter.dart';
+import '../painters/shaft_painter.dart';
 import '../theme.dart';
 import 'load_gauge.dart';
+import 'pressable.dart';
 import 'resident_figure.dart';
 
 /// The shaft panel: upcoming lifts, the cabin (a tap target that shows who
@@ -21,6 +24,7 @@ class LiftShaft extends StatelessWidget {
     required this.cabinTilt,
     required this.onTapLift,
     required this.onSend,
+    this.doorOpen = 1,
   });
 
   final LiftGame game;
@@ -28,6 +32,9 @@ class LiftShaft extends StatelessWidget {
   final double cabinTilt;
   final VoidCallback onTapLift;
   final VoidCallback onSend;
+
+  /// Cabin doors: 0 closed, 1 open. Driven by the send animation.
+  final double doorOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -40,82 +47,144 @@ class LiftShaft extends StatelessWidget {
     final s = m.scale;
     final label = LL.label.copyWith(fontSize: m.font(11));
 
+    final pad = 10 * s;
+    final railLeft = pad + m.nextColumn + 8 * s;
     return Container(
       height: m.shaftHeight,
       margin: EdgeInsets.symmetric(horizontal: m.gap),
       clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(color: venue.wall, borderRadius: BorderRadius.circular(m.radius)),
-      padding: EdgeInsets.symmetric(horizontal: 10 * s),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: m.nextColumn,
-            child: Padding(
-              padding: EdgeInsets.only(top: 14 * s),
-              child: Column(
-                children: [
-                  FittedBox(fit: BoxFit.scaleDown, child: Text('NEXT', style: label)),
-                  SizedBox(height: 7 * s),
-                  for (var i = 0; i < upcoming.length; i++) ...[
-                    Opacity(opacity: i == 0 ? 1 : 0.55, child: _NextChip(stop: upcoming[i])),
-                    SizedBox(height: 7 * s),
-                  ],
-                  const Spacer(),
-                  SizedBox(width: 34 * s, height: 48 * s, child: CustomPaint(painter: VenuePropPainter(venue))),
-                  SizedBox(height: 10 * s),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: 8 * s),
-          SizedBox(
-            width: m.cabinWidth,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Cable: snapped after an overload.
-                Positioned(
-                  left: m.cabinWidth / 2 - 2 * s,
-                  top: 0,
-                  child: Transform.rotate(
-                    angle: crashed ? 0.32 : 0,
-                    alignment: Alignment.topCenter,
-                    child: Container(width: 4 * s, height: (crashed ? 14 : 30) * s, color: const Color(0xFF8F8AC4)),
+      decoration: BoxDecoration(
+        color: venue.wall,
+        borderRadius: BorderRadius.circular(m.radius),
+        boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 12, offset: Offset(0, 4))],
+      ),
+      child: CustomPaint(
+        painter: ShaftPainter(style: venue, railLeft: railLeft, railRight: railLeft + m.cabinWidth),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: pad),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: m.nextColumn,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 14 * s),
+                  child: Column(
+                    children: [
+                      FittedBox(fit: BoxFit.scaleDown, child: Text('NEXT', style: label)),
+                      SizedBox(height: 7 * s),
+                      for (var i = 0; i < upcoming.length; i++) ...[
+                        Opacity(opacity: i == 0 ? 1 : 0.55, child: _NextChip(stop: upcoming[i])),
+                        SizedBox(height: 7 * s),
+                      ],
+                      const Spacer(),
+                      SizedBox(width: 34 * s, height: 48 * s, child: CustomPaint(painter: VenuePropPainter(venue))),
+                      SizedBox(height: 10 * s),
+                    ],
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  top: 30 * s,
-                  child: Transform.translate(
-                    offset: Offset(0, cabinDy),
-                    child: Transform.rotate(
-                      angle: cabinTilt,
-                      child: _Cabin(game: game, crashed: crashed, hint: hint, onTap: onTapLift),
+              ),
+              SizedBox(width: 8 * s),
+              SizedBox(
+                width: m.cabinWidth,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Twin hoist cables: snapped and swinging after an overload.
+                    for (final dx in [-9.0, 7.0])
+                      Positioned(
+                        left: m.cabinWidth / 2 + dx * s,
+                        top: 0,
+                        child: Transform.rotate(
+                          angle: crashed ? (dx < 0 ? 0.35 : -0.25) : 0,
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                            width: 2.4 * s,
+                            height: (crashed ? 12 : 30) * s,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [Color(0xFF6E6A9E), Color(0xFFB3AFE0)]),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 3 * s,
+                      child: Center(child: _FloorDisplay(floors: game.liftFloors, alarm: crashed)),
                     ),
+                    Positioned(
+                      left: 0,
+                      top: 30 * s,
+                      child: Transform.translate(
+                        offset: Offset(0, cabinDy),
+                        child: Transform.rotate(
+                          angle: cabinTilt,
+                          child: _Cabin(game: game, crashed: crashed, hint: hint, doorOpen: doorOpen, onTap: onTapLift),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 14 * s),
+                  child: Column(
+                    children: [
+                      LoadGauge(
+                        fraction: game.loadFraction,
+                        zone: game.zone,
+                        ghost: game.ghostLoad == null ? null : game.ghostLoad! / game.capacity,
+                        width: m.gaugeWidth,
+                      ),
+                      SizedBox(height: 10 * s),
+                      _SendButton(enabled: game.canSend, onPressed: onSend),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(top: 14 * s),
-              child: Column(
-                children: [
-                  LoadGauge(
-                    fraction: game.loadFraction,
-                    zone: game.zone,
-                    ghost: game.ghostLoad == null ? null : game.ghostLoad! / game.capacity,
-                    width: m.gaugeWidth,
-                  ),
-                  SizedBox(height: 10 * s),
-                  _SendButton(enabled: game.canSend, onPressed: onSend),
-                ],
               ),
-            ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The lit indicator above the shaft: an arrow and the floor(s) this lift
+/// serves, like the panel over a real lift door.
+class _FloorDisplay extends StatelessWidget {
+  const _FloorDisplay({required this.floors, required this.alarm});
+
+  final List<Floor> floors;
+  final bool alarm;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = Metrics.of(context);
+    final led = alarm ? LL.alarmSoft : const Color(0xFFFFC46B);
+    return ExcludeSemantics(
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 8 * m.scale, vertical: 4 * m.scale),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E0C22),
+          borderRadius: BorderRadius.circular(6 * m.scale),
+          border: Border.all(color: const Color(0xFF3A3670), width: 1.5),
+        ),
+        child: Text(
+          alarm ? '! !' : '▲ ${floors.map((f) => f.label).join('·')}',
+          style: TextStyle(
+            fontFamily: LL.displayFont,
+            fontSize: m.font(13),
+            fontWeight: FontWeight.w800,
+            height: 1,
+            letterSpacing: 1,
+            color: led,
+            shadows: [Shadow(color: led.withValues(alpha: 0.8), blurRadius: 6)],
+          ),
+        ),
       ),
     );
   }
@@ -183,11 +252,18 @@ class _NextChip extends StatelessWidget {
 }
 
 class _Cabin extends StatelessWidget {
-  const _Cabin({required this.game, required this.crashed, required this.hint, required this.onTap});
+  const _Cabin({
+    required this.game,
+    required this.crashed,
+    required this.hint,
+    required this.doorOpen,
+    required this.onTap,
+  });
 
   final LiftGame game;
   final bool crashed;
   final bool hint;
+  final double doorOpen;
   final VoidCallback onTap;
 
   @override
@@ -208,9 +284,22 @@ class _Cabin extends StatelessWidget {
           height: m.cabinHeight,
           padding: EdgeInsets.all(7 * s),
           decoration: BoxDecoration(
-            color: crashed ? LL.alarm : kind.cabin,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: crashed
+                  ? const [LL.alarmSoft, LL.alarm]
+                  : [
+                      Color.lerp(kind.cabin, Colors.white, 0.25)!,
+                      kind.cabin,
+                      Color.lerp(kind.cabin, Colors.black, 0.18)!
+                    ],
+            ),
             borderRadius: BorderRadius.circular(16 * s),
-            boxShadow: hint ? [BoxShadow(color: kind.cabin.withValues(alpha: 0.45), spreadRadius: 4)] : null,
+            boxShadow: [
+              const BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 5)),
+              if (hint) BoxShadow(color: kind.cabin.withValues(alpha: 0.5), spreadRadius: 4 * s, blurRadius: 6),
+            ],
           ),
           child: Column(
             children: [
@@ -234,17 +323,11 @@ class _Cabin extends StatelessWidget {
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10 * s),
-                  child: Container(
-                    color: LL.steel,
+                  child: CustomPaint(
+                    painter: CabinInteriorPainter(alarm: crashed),
+                    foregroundPainter: CabinDoorsPainter(open: doorOpen),
                     child: Stack(
                       children: [
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          height: 14 * s,
-                          child: Container(color: LL.steelFloor),
-                        ),
                         Positioned(
                           left: 4 * s,
                           right: 4 * s,
@@ -343,30 +426,52 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
+    final radius = BorderRadius.circular(16 * m.scale);
     return Opacity(
       opacity: enabled ? 1 : 0.45,
-      child: SizedBox(
-        width: m.sendSize.width,
-        height: m.sendSize.height,
-        child: FilledButton(
-          onPressed: enabled ? onPressed : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: LL.brass,
-            disabledBackgroundColor: LL.brass,
-            foregroundColor: LL.ink,
-            disabledForegroundColor: LL.ink,
-            padding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16 * m.scale)),
+      child: PressScale(
+        enabled: enabled,
+        child: DecoratedBox(
+          // A raised brass key: darker edge below, soft drop shadow.
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: [
+              BoxShadow(color: LL.brassDark, offset: Offset(0, 4 * m.scale)),
+              const BoxShadow(color: Color(0x55000000), blurRadius: 10, offset: Offset(0, 6)),
+            ],
           ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.notifications_rounded, size: 26 * m.scale),
-                SizedBox(height: 2 * m.scale),
-                Text('Send', style: TextStyle(fontSize: m.font(17), fontWeight: FontWeight.w800, height: 1)),
-              ],
+          child: SizedBox(
+            width: m.sendSize.width,
+            height: m.sendSize.height,
+            child: FilledButton(
+              onPressed: enabled ? onPressed : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: LL.brass,
+                disabledBackgroundColor: LL.brass,
+                foregroundColor: LL.ink,
+                disabledForegroundColor: LL.ink,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(borderRadius: radius),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.notifications_rounded, size: 26 * m.scale),
+                    SizedBox(height: 2 * m.scale),
+                    Text(
+                      'Send',
+                      style: TextStyle(
+                        fontFamily: LL.displayFont,
+                        fontSize: m.font(19),
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

@@ -5,6 +5,7 @@ import '../../game/formulas.dart';
 import '../../game/venue.dart';
 import '../game_controller.dart';
 import '../theme.dart';
+import 'pressable.dart';
 
 /// Dimmed full-screen layer with a centred card.
 class _Overlay extends StatelessWidget {
@@ -52,17 +53,22 @@ class RewardedButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: FilledButton.icon(
-          onPressed: onPressed,
-          icon: const Icon(Icons.play_circle_fill_rounded, size: 24),
-          label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          style: FilledButton.styleFrom(
-            backgroundColor: LL.mint,
-            foregroundColor: LL.mintInk,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Widget build(BuildContext context) => PressScale(
+        enabled: onPressed != null,
+        child: SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton.icon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.play_circle_fill_rounded, size: 24),
+            label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            style: FilledButton.styleFrom(
+              backgroundColor: LL.mint,
+              foregroundColor: LL.mintInk,
+              elevation: 3,
+              shadowColor: LL.mintDark,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
           ),
         ),
       );
@@ -76,17 +82,31 @@ class PrimaryButton extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: height,
-        child: FilledButton(
-          onPressed: onPressed,
-          style: FilledButton.styleFrom(
-            backgroundColor: LL.brass,
-            foregroundColor: LL.ink,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Widget build(BuildContext context) => PressScale(
+        enabled: onPressed != null,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: onPressed == null
+                ? null
+                : const [
+                    BoxShadow(color: LL.brassDark, offset: Offset(0, 4)),
+                    BoxShadow(color: Color(0x44000000), blurRadius: 10, offset: Offset(0, 6)),
+                  ],
           ),
-          child: Text(label, style: LL.display.copyWith(fontSize: 21)),
+          child: SizedBox(
+            width: double.infinity,
+            height: height,
+            child: FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: LL.brass,
+                foregroundColor: LL.ink,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: LL.display.copyWith(fontSize: 21))),
+            ),
+          ),
         ),
       );
 }
@@ -140,9 +160,16 @@ class FailSheet extends StatelessWidget {
           'Watch ad · $seats',
         ),
     };
+    final (icon, tint) = switch (kind) {
+      FailKind.crash => (Icons.link_off_rounded, LL.alarm),
+      FailKind.outOfTrips => (Icons.hourglass_empty_rounded, LL.brassDark),
+      FailKind.jam => (Icons.event_seat_rounded, LL.inkSoft),
+    };
     return _Overlay(
       label: title,
       children: [
+        _Badge(icon: icon, color: tint),
+        const SizedBox(height: 10),
         Text(title, textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
         const SizedBox(height: 12),
         Text(body, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, height: 1.4, color: LL.inkSoft)),
@@ -191,6 +218,8 @@ class WinSheet extends StatelessWidget {
     return _Overlay(
       label: 'Tower delivered',
       children: [
+        const _Badge(icon: Icons.emoji_events_rounded, color: LL.brass),
+        const SizedBox(height: 10),
         Text('LEVEL ${g.level.number} CLEAR', style: LL.label.copyWith(color: LL.inkSoft)),
         const SizedBox(height: 8),
         Text('Tower delivered!', textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
@@ -205,8 +234,24 @@ class WinSheet extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(color: LL.ink, borderRadius: BorderRadius.circular(999)),
-          child: Text('+${c.tripleClaimed ? g.levelCoins * 3 : g.levelCoins} coins',
-              style: LL.display.copyWith(fontSize: 24, color: LL.cream)),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.monetization_on_rounded, color: LL.brass, size: 26),
+                const SizedBox(width: 6),
+                // Counts up to the award; settles, so tests stay deterministic.
+                TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: c.tripleClaimed ? g.levelCoins * 3 : g.levelCoins),
+                  duration: Duration(milliseconds: (MediaQuery.maybeDisableAnimationsOf(context) ?? false) ? 0 : 700),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, v, _) =>
+                      Text('+$v coins', style: LL.display.copyWith(fontSize: 24, color: LL.cream)),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 14),
         if (c.canTriple) ...[
@@ -251,4 +296,24 @@ class _BuildingComplete extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A round illustration at the top of a sheet.
+class _Badge extends StatelessWidget {
+  const _Badge({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 76,
+        height: 76,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [color.withValues(alpha: 0.28), color.withValues(alpha: 0.08)]),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 3),
+        ),
+        child: Icon(icon, size: 40, color: color),
+      );
 }

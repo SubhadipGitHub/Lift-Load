@@ -34,10 +34,10 @@ class Metrics {
       // The left pane carries the fixed-height stack (HUD to toolbar), about
       // 600 design units tall; the lanes take the full height on the right.
       FormFactor.twoPane => (math.min(_paneWidth(w) / _designWidth, h / 600)).clamp(0.6, 1.5).toDouble(),
-      FormFactor.tabletPortrait => (math.min(math.min(w, tabletColumn) / _designWidth, h / _designHeight) * 1.05)
-          .clamp(1.0, 1.5)
-          .toDouble(),
-      FormFactor.compactPhone || FormFactor.phone =>
+      FormFactor.tabletPortrait =>
+        (math.min(math.min(w, tabletColumn) / _designWidth, h / _designHeight) * 1.05).clamp(1.0, 1.5).toDouble(),
+      FormFactor.compactPhone ||
+      FormFactor.phone =>
         (math.min(w / _designWidth, h / _designHeight)).clamp(0.78, 1.15).toDouble(),
     };
     return Metrics._(size, form, scale);

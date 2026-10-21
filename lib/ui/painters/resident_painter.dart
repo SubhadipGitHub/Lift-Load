@@ -20,7 +20,22 @@ enum Sleeves { long, short, none }
 
 enum Hair { short, messy, long, bun, bald, fade, helmet, cap, pillbox, hood }
 
-enum Accessory { none, backpack, phone, laptopLeft, tie, shoppingBags, stick, mustache, duffel, parcel, baton, quilted, blanket, buttons }
+enum Accessory {
+  none,
+  backpack,
+  phone,
+  laptopLeft,
+  tie,
+  shoppingBags,
+  stick,
+  mustache,
+  duffel,
+  parcel,
+  baton,
+  quilted,
+  blanket,
+  buttons
+}
 
 enum Vehicle { none, wheelchair, pram, trolley }
 
@@ -67,32 +82,227 @@ class ResidentLook {
   }
 
   static ResidentLook of(ResidentType t) => switch (t) {
-        ResidentType.kid => const ResidentLook(height: 66, shoulders: 7, hips: 6.5, top: Color(0xFFF2F4F8), bottomColor: Color(0xFF2C3A63), bottom: Bottom.shorts, sleeves: Sleeves.short, hair: Hair.short, hairColor: Color(0xFF2B2140), skin: Color(0xFFC98E66), shoe: Color(0xFF1E1E24), accessory: Accessory.backpack),
-        ResidentType.student => const ResidentLook(height: 92, shoulders: 9, hips: 8, top: Color(0xFFE46D3A), bottomColor: Color(0xFF3B5B8C), bottom: Bottom.pants, sleeves: Sleeves.short, hair: Hair.messy, hairColor: Color(0xFF1F1A17), skin: Color(0xFF8D5A3B), shoe: Color(0xFFF2F2F2), accessory: Accessory.phone),
-        ResidentType.officeW => const ResidentLook(height: 96, shoulders: 8.5, hips: 8.5, top: Color(0xFF8E7CC3), bottomColor: Color(0xFF2D2D3A), bottom: Bottom.skirt, sleeves: Sleeves.long, hair: Hair.long, hairColor: Color(0xFF2A1B14), skin: Color(0xFFE0AC85), shoe: Color(0xFF5A2E2E), accessory: Accessory.laptopLeft),
-        ResidentType.officeM => const ResidentLook(height: 102, shoulders: 10.5, hips: 9, belly: 1, top: Color(0xFFDCE7F5), bottomColor: Color(0xFF4A4A55), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.short, hairColor: Color(0xFF1F1A17), skin: Color(0xFFB07A55), shoe: Color(0xFF3A2A20), accessory: Accessory.tie),
-        ResidentType.aunty => const ResidentLook(height: 92, shoulders: 10.5, hips: 11.5, belly: 3, top: Color(0xFFF4B400), bottomColor: Color(0xFFC2185B), bottom: Bottom.saree, sleeves: Sleeves.short, hair: Hair.bun, hairColor: Color(0xFF1F1A17), skin: Color(0xFFA86F4C), shoe: Color(0xFF8A5A2B), accessory: Accessory.shoppingBags),
-        ResidentType.grandpa => const ResidentLook(height: 94, shoulders: 9, hips: 8.5, belly: 1, top: Color(0xFFEFE6D2), bottomColor: Color(0xFFF7F3EA), bottom: Bottom.pants, sleeves: Sleeves.long, longTop: true, hair: Hair.bald, hairColor: Color(0xFFD8D4CC), skin: Color(0xFFC08A63), shoe: Color(0xFF5C4033), accessory: Accessory.stick),
-        ResidentType.uncle => const ResidentLook(height: 100, shoulders: 12, hips: 13, belly: 7, top: Color(0xFF5D7D4E), bottomColor: Color(0xFF3D3A36), bottom: Bottom.pants, sleeves: Sleeves.long, longTop: true, hair: Hair.short, hairColor: Color(0xFF2B2140), skin: Color(0xFF9C6644), shoe: Color(0xFF2A211B), accessory: Accessory.mustache),
-        ResidentType.gym => const ResidentLook(height: 104, shoulders: 14, hips: 9, top: Color(0xFF24252C), bottomColor: Color(0xFF6B6F78), bottom: Bottom.shorts, sleeves: Sleeves.none, hair: Hair.fade, hairColor: Color(0xFF1A1512), skin: Color(0xFF7A4A2C), shoe: Color(0xFFE8E8EC), accessory: Accessory.duffel),
-        ResidentType.rider => const ResidentLook(height: 100, shoulders: 11, hips: 10, belly: 1, top: Color(0xFFD9A21B), bottomColor: Color(0xFF2B2B30), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.helmet, hairColor: Color(0xFFD9A21B), skin: Color(0xFFB88360), shoe: Color(0xFF1E1E24), accessory: Accessory.parcel),
-        ResidentType.guard => const ResidentLook(height: 102, shoulders: 12.5, hips: 11, belly: 3, top: Color(0xFF34466B), bottomColor: Color(0xFF243150), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.cap, hairColor: Color(0xFF1D2740), skin: Color(0xFF9C6644), shoe: Color(0xFF15151A), accessory: Accessory.baton),
-        ResidentType.wheelchair => const ResidentLook(height: 94, shoulders: 10, hips: 10, belly: 2, top: Color(0xFFBFD8E6), bottomColor: Color(0xFF8FA9BC), bottom: Bottom.pants, sleeves: Sleeves.short, hair: Hair.short, hairColor: Color(0xFF6E6A66), skin: Color(0xFFC08A63), shoe: Color(0xFF5C4033), accessory: Accessory.blanket, vehicle: Vehicle.wheelchair),
-        ResidentType.puffer => const ResidentLook(height: 96, shoulders: 14, hips: 13, belly: 4, top: Color(0xFFEF7D32), bottomColor: Color(0xFF26262E), bottom: Bottom.pants, sleeves: Sleeves.long, longTop: true, hair: Hair.hood, hairColor: Color(0xFF1F1A17), skin: Color(0xFFB07A55), shoe: Color(0xFFF2F2F2), accessory: Accessory.quilted),
-        ResidentType.pram => const ResidentLook(height: 96, shoulders: 9.5, hips: 10, belly: 1, top: Color(0xFFD98BA8), bottomColor: Color(0xFF3B4A6B), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.long, hairColor: Color(0xFF3A2418), skin: Color(0xFFE0AC85), shoe: Color(0xFF5A2E2E), accessory: Accessory.none, vehicle: Vehicle.pram),
-        ResidentType.bellhop => const ResidentLook(height: 100, shoulders: 11, hips: 10, belly: 1, top: Color(0xFF9E2B2B), bottomColor: Color(0xFF2B2B30), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.pillbox, hairColor: Color(0xFF9E2B2B), skin: Color(0xFF8D5A3B), shoe: Color(0xFF15151A), accessory: Accessory.buttons, vehicle: Vehicle.trolley),
+        ResidentType.kid => const ResidentLook(
+            height: 66,
+            shoulders: 7,
+            hips: 6.5,
+            top: Color(0xFFF2F4F8),
+            bottomColor: Color(0xFF2C3A63),
+            bottom: Bottom.shorts,
+            sleeves: Sleeves.short,
+            hair: Hair.short,
+            hairColor: Color(0xFF2B2140),
+            skin: Color(0xFFC98E66),
+            shoe: Color(0xFF1E1E24),
+            accessory: Accessory.backpack),
+        ResidentType.student => const ResidentLook(
+            height: 92,
+            shoulders: 9,
+            hips: 8,
+            top: Color(0xFFE46D3A),
+            bottomColor: Color(0xFF3B5B8C),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.short,
+            hair: Hair.messy,
+            hairColor: Color(0xFF1F1A17),
+            skin: Color(0xFF8D5A3B),
+            shoe: Color(0xFFF2F2F2),
+            accessory: Accessory.phone),
+        ResidentType.officeW => const ResidentLook(
+            height: 96,
+            shoulders: 8.5,
+            hips: 8.5,
+            top: Color(0xFF8E7CC3),
+            bottomColor: Color(0xFF2D2D3A),
+            bottom: Bottom.skirt,
+            sleeves: Sleeves.long,
+            hair: Hair.long,
+            hairColor: Color(0xFF2A1B14),
+            skin: Color(0xFFE0AC85),
+            shoe: Color(0xFF5A2E2E),
+            accessory: Accessory.laptopLeft),
+        ResidentType.officeM => const ResidentLook(
+            height: 102,
+            shoulders: 10.5,
+            hips: 9,
+            belly: 1,
+            top: Color(0xFFDCE7F5),
+            bottomColor: Color(0xFF4A4A55),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            hair: Hair.short,
+            hairColor: Color(0xFF1F1A17),
+            skin: Color(0xFFB07A55),
+            shoe: Color(0xFF3A2A20),
+            accessory: Accessory.tie),
+        ResidentType.aunty => const ResidentLook(
+            height: 92,
+            shoulders: 10.5,
+            hips: 11.5,
+            belly: 3,
+            top: Color(0xFFF4B400),
+            bottomColor: Color(0xFFC2185B),
+            bottom: Bottom.saree,
+            sleeves: Sleeves.short,
+            hair: Hair.bun,
+            hairColor: Color(0xFF1F1A17),
+            skin: Color(0xFFA86F4C),
+            shoe: Color(0xFF8A5A2B),
+            accessory: Accessory.shoppingBags),
+        ResidentType.grandpa => const ResidentLook(
+            height: 94,
+            shoulders: 9,
+            hips: 8.5,
+            belly: 1,
+            top: Color(0xFFEFE6D2),
+            bottomColor: Color(0xFFF7F3EA),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            longTop: true,
+            hair: Hair.bald,
+            hairColor: Color(0xFFD8D4CC),
+            skin: Color(0xFFC08A63),
+            shoe: Color(0xFF5C4033),
+            accessory: Accessory.stick),
+        ResidentType.uncle => const ResidentLook(
+            height: 100,
+            shoulders: 12,
+            hips: 13,
+            belly: 7,
+            top: Color(0xFF5D7D4E),
+            bottomColor: Color(0xFF3D3A36),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            longTop: true,
+            hair: Hair.short,
+            hairColor: Color(0xFF2B2140),
+            skin: Color(0xFF9C6644),
+            shoe: Color(0xFF2A211B),
+            accessory: Accessory.mustache),
+        ResidentType.gym => const ResidentLook(
+            height: 104,
+            shoulders: 14,
+            hips: 9,
+            top: Color(0xFF24252C),
+            bottomColor: Color(0xFF6B6F78),
+            bottom: Bottom.shorts,
+            sleeves: Sleeves.none,
+            hair: Hair.fade,
+            hairColor: Color(0xFF1A1512),
+            skin: Color(0xFF7A4A2C),
+            shoe: Color(0xFFE8E8EC),
+            accessory: Accessory.duffel),
+        ResidentType.rider => const ResidentLook(
+            height: 100,
+            shoulders: 11,
+            hips: 10,
+            belly: 1,
+            top: Color(0xFFD9A21B),
+            bottomColor: Color(0xFF2B2B30),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            hair: Hair.helmet,
+            hairColor: Color(0xFFD9A21B),
+            skin: Color(0xFFB88360),
+            shoe: Color(0xFF1E1E24),
+            accessory: Accessory.parcel),
+        ResidentType.guard => const ResidentLook(
+            height: 102,
+            shoulders: 12.5,
+            hips: 11,
+            belly: 3,
+            top: Color(0xFF34466B),
+            bottomColor: Color(0xFF243150),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            hair: Hair.cap,
+            hairColor: Color(0xFF1D2740),
+            skin: Color(0xFF9C6644),
+            shoe: Color(0xFF15151A),
+            accessory: Accessory.baton),
+        ResidentType.wheelchair => const ResidentLook(
+            height: 94,
+            shoulders: 10,
+            hips: 10,
+            belly: 2,
+            top: Color(0xFFBFD8E6),
+            bottomColor: Color(0xFF8FA9BC),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.short,
+            hair: Hair.short,
+            hairColor: Color(0xFF6E6A66),
+            skin: Color(0xFFC08A63),
+            shoe: Color(0xFF5C4033),
+            accessory: Accessory.blanket,
+            vehicle: Vehicle.wheelchair),
+        ResidentType.puffer => const ResidentLook(
+            height: 96,
+            shoulders: 14,
+            hips: 13,
+            belly: 4,
+            top: Color(0xFFEF7D32),
+            bottomColor: Color(0xFF26262E),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            longTop: true,
+            hair: Hair.hood,
+            hairColor: Color(0xFF1F1A17),
+            skin: Color(0xFFB07A55),
+            shoe: Color(0xFFF2F2F2),
+            accessory: Accessory.quilted),
+        ResidentType.pram => const ResidentLook(
+            height: 96,
+            shoulders: 9.5,
+            hips: 10,
+            belly: 1,
+            top: Color(0xFFD98BA8),
+            bottomColor: Color(0xFF3B4A6B),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            hair: Hair.long,
+            hairColor: Color(0xFF3A2418),
+            skin: Color(0xFFE0AC85),
+            shoe: Color(0xFF5A2E2E),
+            accessory: Accessory.none,
+            vehicle: Vehicle.pram),
+        ResidentType.bellhop => const ResidentLook(
+            height: 100,
+            shoulders: 11,
+            hips: 10,
+            belly: 1,
+            top: Color(0xFF9E2B2B),
+            bottomColor: Color(0xFF2B2B30),
+            bottom: Bottom.pants,
+            sleeves: Sleeves.long,
+            hair: Hair.pillbox,
+            hairColor: Color(0xFF9E2B2B),
+            skin: Color(0xFF8D5A3B),
+            shoe: Color(0xFF15151A),
+            accessory: Accessory.buttons,
+            vehicle: Vehicle.trolley),
       };
 }
 
 /// A filled or stroked layer of the figure.
 class _Layer {
-  const _Layer(this.path, this.color, {this.stroke = 0});
+  const _Layer(this.path, this.color, {this.stroke = 0, this.eyes = false});
   final Path path;
   final Color color;
 
   /// 0 = filled, otherwise stroke width with round caps.
   final double stroke;
+
+  /// The eye dots, swapped for closed lids on a blink frame.
+  final bool eyes;
+
+  /// Opaque body parts get the ink outline; tints, shading and eyes do not.
+  bool get outlined => !eyes && color.a == 1.0;
 }
+
+/// Ink outline drawn under every opaque layer: gives the flat shapes a
+/// cartoon edge and lifts them off busy floors.
+const Color _outline = Color(0x8C1A1530);
+const double _outlineWidth = 2.2;
 
 /// Builds the ordered layers for one look. Cached per type.
 class _Figure {
@@ -146,7 +356,9 @@ class _Figure {
       ));
     }
     if (l.hair == Hair.hood) {
-      layers.add(_Layer(Path()..addOval(Rect.fromCenter(center: Offset(30, hy + ry * 0.1), width: rx * 2 + 6, height: ry * 2 + 6)), l.top));
+      layers.add(_Layer(
+          Path()..addOval(Rect.fromCenter(center: Offset(30, hy + ry * 0.1), width: rx * 2 + 6, height: ry * 2 + 6)),
+          l.top));
     }
     if (l.accessory == Accessory.backpack) {
       layers.add(_Layer(
@@ -176,7 +388,8 @@ class _Figure {
       final thighs = Path()..addRRect(RRect.fromLTRBR(30 - hp, p - 2, knee + 2, p + 7, const Radius.circular(3)));
       final shins = Path()..addRect(Rect.fromLTRB(knee - 4, p + 4, knee + 1.5, 112.6));
       layers.add(_Layer(thighs..addPath(shins, Offset.zero), l.bottomColor));
-      layers.add(_Layer(Path()..addRRect(RRect.fromLTRBR(knee - 4.5, 112.4, knee + 5, 116, const Radius.circular(1.5))), l.shoe));
+      layers.add(_Layer(
+          Path()..addRRect(RRect.fromLTRBR(knee - 4.5, 112.4, knee + 5, 116, const Radius.circular(1.5))), l.shoe));
       layers.add(_Layer(
         Path()
           ..moveTo(30 - hp - 2, p + 8)
@@ -216,7 +429,8 @@ class _Figure {
           Offset(30 - xo(ky) - 0.6, ky),
         ]);
       case Bottom.skirt:
-        bottom = poly([Offset(30 - hp, p), Offset(30 + hp, p), Offset(30 + hp + 2.5, k + 4), Offset(30 - hp - 2.5, k + 4)]);
+        bottom =
+            poly([Offset(30 - hp, p), Offset(30 + hp, p), Offset(30 + hp + 2.5, k + 4), Offset(30 - hp - 2.5, k + 4)]);
       case Bottom.saree:
         bottom = Path()
           ..moveTo(30 - hp, p)
@@ -268,6 +482,16 @@ class _Figure {
         ..lineTo(30 + hpT * 0.25, tb)
         ..close(),
       const Color(0x1F000000),
+    ));
+    // Soft highlight down the lit left shoulder.
+    layers.add(_Layer(
+      Path()
+        ..moveTo(30 - sh + 2.2, s + 2.4)
+        ..quadraticBezierTo(30 - sh * 0.4, s + 0.8, 30 - sh * 0.1, s + 1.2)
+        ..lineTo(30 - sh * 0.35, cy)
+        ..quadraticBezierTo(30 - bx + 2.5, cy, 30 - sh + 2.2, s + 2.4)
+        ..close(),
+      const Color(0x2EFFFFFF),
     ));
 
     // Arms, sleeves, hands.
@@ -360,8 +584,10 @@ class _Figure {
         layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - 1.2, hy - ry * 1.05, 2.4, 2.2)), const Color(0xFFE8C547)));
       case Hair.pillbox:
         layers.add(_Layer(cap, const Color(0xFF1F1A17)));
-        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx * 0.75, hy - ry * 1.55, rx * 1.5, ry * 0.62)), l.hairColor));
-        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx * 0.75, hy - ry * 1.02, rx * 1.5, 0.9)), const Color(0xFFE8C547)));
+        layers.add(
+            _Layer(Path()..addRect(Rect.fromLTWH(30 - rx * 0.75, hy - ry * 1.55, rx * 1.5, ry * 0.62)), l.hairColor));
+        layers.add(_Layer(
+            Path()..addRect(Rect.fromLTWH(30 - rx * 0.75, hy - ry * 1.02, rx * 1.5, 0.9)), const Color(0xFFE8C547)));
       case Hair.hood:
         layers.add(_Layer(cap, l.hairColor));
       case Hair.helmet:
@@ -377,11 +603,22 @@ class _Figure {
 
     // Eyes.
     final eyeY = hy + ry * 0.08, er = math.max(0.45, rx * 0.12);
-    layers.add(_Layer(circle(30 - rx * 0.38, eyeY, er)..addPath(circle(30 + rx * 0.38, eyeY, er), Offset.zero), const Color(0xFF1E1A24)));
+    layers.add(_Layer(
+      circle(30 - rx * 0.38, eyeY, er)..addPath(circle(30 + rx * 0.38, eyeY, er), Offset.zero),
+      const Color(0xFF1E1A24),
+      eyes: true,
+    ));
+    lids = Path()
+      ..moveTo(30 - rx * 0.38 - er * 1.3, eyeY)
+      ..lineTo(30 - rx * 0.38 + er * 1.3, eyeY)
+      ..moveTo(30 + rx * 0.38 - er * 1.3, eyeY)
+      ..lineTo(30 + rx * 0.38 + er * 1.3, eyeY);
+    lidWidth = er * 0.9;
 
     // Front accessories.
-    Path rrect(double x, double y, double w, double hh, double r) =>
-        Path()..addRRect(RRect.fromLTRBAndCorners(x, y, x + w, y + hh, bottomLeft: Radius.circular(r), bottomRight: Radius.circular(r)));
+    Path rrect(double x, double y, double w, double hh, double r) => Path()
+      ..addRRect(RRect.fromLTRBAndCorners(x, y, x + w, y + hh,
+          bottomLeft: Radius.circular(r), bottomRight: Radius.circular(r)));
     switch (l.accessory) {
       case Accessory.none:
         break;
@@ -405,10 +642,14 @@ class _Figure {
         layers.add(_Layer(quilt, const Color(0x40000000), stroke: 1));
         layers.add(_Layer(Path()..addRect(Rect.fromLTWH(29.4, s + 1, 1.2, tb - s - 1)), const Color(0x40000000)));
       case Accessory.blanket:
-        layers.add(_Layer(Path()..addRRect(RRect.fromLTRBR(30 - hp - 1, p - 3, 30 + hp + 8, p + 8, const Radius.circular(3))), const Color(0xFF6F8FB0)));
+        layers.add(_Layer(
+            Path()..addRRect(RRect.fromLTRBR(30 - hp - 1, p - 3, 30 + hp + 8, p + 8, const Radius.circular(3))),
+            const Color(0xFF6F8FB0)));
       case Accessory.buttons:
         layers.add(_Layer(
-          circle(30, s + 4, 1)..addPath(circle(30, s + 9, 1), Offset.zero)..addPath(circle(30, s + 14, 1), Offset.zero),
+          circle(30, s + 4, 1)
+            ..addPath(circle(30, s + 9, 1), Offset.zero)
+            ..addPath(circle(30, s + 14, 1), Offset.zero),
           const Color(0xFFE8C547),
         ));
       case Accessory.backpack:
@@ -430,16 +671,24 @@ class _Figure {
           stroke: 1,
         ));
       case Accessory.tie:
-        layers.add(_Layer(poly([Offset(30, s + 0.8), Offset(28.4, s + 3), Offset(30, s + 3 + h * 0.2), Offset(31.6, s + 3)]), const Color(0xFFB23A48)));
+        layers.add(_Layer(
+            poly([Offset(30, s + 0.8), Offset(28.4, s + 3), Offset(30, s + 3 + h * 0.2), Offset(31.6, s + 3)]),
+            const Color(0xFFB23A48)));
         layers.add(_Layer(rrect(hxR - 5.5, hyH - 0.5, 11, 9.6, 1.6), const Color(0xFF3A2A20)));
       case Accessory.shoppingBags:
         layers.add(_Layer(
-          poly([Offset(30 + sh - 5.5, s), Offset(30 + sh - 0.5, s + 1.5), Offset(30 - hp + 5, p + 7), Offset(30 - hp - 0.5, p + 4)]),
+          poly([
+            Offset(30 + sh - 5.5, s),
+            Offset(30 + sh - 0.5, s + 1.5),
+            Offset(30 - hp + 5, p + 7),
+            Offset(30 - hp - 0.5, p + 4)
+          ]),
           const Color(0xFF8E0F42),
         ));
         layers.add(_Layer(
           poly([Offset(hxL - 4, hyH), Offset(hxL + 4, hyH), Offset(hxL + 3, hyH + 9), Offset(hxL - 3, hyH + 9)])
-            ..addPolygon([Offset(hxR - 4, hyH), Offset(hxR + 4, hyH), Offset(hxR + 3, hyH + 9), Offset(hxR - 3, hyH + 9)], true),
+            ..addPolygon(
+                [Offset(hxR - 4, hyH), Offset(hxR + 4, hyH), Offset(hxR + 3, hyH + 9), Offset(hxR - 3, hyH + 9)], true),
           const Color(0xFFE9D3A8),
         ));
       case Accessory.stick:
@@ -464,11 +713,13 @@ class _Figure {
           const Color(0xFF241A16),
         ));
       case Accessory.duffel:
-        layers.add(_Layer(Path()..addRRect(RRect.fromLTRBR(hxL - 6, hyH, hxL + 8, hyH + 9, const Radius.circular(2))), const Color(0xFF3A3F4B)));
+        layers.add(_Layer(Path()..addRRect(RRect.fromLTRBR(hxL - 6, hyH, hxL + 8, hyH + 9, const Radius.circular(2))),
+            const Color(0xFF3A3F4B)));
       case Accessory.parcel:
         layers.add(_Layer(Path()..addRect(Rect.fromLTWH(21.5, p - 11, 17, 13)), const Color(0xFFC69C6D)));
         layers.add(_Layer(Path()..addRect(Rect.fromLTWH(21.5, p - 6, 17, 2.2)), const Color(0xFFA87E50)));
-        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx - 0.8, hy - ry * 0.25, 2 * rx + 1.6, ry * 0.62)), const Color(0xFF26262E)));
+        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx - 0.8, hy - ry * 0.25, 2 * rx + 1.6, ry * 0.62)),
+            const Color(0xFF26262E)));
     }
 
     // Vehicles to the right of the person (60..90).
@@ -533,12 +784,17 @@ class _Figure {
           stroke: 2,
         ));
         layers.add(_Layer(Path()..addRect(const Rect.fromLTRB(60, 110, 92, 113)), brass));
-        layers.add(_Layer(circle(64, 114.5, 2.4)..addPath(circle(88, 114.5, 2.4), Offset.zero), const Color(0xFF2E323C)));
+        layers
+            .add(_Layer(circle(64, 114.5, 2.4)..addPath(circle(88, 114.5, 2.4), Offset.zero), const Color(0xFF2E323C)));
     }
   }
 
   final List<_Layer> layers = [];
   late final double shadowRx;
+
+  /// Closed-eye strokes for a blink frame.
+  late final Path lids;
+  late final double lidWidth;
 }
 
 /// Cargo props stand by the feet, in the [cargoWidth] strip right of the
@@ -550,7 +806,8 @@ List<_Layer> _cargoLayers(Cargo cargo) {
       return const [];
     case Cargo.waterCan:
       return [
-        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 92, x + 15, 116, const Radius.circular(4))), const Color(0xCC8FD0EA)),
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 92, x + 15, 116, const Radius.circular(4))),
+            const Color(0xCC8FD0EA)),
         _Layer(Path()..addRect(const Rect.fromLTRB(x + 1, 100, x + 15, 101.6)), const Color(0x664B9CC4)),
         _Layer(Path()..addRect(const Rect.fromLTRB(x + 5.5, 87.5, x + 10.5, 92)), const Color(0xFF2F6FB5)),
       ];
@@ -565,7 +822,8 @@ List<_Layer> _cargoLayers(Cargo cargo) {
           const Color(0xFF8A90A0),
           stroke: 1.4,
         ),
-        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 91, x + 15, 113, const Radius.circular(2.5))), const Color(0xFF44546A)),
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 91, x + 15, 113, const Radius.circular(2.5))),
+            const Color(0xFF44546A)),
         _Layer(Path()..addRect(const Rect.fromLTRB(x + 1, 100, x + 15, 101.4)), const Color(0xFF2E3A4A)),
         _Layer(
           Path()
@@ -576,19 +834,24 @@ List<_Layer> _cargoLayers(Cargo cargo) {
       ];
     case Cargo.cylinder:
       return [
-        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 86, x + 15, 116, const Radius.circular(5))), const Color(0xFFB3261E)),
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 86, x + 15, 116, const Radius.circular(5))),
+            const Color(0xFFB3261E)),
         _Layer(Path()..addRect(const Rect.fromLTRB(x + 1, 108, x + 15, 110)), const Color(0xFF7E1A14)),
-        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 3.5, 79, x + 12.5, 86, const Radius.circular(2))), const Color(0xFF5B5F6B)),
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 3.5, 79, x + 12.5, 86, const Radius.circular(2))),
+            const Color(0xFF5B5F6B)),
         _Layer(Path()..addRect(const Rect.fromLTRB(x + 6.5, 76.5, x + 9.5, 79)), const Color(0xFF2E323C)),
       ];
   }
 }
 
 class ResidentPainter extends CustomPainter {
-  ResidentPainter(this.type, {this.cargo = Cargo.none, this.dimmed = false});
+  ResidentPainter(this.type, {this.cargo = Cargo.none, this.dimmed = false, this.blink = false});
 
   final ResidentType type;
   final Cargo cargo;
+
+  /// Eyes closed for this frame (idle blinking).
+  final bool blink;
 
   /// Power cut: a generic shadow with no type, build or cargo showing.
   final bool dimmed;
@@ -623,12 +886,35 @@ class ResidentPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true;
-    for (final layers in [fig.layers, _cargoCache.putIfAbsent(cargo, () => _cargoLayers(cargo))]) {
+    final cargoLayers = _cargoCache.putIfAbsent(cargo, () => _cargoLayers(cargo));
+    final ink = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = _outline
+      ..isAntiAlias = true;
+    for (final layers in [fig.layers, cargoLayers]) {
       for (final layer in layers) {
+        if (!layer.outlined) continue;
+        canvas.drawPath(layer.path, ink..strokeWidth = layer.stroke + _outlineWidth);
+      }
+    }
+    for (final layers in [fig.layers, cargoLayers]) {
+      for (final layer in layers) {
+        if (layer.eyes && blink) {
+          canvas.drawPath(
+              fig.lids,
+              stroke
+                ..color = layer.color
+                ..strokeWidth = fig.lidWidth);
+          continue;
+        }
         if (layer.stroke > 0) {
-          canvas.drawPath(layer.path, stroke
-            ..color = layer.color
-            ..strokeWidth = layer.stroke);
+          canvas.drawPath(
+              layer.path,
+              stroke
+                ..color = layer.color
+                ..strokeWidth = layer.stroke);
         } else {
           canvas.drawPath(layer.path, fill..color = layer.color);
         }
@@ -645,5 +931,6 @@ class ResidentPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(ResidentPainter old) => old.type != type || old.cargo != cargo || old.dimmed != dimmed;
+  bool shouldRepaint(ResidentPainter old) =>
+      old.type != type || old.cargo != cargo || old.dimmed != dimmed || old.blink != blink;
 }

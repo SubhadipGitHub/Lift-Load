@@ -6,6 +6,7 @@ import '../layout.dart';
 import '../theme.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
+import '../widgets/pressable.dart';
 import '../widgets/result_sheets.dart';
 
 /// The level screen. Owns the cabin animations: when the engine enters
@@ -128,6 +129,8 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
         onSend: c.send,
       ),
     );
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    // The message line: a pill that slides up and fades in on each change.
     final message = SizedBox(
       height: m.messageHeight,
       child: Center(
@@ -135,12 +138,31 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
           liveRegion: true,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: m.gap),
-            child: Text(
-              c.message,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800, color: LL.brass),
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: still ? 0 : 220),
+              switchInCurve: Curves.easeOutBack,
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: Container(
+                key: ValueKey(c.message),
+                padding: EdgeInsets.symmetric(horizontal: 12 * m.scale, vertical: 3 * m.scale),
+                decoration: BoxDecoration(
+                  color: c.message.isEmpty ? null : const Color(0x401E1B3A),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  c.message,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800, color: LL.brass),
+                ),
+              ),
             ),
           ),
         ),
@@ -149,6 +171,13 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     final hud = _Hud(c: c, onBack: _leave);
     final bench = BenchRow(game: g, onTapSeat: c.tapBench);
     final lanes = QueueLanes(game: g, onTapLane: c.tapQueue);
+    // The lobby floor always reaches the bottom of its area, and scrolls when
+    // the queues are longer than the screen.
+    final lanesArea = LayoutBuilder(
+      builder: (context, box) => SingleChildScrollView(
+        child: ConstrainedBox(constraints: BoxConstraints(minHeight: box.maxHeight), child: lanes),
+      ),
+    );
     final toolbar = _Toolbar(c: c);
 
     final Widget body;
@@ -167,8 +196,16 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
                   children: [
                     hud,
                     Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(children: [shaft, message, bench]),
+                      child: LayoutBuilder(
+                        builder: (context, box) => SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: box.maxHeight),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [shaft, message, bench],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     toolbar,
@@ -178,7 +215,7 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(top: m.gap, bottom: m.gap),
-                  child: SingleChildScrollView(child: lanes),
+                  child: lanesArea,
                 ),
               ),
             ],
@@ -195,7 +232,7 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
               shaft,
               message,
               bench,
-              Expanded(child: SingleChildScrollView(child: lanes)),
+              Expanded(child: lanesArea),
               toolbar,
             ],
           ),
@@ -334,19 +371,22 @@ class _Toolbar extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 5 * m.scale),
             child: Tooltip(
               message: tooltip ?? label,
-              child: FilledButton.icon(
-                onPressed: onTap,
-                icon: Icon(icon, size: 20 * m.textScale),
-                label: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: m.font(13))),
-                style: FilledButton.styleFrom(
-                  backgroundColor: LL.facade,
-                  foregroundColor: LL.cream,
-                  disabledBackgroundColor: LL.facade.withValues(alpha: 0.5),
-                  minimumSize: Size.fromHeight(m.toolbarHeight - 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14 * m.scale)),
+              child: PressScale(
+                enabled: onTap != null,
+                child: FilledButton.icon(
+                  onPressed: onTap,
+                  icon: Icon(icon, size: 20 * m.textScale),
+                  label: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: m.font(13))),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: LL.facade,
+                    foregroundColor: LL.cream,
+                    disabledBackgroundColor: LL.facade.withValues(alpha: 0.5),
+                    minimumSize: Size.fromHeight(m.toolbarHeight - 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14 * m.scale)),
+                  ),
                 ),
               ),
             ),
@@ -366,7 +406,9 @@ class _Toolbar extends StatelessWidget {
           ),
           tool(
             icon: Icons.restart_alt_rounded,
-            label: c.levelInProgress ? 'Restart · 1 life' : 'Restart',
+            label: c.levelInProgress
+                ? (m.form == FormFactor.compactPhone ? 'Restart −1♥' : 'Restart · 1 life')
+                : 'Restart',
             tooltip: c.levelInProgress ? 'Start over. You have made moves, so this costs 1 life' : 'Start over',
             onTap: playing && c.canRestart ? c.restart : null,
           ),

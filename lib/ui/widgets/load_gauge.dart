@@ -38,7 +38,17 @@ class LoadGauge extends StatelessWidget {
             curve: Curves.elasticOut,
             builder: (context, f, _) => CustomPaint(
               size: Size(width, width * 0.6),
-              painter: GaugePainter(fraction: f, ghost: ghost),
+              painter: GaugePainter(
+                fraction: f,
+                ghost: ghost,
+                glow: switch (zone) {
+                  LoadZone.overload => 1,
+                  LoadZone.limit => 0.8,
+                  LoadZone.green => 0.35,
+                  LoadZone.empty || LoadZone.light => 0,
+                },
+                glowColor: zone == LoadZone.overload ? LL.alarm : LL.mint,
+              ),
             ),
           ),
           SizedBox(height: 4 * m.scale),

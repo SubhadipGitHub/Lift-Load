@@ -9,6 +9,7 @@ import '../../game/scenario.dart';
 import '../../game/venue.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../painters/sky_painter.dart';
 import '../theme.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
@@ -181,7 +182,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-    return Scaffold(body: SafeArea(child: Center(child: body)));
+    return Scaffold(
+      body: CustomPaint(
+        painter: SkyPainter(style: VenueStyle.of(Venue.of(p.level))),
+        child: SafeArea(child: Center(child: body)),
+      ),
+    );
   }
 
   String _nextHint(int level) {
@@ -337,7 +343,12 @@ class _Building extends StatelessWidget {
         height: height,
         padding: const EdgeInsets.fromLTRB(5, 8, 5, 5),
         decoration: BoxDecoration(
-          color: style.wall,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [style.wallTop, style.wall, style.wallBottom],
+          ),
+          boxShadow: current ? [BoxShadow(color: style.accent.withValues(alpha: 0.35), blurRadius: 14)] : null,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           border: Border.all(color: current ? style.accent : LL.rule, width: current ? 2.5 : 1),
         ),
@@ -353,7 +364,9 @@ class _Building extends StatelessWidget {
                         child: Container(
                           margin: const EdgeInsets.all(1.5),
                           decoration: BoxDecoration(
-                            color: r * 2 + c < cleared ? style.accent : LL.deep.withValues(alpha: 0.6),
+                            color: r * 2 + c < cleared ? const Color(0xFFFFD98A) : LL.deep.withValues(alpha: 0.6),
+                            boxShadow:
+                                r * 2 + c < cleared ? const [BoxShadow(color: Color(0x66FFD98A), blurRadius: 3)] : null,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),

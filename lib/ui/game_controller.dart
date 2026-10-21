@@ -64,7 +64,9 @@ class GameController extends ChangeNotifier {
     _lobbyNews = '';
     tripleClaimed = false;
     _lifeSpentForThisFail = false;
-    message = debutTip(game.level.number) ?? scenarioTip(game.level.scenario) ?? 'Tap a resident, then the lift or a bench seat';
+    message = debutTip(game.level.number) ??
+        scenarioTip(game.level.scenario) ??
+        'Tap a resident, then the lift or a bench seat';
     analytics.log('level_start', {
       'level': game.level.number,
       'difficulty': game.level.difficulty.name,
@@ -255,7 +257,8 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool get canAdForLife => profile.lives < Formulas.maxLives && profile.rewarded.canShow(RewardedPlacement.extraLife, now);
+  bool get canAdForLife =>
+      profile.lives < Formulas.maxLives && profile.rewarded.canShow(RewardedPlacement.extraLife, now);
 
   Future<void> adForLife() async {
     if (!canAdForLife || adInFlight) return;
