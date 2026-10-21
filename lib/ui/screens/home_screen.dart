@@ -16,6 +16,7 @@ import '../theme.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 import '../widgets/settings_sheet.dart';
+import '../widgets/tester_sheets.dart';
 import 'play_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -111,6 +112,10 @@ class _HomeScreenState extends State<HomeScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: m.font(15), fontWeight: FontWeight.w700, color: LL.lilac),
         ),
+        if (c.testerLog case final log? when c.tester.enabled) ...[
+          SizedBox(height: 8 * m.scale),
+          TesterChip(log: log),
+        ],
       ],
     );
     final actions = Column(
@@ -124,14 +129,21 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontSize: m.font(14), fontWeight: FontWeight.w800, color: LL.brass),
             ),
           ),
-        _Pulse(
-          active: hasLives,
-          child: PrimaryButton(
-            label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
+        if (c.testComplete)
+          PrimaryButton(
+            label: 'Test complete · Send results',
             height: 62 * m.scale,
-            onPressed: hasLives ? _play : null,
+            onPressed: () => showResultsSheet(context, c),
+          )
+        else
+          _Pulse(
+            active: hasLives,
+            child: PrimaryButton(
+              label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
+              height: 62 * m.scale,
+              onPressed: hasLives ? _play : null,
+            ),
           ),
-        ),
         if (!hasLives && c.canAdForLife) ...[
           SizedBox(height: 10 * m.scale),
           RewardedButton(
@@ -140,11 +152,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
         SizedBox(height: 10 * m.scale),
-        Text(
-          _nextHint(p.level),
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: m.font(12), color: LL.lilac, fontWeight: FontWeight.w700),
-        ),
+        if (!c.testComplete)
+          Text(
+            _nextHint(p.level),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: m.font(12), color: LL.lilac, fontWeight: FontWeight.w700),
+          ),
+        if (c.tester.enabled && c.testerLog != null && !c.testComplete)
+          TextButton(
+            onPressed: () => showResultsSheet(context, c),
+            child: Text('Send results so far',
+                style: TextStyle(fontSize: m.font(13), color: LL.cream, fontWeight: FontWeight.w800)),
+          ),
       ],
     );
     final map = _VenueMap(level: p.level);

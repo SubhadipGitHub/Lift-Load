@@ -453,7 +453,14 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       Navigator.of(context).pop();
                     },
                   ),
-                if (g.phase == Phase.won) WinSheet(c: c),
+                if (g.phase == Phase.won)
+                  WinSheet(
+                    c: c,
+                    onHome: () {
+                      c.quitToHome();
+                      Navigator.of(context).pop();
+                    },
+                  ),
                 Positioned.fill(child: EffectsLayer(key: _effects)),
               ],
             ),

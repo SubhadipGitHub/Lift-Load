@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/ads_service.dart';
 import 'services/analytics_service.dart';
 import 'services/audio_service.dart';
 import 'services/profile.dart';
+import 'services/tester_log.dart';
 import 'ui/game_controller.dart';
 import 'ui/layout.dart';
 import 'ui/screens/home_screen.dart';
@@ -28,12 +30,18 @@ Future<void> main() async {
   // Quiet in the background, back on return.
   AppLifecycleListener(onHide: audio.pause, onShow: audio.resume);
 
+  // Gate A tester build (Pages): keep the events testers send back.
+  const tester = TesterConfig.fromEnvironment;
+  final testerLog = tester.enabled ? await TesterLog.open(await SharedPreferences.getInstance()) : null;
+
   final controller = GameController(
     profile: store.load(DateTime.now()),
     store: store,
     ads: ads,
-    analytics: DebugAnalytics(),
+    analytics: testerLog == null ? DebugAnalytics() : FanOutAnalytics([DebugAnalytics(), testerLog]),
     audio: audio,
+    tester: tester,
+    testerLog: testerLog,
   );
   runApp(LiftLoadApp(controller: controller));
 }

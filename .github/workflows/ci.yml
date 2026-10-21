@@ -46,7 +46,8 @@ jobs:
             rm -f test/widget_test.dart
           fi
       - run: flutter pub get
-      - run: flutter build web --release --base-href /Lift-Load/
+      # The Pages build is the Gate A tester build (docs/gate-a.md).
+      - run: flutter build web --release --base-href /Lift-Load/ --dart-define=TESTER=true
       - uses: actions/upload-artifact@v4
         with:
           name: lift-load-web
