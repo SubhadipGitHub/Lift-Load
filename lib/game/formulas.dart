@@ -8,6 +8,8 @@ library;
 import 'dart:math' as math;
 
 import 'cast.dart';
+import 'debuts.dart';
+import 'scenario.dart';
 
 enum Difficulty { normal, hard, superHard, breather }
 
@@ -24,10 +26,15 @@ abstract final class Formulas {
   static const int greenTripCoins = 8;
   static const int perfectTripCoins = 15;
 
-  /// Difficulty sawtooth. Levels that introduce a new resident type are
-  /// always breathers so the new silhouette is learned without pressure.
+  /// Levels the content plan covers (five venues of 20). Levels past this
+  /// keep generating in the last venue.
+  static const int lastLevel = 100;
+
+  /// Difficulty sawtooth. Levels that introduce anything new (a type, a
+  /// cargo, a lift kind, a scenario) are always breathers so it is learned
+  /// without pressure.
   static Difficulty difficulty(int level) {
-    if (ResidentType.introducedAt(level) != null) return Difficulty.breather;
+    if (Debut.at(level) != null) return Difficulty.breather;
     if (level % 25 == 0) return Difficulty.superHard;
     if (level % 10 == 0) return Difficulty.hard;
     if (level % 10 == 1 && level > 1) return Difficulty.breather;
@@ -75,6 +82,73 @@ abstract final class Formulas {
 
   /// Base coins for clearing a level: 20 + 2⌊L/5⌋.
   static int baseCoins(int level) => 20 + 2 * (level ~/ 5);
+
+  // ── Cargo ───────────────────────────────────────────────────────────────
+
+  /// Chance that a resident who can carry cargo does, once any is unlocked.
+  static const double cargoChance = 0.25;
+
+  /// A newly unlocked cargo is carried at least this many times on its debut.
+  static const int debutMinimum = 3;
+
+  // ── Lift kinds (World 2) ────────────────────────────────────────────────
+  static const double oldLiftFraction = 0.75;
+  static const double serviceLiftFraction = 1.4;
+
+  /// Capacity of one trip on a [kind] of lift, from the level's base [capacity].
+  static int liftCapacity(int capacity, LiftKind kind) => switch (kind) {
+        LiftKind.old => (capacity * oldLiftFraction).round(),
+        LiftKind.service => (capacity * serviceLiftFraction).round(),
+        LiftKind.normal || LiftKind.express => capacity,
+      };
+
+  /// The repeating pattern of lift kinds for a level; trip i uses
+  /// pattern[i % length]. The first lift is always normal. A lift kind's
+  /// debut level teaches it alone; other debut levels stay plain.
+  static List<LiftKind> liftSchedule(int level) {
+    final debut = Debut.at(level);
+    if (debut is LiftDebut) return [LiftKind.normal, LiftKind.normal, debut.kind];
+    if (debut != null) return const [LiftKind.normal];
+    final unlocked = [
+      for (final k in LiftKind.values)
+        if (k != LiftKind.normal && k.unlockLevel <= level) k,
+    ];
+    if (unlocked.isEmpty) return const [LiftKind.normal];
+    final rng = math.Random(level * 7349 + 11);
+    final first = unlocked[rng.nextInt(unlocked.length)];
+    if (unlocked.length == 1 || rng.nextBool()) return [LiftKind.normal, LiftKind.normal, first];
+    final rest = [...unlocked]..remove(first);
+    return [LiftKind.normal, first, LiftKind.normal, rest[rng.nextInt(rest.length)]];
+  }
+
+  // ── Lobby scenarios (World 2) ───────────────────────────────────────────
+
+  /// The level's lobby scenario, or null. A scenario's debut forces it; other
+  /// debut levels and Super Hard levels get none; otherwise about every
+  /// other level draws one of the unlocked scenarios.
+  static Scenario? scenario(int level) {
+    final debut = Debut.at(level);
+    if (debut is ScenarioDebut) return debut.scenario;
+    if (debut != null || difficulty(level) == Difficulty.superHard) return null;
+    final unlocked = [
+      for (final s in Scenario.values)
+        if (s.unlockLevel <= level) s,
+    ];
+    if (unlocked.isEmpty) return null;
+    final rng = math.Random(level * 4729 + 3);
+    if (!rng.nextBool()) return null;
+    return unlocked[rng.nextInt(unlocked.length)];
+  }
+
+  /// Maintenance: the coned-off lane opens once this many trips are used.
+  static const int maintenanceTrips = 3;
+
+  /// Power cut: residents at this lane depth or deeper are shadows.
+  static const int powerCutDepth = 2;
+
+  /// Rush hour: residents per wave, and the trip after which each wave lands.
+  static const int rushWaveSize = 4;
+  static const List<int> rushWaveTrips = [3, 6];
 
   // ── Meta economy ────────────────────────────────────────────────────────
   static const int maxLives = 5;

@@ -1,9 +1,11 @@
 /// Parametric resident bodies, ported from the concept canvas (Assets
 /// artboard). Every type is one body drawn from a [ResidentLook]: height,
-/// shoulders, hips, belly, clothing, hair and one accessory. Weight is never
-/// drawn as a number; the silhouette carries it.
+/// shoulders, hips, belly, clothing, hair, one accessory and optionally a
+/// vehicle (wheelchair, pram, trolley). Cargo is a separate prop drawn by
+/// the feet. Weight is never drawn as a number; the silhouette carries it.
 ///
-/// Design space: 60 × 120, feet on y = 116.
+/// Design space: 60 × 120 for the person, feet on y = 116. A vehicle adds
+/// [vehicleWidth] to the right, cargo adds [cargoWidth] to the right.
 library;
 
 import 'dart:math' as math;
@@ -16,9 +18,15 @@ enum Bottom { pants, shorts, skirt, saree }
 
 enum Sleeves { long, short, none }
 
-enum Hair { short, messy, long, bun, bald, fade, helmet }
+enum Hair { short, messy, long, bun, bald, fade, helmet, cap, pillbox, hood }
 
-enum Accessory { backpack, phone, laptopLeft, tie, shoppingBags, stick, mustache, duffel, parcel }
+enum Accessory { none, backpack, phone, laptopLeft, tie, shoppingBags, stick, mustache, duffel, parcel, baton, quilted, blanket, buttons }
+
+enum Vehicle { none, wheelchair, pram, trolley }
+
+const double personWidth = 60;
+const double vehicleWidth = 30;
+const double cargoWidth = 16;
 
 class ResidentLook {
   const ResidentLook({
@@ -36,6 +44,7 @@ class ResidentLook {
     required this.skin,
     required this.shoe,
     required this.accessory,
+    this.vehicle = Vehicle.none,
   });
 
   final double height, shoulders, hips, belly;
@@ -45,6 +54,17 @@ class ResidentLook {
   final bool longTop;
   final Hair hair;
   final Accessory accessory;
+  final Vehicle vehicle;
+
+  /// Width of the design box for this type with [cargo]. A dimmed (power
+  /// cut) figure is always person-width so its outline gives nothing away.
+  static double designWidth(ResidentType t, Cargo cargo, {bool dimmed = false}) {
+    if (dimmed) return personWidth;
+    final v = of(t).vehicle;
+    return personWidth +
+        (v == Vehicle.pram || v == Vehicle.trolley ? vehicleWidth : 0) +
+        (cargo == Cargo.none ? 0 : cargoWidth);
+  }
 
   static ResidentLook of(ResidentType t) => switch (t) {
         ResidentType.kid => const ResidentLook(height: 66, shoulders: 7, hips: 6.5, top: Color(0xFFF2F4F8), bottomColor: Color(0xFF2C3A63), bottom: Bottom.shorts, sleeves: Sleeves.short, hair: Hair.short, hairColor: Color(0xFF2B2140), skin: Color(0xFFC98E66), shoe: Color(0xFF1E1E24), accessory: Accessory.backpack),
@@ -56,6 +76,11 @@ class ResidentLook {
         ResidentType.uncle => const ResidentLook(height: 100, shoulders: 12, hips: 13, belly: 7, top: Color(0xFF5D7D4E), bottomColor: Color(0xFF3D3A36), bottom: Bottom.pants, sleeves: Sleeves.long, longTop: true, hair: Hair.short, hairColor: Color(0xFF2B2140), skin: Color(0xFF9C6644), shoe: Color(0xFF2A211B), accessory: Accessory.mustache),
         ResidentType.gym => const ResidentLook(height: 104, shoulders: 14, hips: 9, top: Color(0xFF24252C), bottomColor: Color(0xFF6B6F78), bottom: Bottom.shorts, sleeves: Sleeves.none, hair: Hair.fade, hairColor: Color(0xFF1A1512), skin: Color(0xFF7A4A2C), shoe: Color(0xFFE8E8EC), accessory: Accessory.duffel),
         ResidentType.rider => const ResidentLook(height: 100, shoulders: 11, hips: 10, belly: 1, top: Color(0xFFD9A21B), bottomColor: Color(0xFF2B2B30), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.helmet, hairColor: Color(0xFFD9A21B), skin: Color(0xFFB88360), shoe: Color(0xFF1E1E24), accessory: Accessory.parcel),
+        ResidentType.guard => const ResidentLook(height: 102, shoulders: 12.5, hips: 11, belly: 3, top: Color(0xFF34466B), bottomColor: Color(0xFF243150), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.cap, hairColor: Color(0xFF1D2740), skin: Color(0xFF9C6644), shoe: Color(0xFF15151A), accessory: Accessory.baton),
+        ResidentType.wheelchair => const ResidentLook(height: 94, shoulders: 10, hips: 10, belly: 2, top: Color(0xFFBFD8E6), bottomColor: Color(0xFF8FA9BC), bottom: Bottom.pants, sleeves: Sleeves.short, hair: Hair.short, hairColor: Color(0xFF6E6A66), skin: Color(0xFFC08A63), shoe: Color(0xFF5C4033), accessory: Accessory.blanket, vehicle: Vehicle.wheelchair),
+        ResidentType.puffer => const ResidentLook(height: 96, shoulders: 14, hips: 13, belly: 4, top: Color(0xFFEF7D32), bottomColor: Color(0xFF26262E), bottom: Bottom.pants, sleeves: Sleeves.long, longTop: true, hair: Hair.hood, hairColor: Color(0xFF1F1A17), skin: Color(0xFFB07A55), shoe: Color(0xFFF2F2F2), accessory: Accessory.quilted),
+        ResidentType.pram => const ResidentLook(height: 96, shoulders: 9.5, hips: 10, belly: 1, top: Color(0xFFD98BA8), bottomColor: Color(0xFF3B4A6B), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.long, hairColor: Color(0xFF3A2418), skin: Color(0xFFE0AC85), shoe: Color(0xFF5A2E2E), accessory: Accessory.none, vehicle: Vehicle.pram),
+        ResidentType.bellhop => const ResidentLook(height: 100, shoulders: 11, hips: 10, belly: 1, top: Color(0xFF9E2B2B), bottomColor: Color(0xFF2B2B30), bottom: Bottom.pants, sleeves: Sleeves.long, hair: Hair.pillbox, hairColor: Color(0xFF9E2B2B), skin: Color(0xFF8D5A3B), shoe: Color(0xFF15151A), accessory: Accessory.buttons, vehicle: Vehicle.trolley),
       };
 }
 
@@ -74,7 +99,9 @@ class _Figure {
   _Figure(ResidentLook l) {
     final h = l.height;
     final kid = h < 75;
-    final t0 = 116 - h;
+    final seated = l.vehicle == Vehicle.wheelchair;
+    // Seated figures keep standing proportions, lowered onto the seat.
+    final t0 = 116 - h + (seated ? 24 : 0);
     final headH = kid ? h * 0.21 : h * 0.145;
     final rx = headH * 0.4, ry = headH * 0.5;
     final hy = t0 + ry;
@@ -96,7 +123,31 @@ class _Figure {
 
     shadowRx = math.max(sh, hp) + 4;
 
-    // Back layer: backpack or long hair / bun.
+    // Back layer: vehicle frames, hood, backpack or long hair / bun.
+    if (seated) {
+      layers.add(_Layer(circle(25, 99, 15), const Color(0xFF4A4F5C), stroke: 3));
+      layers.add(_Layer(
+        Path()
+          ..moveTo(25, 85)
+          ..lineTo(25, 113)
+          ..moveTo(11, 99)
+          ..lineTo(39, 99),
+        const Color(0xFF8A90A0),
+        stroke: 1,
+      ));
+      layers.add(_Layer(
+        Path()
+          ..moveTo(30 - hp - 3, s + 4)
+          ..lineTo(30 - hp - 3, p + 4)
+          ..moveTo(30 - hp - 3, s + 4)
+          ..lineTo(30 - hp - 7, s + 4),
+        const Color(0xFF4A4F5C),
+        stroke: 2.2,
+      ));
+    }
+    if (l.hair == Hair.hood) {
+      layers.add(_Layer(Path()..addOval(Rect.fromCenter(center: Offset(30, hy + ry * 0.1), width: rx * 2 + 6, height: ry * 2 + 6)), l.top));
+    }
     if (l.accessory == Accessory.backpack) {
       layers.add(_Layer(
         Path()
@@ -118,7 +169,25 @@ class _Figure {
     }
     if (l.hair == Hair.bun) layers.add(_Layer(circle(30, hy - ry * 1.02, rx * 0.5), l.hairColor));
 
-    // Legs in skin, then the bottom garment over them.
+    // Legs in skin, then the bottom garment over them. Seated legs bend
+    // forward at the knee (thigh across the seat, shin down to the footrest).
+    if (seated) {
+      final knee = 30 + hp + 9;
+      final thighs = Path()..addRRect(RRect.fromLTRBR(30 - hp, p - 2, knee + 2, p + 7, const Radius.circular(3)));
+      final shins = Path()..addRect(Rect.fromLTRB(knee - 4, p + 4, knee + 1.5, 112.6));
+      layers.add(_Layer(thighs..addPath(shins, Offset.zero), l.bottomColor));
+      layers.add(_Layer(Path()..addRRect(RRect.fromLTRBR(knee - 4.5, 112.4, knee + 5, 116, const Radius.circular(1.5))), l.shoe));
+      layers.add(_Layer(
+        Path()
+          ..moveTo(30 - hp - 2, p + 8)
+          ..lineTo(knee + 3, p + 8)
+          ..moveTo(knee + 2, p + 8)
+          ..lineTo(knee + 4, 110),
+        const Color(0xFF4A4F5C),
+        stroke: 2,
+      ));
+      layers.add(_Layer(circle(knee + 5, 112.5, 3), const Color(0xFF2E323C)));
+    }
     final legs = poly([
       Offset(30 - hp, p),
       Offset(30 + hp, p),
@@ -128,7 +197,7 @@ class _Figure {
       Offset(30 - lg, 113),
       Offset(30 - lg - 2 * a, 113),
     ]);
-    layers.add(_Layer(legs, l.skin));
+    if (!seated) layers.add(_Layer(legs, l.skin));
 
     double xo(double y) => hp + (lg + 2 * a - hp) * (y - p) / (113 - p);
     final Path bottom;
@@ -157,7 +226,7 @@ class _Figure {
           ..quadraticBezierTo(30 - hp - 4, 100, 30 - hp, p)
           ..close();
     }
-    layers.add(_Layer(bottom, l.bottomColor));
+    if (!seated) layers.add(_Layer(bottom, l.bottomColor));
 
     // Shoes.
     final sw = 2 * a + 1.2;
@@ -175,7 +244,7 @@ class _Figure {
       ..lineTo(lx0 - sw - 1.4, 116)
       ..lineTo(lx0, 116)
       ..close();
-    layers.add(_Layer(shoes, l.shoe));
+    if (!seated) layers.add(_Layer(shoes, l.shoe));
 
     // Torso and its shaded right side.
     layers.add(_Layer(
@@ -209,6 +278,10 @@ class _Figure {
       hxL = 23;
       hxR = 37;
       hyH = p - 4;
+    }
+    if (l.vehicle == Vehicle.pram || l.vehicle == Vehicle.trolley) {
+      hxR = 30 + reach + 4;
+      hyH = p - 2;
     }
     final sxL = 30 - sh + 1.6, sxR = 30 + sh - 1.6, sy = s + 2.6;
     final aw = kid ? 2.8 : (sh >= 13 ? 4.8 : 3.6);
@@ -273,6 +346,24 @@ class _Figure {
             ..close(),
           l.hairColor,
         ));
+      case Hair.cap:
+        layers.add(_Layer(cap, l.hairColor));
+        layers.add(_Layer(
+          Path()
+            ..moveTo(30 - rx - 0.8, hy - ry * 0.35)
+            ..quadraticBezierTo(30 - rx - 1, hy - ry * 1.45, 30, hy - ry * 1.4)
+            ..quadraticBezierTo(30 + rx + 1, hy - ry * 1.45, 30 + rx + 0.8, hy - ry * 0.35)
+            ..close()
+            ..addRect(Rect.fromLTWH(30 - rx - 1.5, hy - ry * 0.45, 2 * rx + 5, 1.8)),
+          l.hairColor,
+        ));
+        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - 1.2, hy - ry * 1.05, 2.4, 2.2)), const Color(0xFFE8C547)));
+      case Hair.pillbox:
+        layers.add(_Layer(cap, const Color(0xFF1F1A17)));
+        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx * 0.75, hy - ry * 1.55, rx * 1.5, ry * 0.62)), l.hairColor));
+        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx * 0.75, hy - ry * 1.02, rx * 1.5, 0.9)), const Color(0xFFE8C547)));
+      case Hair.hood:
+        layers.add(_Layer(cap, l.hairColor));
       case Hair.helmet:
         layers.add(_Layer(
           Path()
@@ -292,6 +383,34 @@ class _Figure {
     Path rrect(double x, double y, double w, double hh, double r) =>
         Path()..addRRect(RRect.fromLTRBAndCorners(x, y, x + w, y + hh, bottomLeft: Radius.circular(r), bottomRight: Radius.circular(r)));
     switch (l.accessory) {
+      case Accessory.none:
+        break;
+      case Accessory.baton:
+        layers.add(_Layer(
+          Path()
+            ..moveTo(hxR, hyH)
+            ..lineTo(hxR + 2.5, hyH + 13),
+          const Color(0xFF15151A),
+          stroke: 2,
+        ));
+        layers.add(_Layer(circle(30 - sh * 0.5, s + 5, 1.5), const Color(0xFFE8C547)));
+      case Accessory.quilted:
+        final quilt = Path();
+        for (var i = 1; i <= 3; i++) {
+          final y = s + (tb - s) * i / 4;
+          quilt
+            ..moveTo(30 - bx + 1.5, y)
+            ..lineTo(30 + bx - 1.5, y);
+        }
+        layers.add(_Layer(quilt, const Color(0x40000000), stroke: 1));
+        layers.add(_Layer(Path()..addRect(Rect.fromLTWH(29.4, s + 1, 1.2, tb - s - 1)), const Color(0x40000000)));
+      case Accessory.blanket:
+        layers.add(_Layer(Path()..addRRect(RRect.fromLTRBR(30 - hp - 1, p - 3, 30 + hp + 8, p + 8, const Radius.circular(3))), const Color(0xFF6F8FB0)));
+      case Accessory.buttons:
+        layers.add(_Layer(
+          circle(30, s + 4, 1)..addPath(circle(30, s + 9, 1), Offset.zero)..addPath(circle(30, s + 14, 1), Offset.zero),
+          const Color(0xFFE8C547),
+        ));
       case Accessory.backpack:
         layers.add(_Layer(
           Path()
@@ -351,29 +470,152 @@ class _Figure {
         layers.add(_Layer(Path()..addRect(Rect.fromLTWH(21.5, p - 6, 17, 2.2)), const Color(0xFFA87E50)));
         layers.add(_Layer(Path()..addRect(Rect.fromLTWH(30 - rx - 0.8, hy - ry * 0.25, 2 * rx + 1.6, ry * 0.62)), const Color(0xFF26262E)));
     }
+
+    // Vehicles to the right of the person (60..90).
+    switch (l.vehicle) {
+      case Vehicle.none || Vehicle.wheelchair:
+        break;
+      case Vehicle.pram:
+        layers.add(_Layer(
+          Path()
+            ..moveTo(hxR, hyH)
+            ..lineTo(64, 84),
+          const Color(0xFF2E3A40),
+          stroke: 1.6,
+        ));
+        layers.add(_Layer(
+          Path()
+            ..moveTo(62, 84)
+            ..lineTo(87, 84)
+            ..quadraticBezierTo(87, 102, 74, 102)
+            ..quadraticBezierTo(62, 102, 62, 84)
+            ..close(),
+          const Color(0xFF5C7C8A),
+        ));
+        layers.add(_Layer(
+          Path()
+            ..moveTo(72, 84)
+            ..quadraticBezierTo(72, 68, 87, 70)
+            ..lineTo(87, 84)
+            ..close(),
+          const Color(0xFF3E5560),
+        ));
+        layers.add(_Layer(
+          Path()
+            ..moveTo(68, 102)
+            ..lineTo(66, 110)
+            ..moveTo(80, 102)
+            ..lineTo(82, 110),
+          const Color(0xFF2E3A40),
+          stroke: 1.4,
+        ));
+        layers.add(_Layer(circle(66, 111, 4.5)..addPath(circle(82, 111, 4.5), Offset.zero), const Color(0xFF2E3A40)));
+        layers.add(_Layer(circle(66, 111, 1.6)..addPath(circle(82, 111, 1.6), Offset.zero), const Color(0xFFB8C4CC)));
+      case Vehicle.trolley:
+        const brass = Color(0xFFC9A227);
+        layers.add(_Layer(
+          Path()
+            ..moveTo(hxR, hyH)
+            ..lineTo(62, 80),
+          brass,
+          stroke: 1.6,
+        ));
+        layers.add(_Layer(Path()..addRect(const Rect.fromLTRB(65, 94, 87, 110)), const Color(0xFF6B4A3A)));
+        layers.add(_Layer(Path()..addRect(const Rect.fromLTRB(67, 80, 85, 94)), const Color(0xFF44546A)));
+        layers.add(_Layer(Path()..addRect(const Rect.fromLTRB(68, 70, 82, 80)), const Color(0xFF8E2B2B)));
+        layers.add(_Layer(
+          Path()
+            ..moveTo(62, 112)
+            ..lineTo(62, 62)
+            ..quadraticBezierTo(76, 54, 90, 62)
+            ..lineTo(90, 112),
+          brass,
+          stroke: 2,
+        ));
+        layers.add(_Layer(Path()..addRect(const Rect.fromLTRB(60, 110, 92, 113)), brass));
+        layers.add(_Layer(circle(64, 114.5, 2.4)..addPath(circle(88, 114.5, 2.4), Offset.zero), const Color(0xFF2E323C)));
+    }
   }
 
   final List<_Layer> layers = [];
   late final double shadowRx;
 }
 
+/// Cargo props stand by the feet, in the [cargoWidth] strip right of the
+/// person (x 58..74). Each is shaped unlike any type's own accessory.
+List<_Layer> _cargoLayers(Cargo cargo) {
+  const x = 58.0;
+  switch (cargo) {
+    case Cargo.none:
+      return const [];
+    case Cargo.waterCan:
+      return [
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 92, x + 15, 116, const Radius.circular(4))), const Color(0xCC8FD0EA)),
+        _Layer(Path()..addRect(const Rect.fromLTRB(x + 1, 100, x + 15, 101.6)), const Color(0x664B9CC4)),
+        _Layer(Path()..addRect(const Rect.fromLTRB(x + 5.5, 87.5, x + 10.5, 92)), const Color(0xFF2F6FB5)),
+      ];
+    case Cargo.suitcase:
+      return [
+        _Layer(
+          Path()
+            ..moveTo(x + 5, 92)
+            ..lineTo(x + 5, 80)
+            ..lineTo(x + 11, 80)
+            ..lineTo(x + 11, 92),
+          const Color(0xFF8A90A0),
+          stroke: 1.4,
+        ),
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 91, x + 15, 113, const Radius.circular(2.5))), const Color(0xFF44546A)),
+        _Layer(Path()..addRect(const Rect.fromLTRB(x + 1, 100, x + 15, 101.4)), const Color(0xFF2E3A4A)),
+        _Layer(
+          Path()
+            ..addOval(Rect.fromCircle(center: const Offset(x + 4, 114.5), radius: 1.6))
+            ..addOval(Rect.fromCircle(center: const Offset(x + 12, 114.5), radius: 1.6)),
+          const Color(0xFF1E1E24),
+        ),
+      ];
+    case Cargo.cylinder:
+      return [
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 1, 86, x + 15, 116, const Radius.circular(5))), const Color(0xFFB3261E)),
+        _Layer(Path()..addRect(const Rect.fromLTRB(x + 1, 108, x + 15, 110)), const Color(0xFF7E1A14)),
+        _Layer(Path()..addRRect(RRect.fromLTRBR(x + 3.5, 79, x + 12.5, 86, const Radius.circular(2))), const Color(0xFF5B5F6B)),
+        _Layer(Path()..addRect(const Rect.fromLTRB(x + 6.5, 76.5, x + 9.5, 79)), const Color(0xFF2E323C)),
+      ];
+  }
+}
+
 class ResidentPainter extends CustomPainter {
-  ResidentPainter(this.type);
+  ResidentPainter(this.type, {this.cargo = Cargo.none, this.dimmed = false});
 
   final ResidentType type;
+  final Cargo cargo;
+
+  /// Power cut: a generic shadow with no type, build or cargo showing.
+  final bool dimmed;
 
   static final Map<ResidentType, _Figure> _cache = {};
+  static final Map<Cargo, List<_Layer>> _cargoCache = {};
 
   @override
   void paint(Canvas canvas, Size size) {
-    final fig = _cache.putIfAbsent(type, () => _Figure(ResidentLook.of(type)));
+    final width = ResidentLook.designWidth(type, cargo, dimmed: dimmed);
     final scale = size.height / 120;
     canvas
       ..save()
-      ..translate((size.width - 60 * scale) / 2, 0)
+      ..translate((size.width - width * scale) / 2, 0)
       ..scale(scale);
+    if (dimmed) {
+      _paintShadow(canvas);
+      canvas.restore();
+      return;
+    }
+    final fig = _cache.putIfAbsent(type, () => _Figure(ResidentLook.of(type)));
     canvas.drawOval(
-      Rect.fromCenter(center: const Offset(30, 116), width: fig.shadowRx * 2, height: 5.2),
+      Rect.fromCenter(
+        center: Offset(width == personWidth ? 30 : width / 2, 116),
+        width: width == personWidth ? fig.shadowRx * 2 : width - 8,
+        height: 5.2,
+      ),
       Paint()..color = const Color(0x2E000000),
     );
     final fill = Paint()..isAntiAlias = true;
@@ -381,18 +623,27 @@ class ResidentPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..isAntiAlias = true;
-    for (final layer in fig.layers) {
-      if (layer.stroke > 0) {
-        canvas.drawPath(layer.path, stroke
-          ..color = layer.color
-          ..strokeWidth = layer.stroke);
-      } else {
-        canvas.drawPath(layer.path, fill..color = layer.color);
+    for (final layers in [fig.layers, _cargoCache.putIfAbsent(cargo, () => _cargoLayers(cargo))]) {
+      for (final layer in layers) {
+        if (layer.stroke > 0) {
+          canvas.drawPath(layer.path, stroke
+            ..color = layer.color
+            ..strokeWidth = layer.stroke);
+        } else {
+          canvas.drawPath(layer.path, fill..color = layer.color);
+        }
       }
     }
     canvas.restore();
   }
 
+  void _paintShadow(Canvas canvas) {
+    final paint = Paint()..color = const Color(0x8C3A3560);
+    canvas
+      ..drawOval(Rect.fromCenter(center: const Offset(30, 38), width: 16, height: 19), paint)
+      ..drawRRect(RRect.fromLTRBR(18, 50, 42, 116, const Radius.circular(11)), paint);
+  }
+
   @override
-  bool shouldRepaint(ResidentPainter old) => old.type != type;
+  bool shouldRepaint(ResidentPainter old) => old.type != type || old.cargo != cargo || old.dimmed != dimmed;
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../game/cast.dart';
+import '../game/scenario.dart';
+import '../game/venue.dart';
 
 /// "Lobby Pop" palette from the concept canvas style guide.
 abstract final class LL {
@@ -66,3 +68,98 @@ class FloorStyle {
 }
 
 enum FloorShape { circle, triangle, square, diamond, hexagon, plus }
+
+/// How a venue looks: the shaft wall, the lobby floor and its pattern, the
+/// sign colour and the prop in the shaft corner.
+class VenueStyle {
+  const VenueStyle({
+    required this.wall,
+    required this.floor,
+    required this.floorLine,
+    required this.pattern,
+    required this.accent,
+    required this.laneInk,
+    required this.prop,
+  });
+
+  final Color wall;
+  final Color floor;
+  final Color floorLine;
+  final FloorPattern pattern;
+  final Color accent;
+
+  /// Text drawn on the lobby floor ("+3 waiting", "Clear").
+  final Color laneInk;
+  final VenueProp prop;
+
+  static VenueStyle of(Venue v) => switch (v) {
+        Venue.society => const VenueStyle(
+            wall: LL.facade,
+            floor: LL.tile,
+            floorLine: Color(0xFFE6CFA6),
+            pattern: FloorPattern.tiles,
+            accent: LL.brass,
+            laneInk: Color(0xFF6B5C44),
+            prop: VenueProp.plant,
+          ),
+        Venue.office => const VenueStyle(
+            wall: Color(0xFF2B3445),
+            floor: Color(0xFFE3E6EA),
+            floorLine: Color(0xFFCDD2D9),
+            pattern: FloorPattern.stone,
+            accent: Color(0xFF8CC4E8),
+            laneInk: Color(0xFF4F5B6B),
+            prop: VenueProp.cooler,
+          ),
+        Venue.hospital => const VenueStyle(
+            wall: Color(0xFF1F3F3B),
+            floor: Color(0xFFE4F1EC),
+            floorLine: Color(0xFFC6DDD4),
+            pattern: FloorPattern.stripes,
+            accent: Color(0xFF7FE0B8),
+            laneInk: Color(0xFF3F6157),
+            prop: VenueProp.medicalSign,
+          ),
+        Venue.mall => const VenueStyle(
+            wall: Color(0xFF3A2350),
+            floor: Color(0xFFFBEFE6),
+            floorLine: Color(0xFFF0D7C4),
+            pattern: FloorPattern.marble,
+            accent: Color(0xFFFF9BB0),
+            laneInk: Color(0xFF7A5566),
+            prop: VenueProp.shoppingBag,
+          ),
+        Venue.hotel => const VenueStyle(
+            wall: Color(0xFF3B1F2B),
+            floor: Color(0xFFE9D7C0),
+            floorLine: Color(0xFFD3B994),
+            pattern: FloorPattern.carpet,
+            accent: Color(0xFFE2C46A),
+            laneInk: Color(0xFF6E4E3A),
+            prop: VenueProp.bell,
+          ),
+      };
+}
+
+enum FloorPattern { tiles, stone, stripes, marble, carpet }
+
+enum VenueProp { plant, cooler, medicalSign, shoppingBag, bell }
+
+/// How each lift kind's cabin reads at a glance. The sign names the cabin;
+/// it never says anything about who weighs what.
+class LiftKindStyle {
+  const LiftKindStyle(this.cabin, this.sign, this.icon);
+
+  final Color cabin;
+  final String sign;
+
+  /// Badge on the cabin and the NEXT chips; null for a normal lift.
+  final IconData? icon;
+
+  static LiftKindStyle of(LiftKind k) => switch (k) {
+        LiftKind.normal => const LiftKindStyle(LL.brass, 'MAX 4 PERSONS', null),
+        LiftKind.old => const LiftKindStyle(Color(0xFFB9824F), 'OLD LIFT · GO EASY', Icons.build_rounded),
+        LiftKind.service => const LiftKindStyle(Color(0xFF9AA6BA), 'SERVICE LIFT', Icons.local_shipping_rounded),
+        LiftKind.express => const LiftKindStyle(LL.mint, 'EXPRESS · TWO STOPS', Icons.bolt_rounded),
+      };
+}

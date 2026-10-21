@@ -2,6 +2,23 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-21 · v1.2 variety pass
+
+- **Variety in two waves: content in 1–60, rules in World 2 (61–100).** Gate A must still measure weight guessing;
+  lift kinds and scenarios would confound it.
+- **Five venues of 20 levels, each with a crowd mix and look.** Owner asked for environment variety; spawn weights keep
+  every unlocked type present so the cast stays learnable.
+- **New types: guard 96 (L23), wheelchair 118 (L43), puffer teen 48 (L45, inverse liar), pram 84 (L63), bellhop 124
+  (L83).** Each sits in a band clear of its look-alikes; the puffer teen deliberately looks heavy.
+- **Cargo is an additive hidden weight (water can 20 L13, suitcase 12 L21, gas cylinder 30 L37).** Extends the
+  learning curve past L20 without breaking "one type, one weight". Props avoid the shapes of type accessories.
+- **Lift kinds as a visible repeating schedule (old 0.75×, service 1.4×, express two floors).** Planning against the
+  NEXT strip is the new brain; a fixed pattern per level keeps it fair.
+- **Scenarios: maintenance, power cut, rush hour; one per level at most.** Never on Super Hard or another debut.
+- **Lifts route only to reachable residents.** A locked lane or a pending wave could otherwise soft-lock an empty lift.
+- **The solver plays through the engine.** One implementation of the rules; the bot cannot drift from the game.
+- **Queued, not built: best-play solver, trap Hard levels, stars, cabin spots, pairs, hurry residents.**
+
 ## 2026-10-21
 
 - **Trips = solver par + slack, not Σ⌈W/0.85C⌉ + slack.** Python and Dart simulation: the weight formula

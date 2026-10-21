@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../game/cast.dart';
+import '../game/debuts.dart';
 import '../game/engine.dart';
 import '../game/formulas.dart';
 import '../game/generator.dart';
 import '../game/level.dart';
+import '../game/scenario.dart';
 import '../services/ad_policy.dart';
 import '../services/ads_service.dart';
 import '../services/analytics_service.dart';
@@ -47,6 +49,10 @@ class GameController extends ChangeNotifier {
   bool tripleClaimed = false;
   TripRating? _lastRating;
   int _lastRatingCoins = 0;
+
+  /// Lobby news from the last send (rush-hour wave, lane opened), shown
+  /// ahead of the "lift arriving" line instead of being overwritten by it.
+  String _lobbyNews = '';
   bool _lifeSpentForThisFail = false;
 
   DateTime get now => _clock();
@@ -55,13 +61,16 @@ class GameController extends ChangeNotifier {
 
   void startLevel() {
     _game = LiftGame(_levelFor(profile.level));
+    _lobbyNews = '';
     tripleClaimed = false;
     _lifeSpentForThisFail = false;
-    message = 'Tap a resident, then the lift or a bench seat';
+    message = debutTip(game.level.number) ?? scenarioTip(game.level.scenario) ?? 'Tap a resident, then the lift or a bench seat';
     analytics.log('level_start', {
       'level': game.level.number,
       'difficulty': game.level.difficulty.name,
       'trips': game.tripsTotal,
+      'venue': game.level.venue.name,
+      if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
     });
     notifyListeners();
   }
@@ -98,6 +107,12 @@ class GameController extends ChangeNotifier {
   // ── Player input ──
 
   void tapQueue(int lane) {
+    if (game.phase == Phase.playing && game.isLaneLocked(lane)) {
+      final n = game.tripsUntilLaneOpens;
+      message = 'Closed for maintenance. Opens in $n ${n == 1 ? 'trip' : 'trips'}';
+      notifyListeners();
+      return;
+    }
     game.tapQueue(lane);
     _afterAction();
   }
@@ -133,7 +148,7 @@ class GameController extends ChangeNotifier {
 
   bool get canUseScale {
     final r = game.selected;
-    return game.phase == Phase.playing && profile.scales > 0 && r != null && r.floor == game.liftFloor;
+    return game.phase == Phase.playing && profile.scales > 0 && r != null && game.goesTo(r.floor);
   }
 
   void useScale() {
@@ -249,8 +264,8 @@ class GameController extends ChangeNotifier {
           message = 'Tap the lift, or an empty bench seat';
         case SeatedEvent():
           message = 'Seated on the bench';
-        case RefusedEvent(:final resident, :final liftFloor):
-          message = 'This lift goes to ${liftFloor.label}. They live on ${resident.floor.label}.';
+        case RefusedEvent(:final resident, :final liftFloors):
+          message = 'This lift goes to ${floorList(liftFloors)}. They live on ${resident.floor.label}.';
         case BoardedEvent(:final zone):
           message = switch (zone) {
             LoadZone.light || LoadZone.empty => 'Still light. Room for more?',
@@ -263,19 +278,23 @@ class GameController extends ChangeNotifier {
           analytics.log('overload', {
             'level': game.level.number,
             'type': resident.type.name,
+            'cargo': resident.cargo.name,
+            'lift_kind': game.liftKind.name,
+            if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
             'riders': game.riders.length,
           });
-        case SentEvent(:final floor, :final rating, :final coins, :final riders):
+        case SentEvent(:final floors, :final kind, :final rating, :final coins, :final riders):
           _lastRating = rating;
           _lastRatingCoins = coins;
-          message = 'Ding! Going up to ${floor.label}';
+          message = 'Ding! Going up to ${floorList(floors)}';
           analytics.log('trip_sent', {
             'level': game.level.number,
             'rating': rating.name,
             'fill_pct': (game.loadFraction * 100).round(),
             'riders': riders,
+            'lift_kind': kind.name,
           });
-        case LiftArrivedEvent(:final floor):
+        case LiftArrivedEvent(:final floors, :final kind):
           final verdict = switch (_lastRating) {
             TripRating.perfect => 'Perfect load! +$_lastRatingCoins · ',
             TripRating.good => 'Good trip +$_lastRatingCoins · ',
@@ -283,7 +302,21 @@ class GameController extends ChangeNotifier {
             null => '',
           };
           _lastRating = null;
-          message = '${verdict}Lift to ${floor.label} arriving';
+          final news = _lobbyNews;
+          _lobbyNews = '';
+          final lift = switch (kind) {
+            LiftKind.normal => 'Lift',
+            LiftKind.old => 'Old lift (it takes less)',
+            LiftKind.service => 'Service lift (it takes more)',
+            LiftKind.express => 'Express',
+          };
+          message = '$news$verdict$lift to ${floorList(floors)} arriving';
+        case ArrivalsEvent(:final count):
+          _lobbyNews += 'Rush hour: +$count in the queues · ';
+          message = 'Rush hour! $count more residents joined the queues';
+        case LaneOpenedEvent(:final lane):
+          _lobbyNews += 'Lane ${lane + 1} open · ';
+          message = 'Maintenance done. Lane ${lane + 1} is open';
         case ScalePreviewEvent():
           message = 'The dashed needle shows where the load would land';
         case WonEvent(:final coins, :final tripsUsed, :final perfects):
@@ -294,6 +327,7 @@ class GameController extends ChangeNotifier {
             ..winStreak += 1;
           analytics.log('level_win', {
             'level': game.level.number,
+            'venue': game.level.venue.name,
             'trips_used': tripsUsed,
             'trips_total': game.tripsTotal,
             'perfects': perfects,
@@ -306,7 +340,13 @@ class GameController extends ChangeNotifier {
             FailKind.outOfTrips => 'Out of trips',
             FailKind.jam => 'Lobby jammed',
           };
-          analytics.log('level_fail', {'level': game.level.number, 'kind': kind.name, 'trips_used': game.tripsUsed});
+          analytics.log('level_fail', {
+            'level': game.level.number,
+            'venue': game.level.venue.name,
+            if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
+            'kind': kind.name,
+            'trips_used': game.tripsUsed,
+          });
         case ContinuedEvent(:final kind):
           _lifeSpentForThisFail = false;
           message = switch (kind) {
@@ -321,6 +361,29 @@ class GameController extends ChangeNotifier {
 
   void _save() => store?.save(profile);
 
-  /// Accessibility label for a resident: type and floor, never weight.
-  static String describe(Resident r) => '${r.type.displayName} going to ${r.floor.label}';
+  /// Accessibility label for a resident: type, cargo and floor, never weight.
+  static String describe(Resident r) =>
+      '${r.type.displayName}${r.cargo == Cargo.none ? '' : ' with a ${r.cargo.displayName}'} going to ${r.floor.label}';
+
+  /// "2F" or "2F and 5F".
+  static String floorList(List<Floor> floors) => floors.map((f) => f.label).join(' and ');
+
+  /// One line introducing whatever debuts on [level]. Never hints at weight.
+  static String? debutTip(int level) => switch (Debut.at(level)) {
+        TypeDebut(:final type) => 'New in the lobby: ${type.displayName}. Watch the needle',
+        CargoDebut(:final cargo) => 'Some residents carry a ${cargo.displayName} today. It counts too',
+        LiftDebut(kind: LiftKind.old) => 'Old lifts are coming. Their cable takes less',
+        LiftDebut(kind: LiftKind.service) => 'Service lifts are coming. They take more',
+        LiftDebut(kind: LiftKind.express) => 'Express lifts stop at two floors in one trip',
+        LiftDebut(kind: LiftKind.normal) => null,
+        ScenarioDebut(:final scenario) => scenarioTip(scenario),
+        null => null,
+      };
+
+  static String? scenarioTip(Scenario? s) => switch (s) {
+        Scenario.maintenance => 'One lane is closed for maintenance for the first trips',
+        Scenario.powerCut => 'Power cut! You only see who is near the front',
+        Scenario.rushHour => 'Rush hour: more residents will arrive',
+        null => null,
+      };
 }

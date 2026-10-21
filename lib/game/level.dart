@@ -1,5 +1,7 @@
 import 'cast.dart';
 import 'formulas.dart';
+import 'scenario.dart';
+import 'venue.dart';
 
 /// An immutable level definition. Created by [LevelGenerator] or by hand
 /// in tests. [queues] lists each lane front-first.
@@ -14,6 +16,12 @@ class Level {
     required this.queues,
     this.parTrips = 0,
     this.seed = 0,
+    this.venue = Venue.society,
+    this.liftSchedule = const [LiftKind.normal],
+    this.scenario,
+    this.lockedLane,
+    this.lockedUntilTrip = 0,
+    this.arrivals = const [],
   });
 
   final int number;
@@ -38,7 +46,25 @@ class Level {
 
   final int seed;
 
-  int get residentCount => queues.fold(0, (a, q) => a + q.length);
+  final Venue venue;
+
+  /// Repeating lift kinds: trip i (0-based) uses `liftSchedule[i % length]`.
+  final List<LiftKind> liftSchedule;
+
+  /// The lobby scenario, if any. Its data is in the fields below.
+  final Scenario? scenario;
+
+  /// Maintenance: this lane cannot be selected until [lockedUntilTrip] trips
+  /// have been used.
+  final int? lockedLane;
+  final int lockedUntilTrip;
+
+  /// Rush hour: residents who join later, in arrival order.
+  final List<Arrival> arrivals;
+
+  LiftKind kindForTrip(int tripIndex) => liftSchedule[tripIndex % liftSchedule.length];
+
+  int get residentCount => queues.fold(0, (a, q) => a + q.length) + arrivals.length;
 
   Level copyWith({int? trips, int? benchSize, int? parTrips}) => Level(
         number: number,
@@ -50,6 +76,12 @@ class Level {
         queues: queues,
         parTrips: parTrips ?? this.parTrips,
         seed: seed,
+        venue: venue,
+        liftSchedule: liftSchedule,
+        scenario: scenario,
+        lockedLane: lockedLane,
+        lockedUntilTrip: lockedUntilTrip,
+        arrivals: arrivals,
       );
 
   /// The 18-resident slice from the concept canvas (Play artboard). Used by

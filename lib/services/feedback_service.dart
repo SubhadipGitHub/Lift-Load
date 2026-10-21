@@ -31,6 +31,12 @@ class FeedbackService {
       case SentEvent():
         HapticFeedback.mediumImpact();
         _sfx.play(Sfx.ding);
+      case ArrivalsEvent():
+        HapticFeedback.lightImpact();
+        _sfx.play(Sfx.thud);
+      case LaneOpenedEvent():
+        HapticFeedback.selectionClick();
+        _sfx.play(Sfx.tick);
       case WonEvent():
         HapticFeedback.mediumImpact();
         _sfx.play(Sfx.fanfare);

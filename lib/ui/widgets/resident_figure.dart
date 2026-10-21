@@ -5,18 +5,27 @@ import '../painters/floor_shape_painter.dart';
 import '../painters/resident_painter.dart';
 import '../theme.dart';
 
-/// A resident drawn at [height] logical pixels (width is half the height).
+/// A resident drawn at [height] logical pixels. Width is half the height,
+/// plus room for a vehicle or [cargo].
 class ResidentFigure extends StatelessWidget {
-  const ResidentFigure({super.key, required this.type, this.height = 52});
+  const ResidentFigure({super.key, required this.type, this.cargo = Cargo.none, this.height = 52, this.dimmed = false});
+
+  /// Draws [r] with their cargo.
+  ResidentFigure.of(Resident r, {Key? key, double height = 52, bool dimmed = false})
+      : this(key: key, type: r.type, cargo: r.cargo, height: height, dimmed: dimmed);
 
   final ResidentType type;
+  final Cargo cargo;
   final double height;
+
+  /// Power cut: draw a generic shadow instead of the resident.
+  final bool dimmed;
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: height / 2,
+        width: height / 120 * ResidentLook.designWidth(type, cargo, dimmed: dimmed),
         height: height,
-        child: CustomPaint(painter: ResidentPainter(type)),
+        child: CustomPaint(painter: ResidentPainter(type, cargo: cargo, dimmed: dimmed)),
       );
 }
 

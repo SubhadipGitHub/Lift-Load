@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../../game/engine.dart';
+import '../../game/scenario.dart';
+import '../game_controller.dart';
 import '../painters/floor_shape_painter.dart';
+import '../painters/lobby_painter.dart';
 import '../theme.dart';
 import 'load_gauge.dart';
 import 'resident_figure.dart';
@@ -29,14 +32,15 @@ class LiftShaft extends StatelessWidget {
   Widget build(BuildContext context) {
     final crashed = game.phase == Phase.falling || (game.phase == Phase.failed && game.failKind == FailKind.crash);
     final selected = game.selected;
-    final hint = game.phase == Phase.playing && selected != null && selected.floor == game.liftFloor;
-    final upcoming = game.upcomingFloors(3);
+    final hint = game.phase == Phase.playing && selected != null && game.goesTo(selected.floor);
+    final upcoming = game.upcomingLifts(3);
+    final venue = VenueStyle.of(game.level.venue);
 
     return Container(
       height: 262,
       margin: const EdgeInsets.symmetric(horizontal: 12),
       clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(22)),
+      decoration: BoxDecoration(color: venue.wall, borderRadius: BorderRadius.circular(22)),
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,9 +54,12 @@ class LiftShaft extends StatelessWidget {
                   const Text('NEXT', style: LL.label),
                   const SizedBox(height: 7),
                   for (var i = 0; i < upcoming.length; i++) ...[
-                    Opacity(opacity: i == 0 ? 1 : 0.55, child: _NextChip(floor: upcoming[i])),
+                    Opacity(opacity: i == 0 ? 1 : 0.55, child: _NextChip(stop: upcoming[i])),
                     const SizedBox(height: 7),
                   ],
+                  const Spacer(),
+                  SizedBox(width: 34, height: 48, child: CustomPaint(painter: VenuePropPainter(venue))),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -109,23 +116,44 @@ class LiftShaft extends StatelessWidget {
   }
 }
 
+/// One upcoming lift: its floor colour and label, and a badge for its kind.
+/// An express shows both floors.
 class _NextChip extends StatelessWidget {
-  const _NextChip({required this.floor});
-  final Floor floor;
+  const _NextChip({required this.stop});
+  final LiftStop stop;
 
   @override
   Widget build(BuildContext context) {
-    final s = FloorStyle.of(floor);
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(color: s.color, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox.square(dimension: 13, child: CustomPaint(painter: FloorShapePainter(s.shape, Colors.white))),
-          Text(floor.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: LL.ink)),
-        ],
+    final s = FloorStyle.of(stop.floors.first);
+    final kind = LiftKindStyle.of(stop.kind);
+    final express = stop.floors.length > 1;
+    return Semantics(
+      label: '${stop.kind == LiftKind.normal ? 'Lift' : '${stop.kind.name} lift'} to ${GameController.floorList(stop.floors)}',
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          gradient: express
+              ? LinearGradient(colors: [s.color, s.color, FloorStyle.of(stop.floors.last).color, FloorStyle.of(stop.floors.last).color], stops: const [0, 0.5, 0.5, 1])
+              : null,
+          color: express ? null : s.color,
+          borderRadius: BorderRadius.circular(12),
+          border: kind.icon == null ? null : Border.all(color: kind.cabin, width: 3),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (kind.icon != null)
+              Icon(kind.icon, size: 13, color: LL.ink)
+            else
+              SizedBox.square(dimension: 13, child: CustomPaint(painter: FloorShapePainter(s.shape, Colors.white))),
+            Text(
+              stop.floors.map((f) => f.label).join(' '),
+              maxLines: 1,
+              style: TextStyle(fontSize: express ? 9 : 11, fontWeight: FontWeight.w800, color: LL.ink),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -141,11 +169,12 @@ class _Cabin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = FloorStyle.of(game.liftFloor);
+    final kind = LiftKindStyle.of(game.liftKind);
     final riders = game.riders;
     return Semantics(
       button: true,
-      label: 'Lift to ${game.liftFloor.label} with ${riders.length} riders. Tap to board the selected resident.',
+      label: '${game.liftKind == LiftKind.normal ? 'Lift' : kind.sign} to ${GameController.floorList(game.liftFloors)} '
+          'with ${riders.length} riders. Tap to board the selected resident.',
       child: GestureDetector(
         onTap: game.phase == Phase.playing ? onTap : null,
         child: AnimatedContainer(
@@ -154,22 +183,25 @@ class _Cabin extends StatelessWidget {
           height: 214,
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: crashed ? LL.alarm : LL.brass,
+            color: crashed ? LL.alarm : kind.cabin,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: hint ? [BoxShadow(color: LL.brass.withValues(alpha: 0.45), spreadRadius: 4)] : null,
+            boxShadow: hint ? [BoxShadow(color: kind.cabin.withValues(alpha: 0.45), spreadRadius: 4)] : null,
           ),
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(6, 2, 10, 2),
-                decoration: BoxDecoration(color: style.color, borderRadius: BorderRadius.circular(999)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox.square(dimension: 12, child: CustomPaint(painter: FloorShapePainter(style.shape, Colors.white))),
-                    const SizedBox(width: 5),
-                    Text('Up to ${game.liftFloor.label}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: LL.ink)),
+                    if (kind.icon != null) ...[
+                      Icon(kind.icon, size: 16, color: LL.ink),
+                      const SizedBox(width: 4),
+                    ],
+                    for (var i = 0; i < game.liftFloors.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 4),
+                      _FloorPill(floor: game.liftFloors[i], prefix: game.liftFloors.length == 1 ? 'Up to ' : ''),
+                    ],
                   ],
                 ),
               ),
@@ -182,14 +214,14 @@ class _Cabin extends StatelessWidget {
                     child: Stack(
                       children: [
                         Positioned(left: 0, right: 0, bottom: 0, height: 14, child: Container(color: LL.steelFloor)),
-                        const Positioned(
+                        Positioned(
                           left: 0,
                           right: 0,
                           top: 8,
                           child: Text(
-                            'MAX 4 PERSONS',
+                            kind.sign,
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: Color(0xFF5B6270)),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: Color(0xFF5B6270)),
                           ),
                         ),
                         if (riders.isEmpty)
@@ -203,13 +235,15 @@ class _Cabin extends StatelessWidget {
                           left: 0,
                           right: 0,
                           bottom: 10,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              for (final r in riders)
-                                Align(widthFactor: 0.68, child: ResidentFigure(type: r.type, height: 80)),
-                            ],
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                for (final r in riders) Align(widthFactor: 0.68, child: ResidentFigure.of(r, height: 80)),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -220,6 +254,30 @@ class _Cabin extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FloorPill extends StatelessWidget {
+  const _FloorPill({required this.floor, required this.prefix});
+
+  final Floor floor;
+  final String prefix;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = FloorStyle.of(floor);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(6, 2, 10, 2),
+      decoration: BoxDecoration(color: style.color, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox.square(dimension: 12, child: CustomPaint(painter: FloorShapePainter(style.shape, Colors.white))),
+          const SizedBox(width: 5),
+          Text('$prefix${floor.label}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: LL.ink)),
+        ],
       ),
     );
   }
