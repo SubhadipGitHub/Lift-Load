@@ -71,6 +71,9 @@ Check current pricing before a full run.
 - **The liars hold.**
   - The gym regular looks lean and light, with broad shoulders and a narrow waist.
   - The puffer teen's legs and face are thin under a huge jacket.
+- **Skin tone matches the design.** Each prompt carries the tone and hex taken from `ResidentLook`
+  (`lib/ui/painters/resident_painter.dart`), because left unsaid Gemini defaults to pale. Check the face against the
+  hex on the card; the gym regular is the deepest brown and the easiest to get wrong.
 - **Every resident of a type looks the same.** No variation, or players cannot learn the cast.
 - **Vehicles and cargo read instantly:**
   - the wheelchair, the pram and the bellhop's trolley;

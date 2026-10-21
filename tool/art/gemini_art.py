@@ -54,7 +54,11 @@ def full_prompt(pack: dict, a: dict) -> str:
     if a["kind"] == "resident_blink":
         return a["prompt"]
     style = pack["style"]["resident" if a["kind"] == "resident" else a["kind"]]
-    parts = [a["prompt"], style]
+    # Skin tones come from ResidentLook (lib/ui/painters/resident_painter.dart), the owner's cast. Left unsaid,
+    # Gemini picks its own: the first gym regular came back pale where the design is the deepest brown.
+    skin = a.get("skin")
+    body = a["prompt"] + (f" Skin tone: {skin['name']}, close to {skin['hex']}." if skin else "")
+    parts = [body, style]
     if a.get("reference"):
         parts.append(REFERENCE_NOTE)
     return "\n\n".join(parts)
