@@ -42,9 +42,11 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 | Path | What lives there |
 | --- | --- |
 | `lib/game/` | Pure-Dart rules: `cast.dart` (types, cargo, hidden kg), `venue.dart` (five buildings, crowd mix), `scenario.dart` (lift kinds, lobby scenarios), `debuts.dart` (what is new on each level), `formulas.dart` (every tuning number), `engine.dart` (state machine + events), `solver.dart` (greedy bot that plays through the engine), `generator.dart` (seeded levels) |
-| `lib/services/` | `ad_policy.dart` (interstitial gating, rewarded caps), `ads_service.dart`, `analytics_service.dart`, `profile.dart`, `feedback_service.dart` |
-| `lib/ui/` | `game_controller.dart` (only bridge from widgets to engine), `theme.dart` (palette, `VenueStyle`, `LiftKindStyle`), `painters/` (parametric resident bodies, vehicles, cargo, gauge, lobby floors), `widgets/`, `screens/` |
+| `lib/services/` | `ad_policy.dart` (interstitial gating, rewarded caps), `ads_service.dart`, `analytics_service.dart`, `profile.dart` (incl. sound/music/haptics switches), `feedback_service.dart` (event → haptic + `Sfx` cue), `audio_service.dart` (audioplayers: cue pool, venue music loop) |
+| `lib/ui/` | `game_controller.dart` (only bridge from widgets to engine), `theme.dart` (palette, `VenueStyle`, `LiftKindStyle`), `layout.dart` (`Metrics`: every size from the 390×844 design, four form factors), `motion.dart` (one idle clock, sway/blink, shake; all still under reduce-motion), `painters/` (parametric resident bodies, vehicles, cargo, gauge, cabin, shaft walls, sky, lobby floors), `widgets/` (incl. `effects.dart` particle bursts, `pressable.dart`, `settings_sheet.dart`), `screens/` |
 | `tool/simulate.dart` | Prints the level table: par, trips, bench, floors per level |
+| `tool/audio/synth.py`, `tool/icons/make_icons.py` | Regenerate `assets/sfx`, `assets/music` (numpy + ffmpeg) and the `web/` icons (PIL); both deterministic |
+| `assets/`, `web/` | Bundled fonts (OFL), synthesized audio, the web shell (icons, manifest, boot splash) |
 | `docs/` | `PRD.md`, `analytics.md`, `concept/` notes |
 | `.claude/` | `agents/`, `skills/`, `memory/` |
 
@@ -69,14 +71,16 @@ flutter pub get
 flutter analyze --no-fatal-infos
 flutter test                      # engine, generator, ad policy, widget, architecture tests
 dart run tool/simulate.dart 1 100 # level table
+python3 tool/audio/synth.py       # regenerate sound effects and music
+python3 tool/icons/make_icons.py  # regenerate web icons
 flutter run -d chrome             # play in the browser (ads stubbed)
 flutter run -d <android-device>
 ```
 
-First-time setup on a machine with the Flutter SDK (platform folders are not committed yet):
+First-time setup on a machine with the Flutter SDK (`web/` is committed; `android/` is generated until M3):
 
 ```bash
-flutter create --platforms=android,web --project-name lift_load --org com.liftload .
+flutter create --platforms=android --project-name lift_load --org com.liftload .
 rm test/widget_test.dart   # flutter create adds a counter-app test we do not want
 ```
 

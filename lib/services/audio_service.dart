@@ -28,21 +28,24 @@ class AudioService implements GameAudio {
   bool _musicOn = true;
   Timer? _fadeTimer;
 
+  /// Loads every cue at once (serial loading takes seconds per cue on the
+  /// web). Each cue becomes playable as soon as its own voices are ready, and
+  /// one failed cue does not stop the others.
   Future<void> init() async {
+    _guard(_music.setReleaseMode(ReleaseMode.loop));
+    await Future.wait([for (final cue in Sfx.values) _load(cue)]);
+  }
+
+  Future<void> _load(Sfx cue) async {
     try {
-      await _music.setReleaseMode(ReleaseMode.loop);
-      for (final cue in Sfx.values) {
-        final voices = <AudioPlayer>[];
-        for (var i = 0; i < voicesPerCue; i++) {
-          final p = AudioPlayer(playerId: 'sfx_${cue.file}_$i');
-          await p.setReleaseMode(ReleaseMode.stop);
-          await p.setSource(AssetSource('sfx/${cue.file}.mp3'));
-          voices.add(p);
-        }
-        _voices[cue] = voices;
-      }
+      final voices = [for (var i = 0; i < voicesPerCue; i++) AudioPlayer(playerId: 'sfx_${cue.file}_$i')];
+      await Future.wait([
+        for (final p in voices)
+          p.setReleaseMode(ReleaseMode.stop).then((_) => p.setSource(AssetSource('sfx/${cue.file}.mp3'))),
+      ]);
+      _voices[cue] = voices;
     } on Object catch (e) {
-      debugPrint('Audio init failed: $e');
+      debugPrint('Audio: ${cue.file} failed to load: $e');
     }
   }
 
