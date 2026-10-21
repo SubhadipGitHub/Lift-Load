@@ -136,7 +136,7 @@
       "design_height": 94,
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a kindly elderly Indian grandfather, slightly stooped, thin and wiry with a small tummy. Wearing cream long kurta and white pyjama trousers, bald with white side hair, leaning on a wooden walking stick.",
+      "prompt": "a kindly elderly Indian grandfather, slightly stooped, thin and wiry with slim arms and legs, a flat stomach and no belly at all. Wearing cream long kurta and white pyjama trousers, bald with white side hair, leaning on a wooden walking stick.",
       "weight_read": "light-medium; thin despite his age",
       "skin": {
         "name": "warm medium tan",
