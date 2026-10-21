@@ -32,3 +32,7 @@ Thumbs.db
 
 # Gate A tester result files (docs/gate-a.md); free-text answers stay out of git
 results/
+
+# Gemini art pack working files (tool/art/gemini_art.py); chosen files move into assets/ in an integration PR
+/art/
+__pycache__/
