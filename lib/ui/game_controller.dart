@@ -275,6 +275,7 @@ class GameController extends ChangeNotifier {
             'type': resident.type.name,
             'cargo': resident.cargo.name,
             'lift_kind': game.liftKind.name,
+            if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
             'riders': game.riders.length,
           });
         case SentEvent(:final floors, :final kind, :final rating, :final coins, :final riders):
@@ -333,6 +334,7 @@ class GameController extends ChangeNotifier {
           analytics.log('level_fail', {
             'level': game.level.number,
             'venue': game.level.venue.name,
+            if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
             'kind': kind.name,
             'trips_used': game.tripsUsed,
           });

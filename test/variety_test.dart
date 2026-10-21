@@ -196,7 +196,7 @@ void main() {
       expect(g.liftFloors, [t]);
     });
 
-    test('a match behind the cones does not prevent a jam', () {
+    test('a jam that only the coned-off lane could clear opens the lane instead', () {
       final g = LiftGame(hand([
         [(c, ResidentType.kid, none)],
         [(t, ResidentType.kid, none), (t, ResidentType.kid, none), (c, ResidentType.kid, none)],
@@ -204,7 +204,19 @@ void main() {
       expect(g.liftFloors, [c]);
       g.tapQueue(1);
       g.tapBench(0);
-      // Bench full, open lane front is teal, the coral front is coned off.
+      // Bench full, open lane front is teal, the coral front was coned off.
+      expect(g.phase, Phase.playing);
+      expect(g.isLaneLocked(0), isFalse);
+      expect(g.drainEvents().whereType<LaneOpenedEvent>(), hasLength(1));
+    });
+
+    test('a jam with nothing behind the cones either still fails', () {
+      final g = LiftGame(hand([
+        [(t, ResidentType.kid, none)],
+        [(t, ResidentType.kid, none), (t, ResidentType.kid, none), (c, ResidentType.kid, none)],
+      ], floors: const [c, t], bench: 1, lockedLane: 0, lockedUntilTrip: 3));
+      g.tapQueue(1);
+      g.tapBench(0);
       expect(g.failKind, FailKind.jam);
     });
   });

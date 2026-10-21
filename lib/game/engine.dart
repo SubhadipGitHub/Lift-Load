@@ -531,15 +531,23 @@ class LiftGame {
   }
 
   /// Jammed: the lift is empty, every seat is taken, and nobody who can be
-  /// selected is going to one of this lift's floors.
+  /// selected is going to one of this lift's floors. While a lane is coned
+  /// off, the maintenance ends early instead: a jam the player could only
+  /// see through the cones would be unfair.
   void _checkJam() {
-    if (phase != Phase.playing || _riders.isNotEmpty) return;
-    final benchFull = !_bench.contains(null);
-    var frontMatch = false;
-    for (var i = 0; i < _queues.length; i++) {
-      if (i != _lockedLane && _queues[i].isNotEmpty && goesTo(_queues[i].first.floor)) frontMatch = true;
+    if (phase != Phase.playing || _riders.isNotEmpty || _bench.contains(null)) return;
+    if (_canBoardNow()) return;
+    if (_lockedLane != null) {
+      _openLane();
+      if (_canBoardNow()) return;
     }
-    final benchMatch = _bench.any((r) => r != null && goesTo(r.floor));
-    if (benchFull && !frontMatch && !benchMatch) _fail(FailKind.jam);
+    _fail(FailKind.jam);
+  }
+
+  bool _canBoardNow() {
+    for (var i = 0; i < _queues.length; i++) {
+      if (i != _lockedLane && _queues[i].isNotEmpty && goesTo(_queues[i].first.floor)) return true;
+    }
+    return _bench.any((r) => r != null && goesTo(r.floor));
   }
 }

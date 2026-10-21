@@ -88,7 +88,8 @@ learning curve (more people, cargo) and adds planning against a visible schedule
   coned off for the first 3 trips. Power cut: residents at depth 2 or deeper are shadows (floor tags still shown).
   Rush hour: two waves of 4 residents join after trips 3 and 6.
 - **No soft-locks.** Lifts are routed only to residents the player can reach. If only coned-off or not-yet-arrived
-  residents remain, the lane opens early or the wave arrives at once.
+  residents remain, the lane opens early or the wave arrives at once. A jam that only the coned-off lane could
+  clear also opens the lane early instead of failing.
 - **Solver.** The greedy bot now plays through the engine itself, so every rule above is proven solvable for all 100
   levels (`test/generator_test.dart`).
 
