@@ -99,9 +99,53 @@ class GameController extends ChangeNotifier {
     startLevel();
   }
 
+  /// The player has seated someone, boarded someone or sent a lift, so
+  /// leaving now gives up this attempt. Selecting alone does not count.
+  bool get levelInProgress =>
+      hasGame &&
+      (game.phase == Phase.playing || game.phase == Phase.departing || game.phase == Phase.falling) &&
+      (game.tripsUsed > 0 || game.riders.isNotEmpty || game.benchUsed > 0);
+
+  /// Restart is free before the first move. After it, restarting gives up the
+  /// attempt like a fail (one life) and, like Retry, needs a life left over
+  /// to start again.
+  bool get canRestart {
+    if (game.phase != Phase.playing) return false;
+    if (!levelInProgress) return true;
+    profile.regenLives(now);
+    return profile.lives > 1;
+  }
+
+  void restart() {
+    if (!canRestart) {
+      message = 'Restarting would use your last life. Finish this one first';
+      notifyListeners();
+      return;
+    }
+    if (levelInProgress) _abandon('restart');
+    startLevel();
+  }
+
   void quitToHome() {
-    if (hasGame && game.phase == Phase.failed) _spendLifeForFail();
+    if (hasGame && game.phase == Phase.failed) {
+      _spendLifeForFail();
+    } else if (levelInProgress) {
+      _abandon('quit');
+    }
     notifyListeners();
+  }
+
+  /// Leaving a level in progress costs one life, the same as failing it, so
+  /// a bad start cannot be dodged for free.
+  void _abandon(String via) {
+    analytics.log('level_abandon', {
+      'level': game.level.number,
+      'via': via,
+      'trips_used': game.tripsUsed,
+    });
+    profile.spendLife(now);
+    profile.winStreak = 0;
+    _save();
   }
 
   // ── Player input ──
@@ -347,12 +391,13 @@ class GameController extends ChangeNotifier {
             'kind': kind.name,
             'trips_used': game.tripsUsed,
           });
-        case ContinuedEvent(:final kind):
+        case ContinuedEvent(:final kind, :final seatsAdded):
           _lifeSpentForThisFail = false;
+          final seats = seatsLabel(seatsAdded);
           message = switch (kind) {
             FailKind.crash => 'Lift repaired. They are back where they stood',
-            FailKind.outOfTrips => '+${Formulas.adTripsBonus} trips',
-            FailKind.jam => '+1 bench seat',
+            FailKind.outOfTrips => '+${Formulas.adTripsBonus} trips${seats.isEmpty ? '' : ' and $seats'}',
+            FailKind.jam => seats,
           };
       }
     }
@@ -364,6 +409,9 @@ class GameController extends ChangeNotifier {
   /// Accessibility label for a resident: type, cargo and floor, never weight.
   static String describe(Resident r) =>
       '${r.type.displayName}${r.cargo == Cargo.none ? '' : ' with a ${r.cargo.displayName}'} going to ${r.floor.label}';
+
+  /// "+1 bench seat", "+2 bench seats", or empty for none.
+  static String seatsLabel(int n) => n <= 0 ? '' : '+$n bench ${n == 1 ? 'seat' : 'seats'}';
 
   /// "2F" or "2F and 5F".
   static String floorList(List<Floor> floors) => floors.map((f) => f.label).join(' and ');

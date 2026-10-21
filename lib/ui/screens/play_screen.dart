@@ -71,7 +71,8 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     _tilt = const AlwaysStoppedAnimation(0);
   }
 
-  Future<void> _run({required double from, required double to, double tiltTo = 0, required int ms, required Curve curve}) {
+  Future<void> _run(
+      {required double from, required double to, double tiltTo = 0, required int ms, required Curve curve}) {
     final curved = CurvedAnimation(parent: _anim, curve: curve);
     _dy = Tween(begin: from, end: to).animate(curved);
     _tilt = Tween(begin: 0.0, end: tiltTo).animate(curved);
@@ -81,64 +82,87 @@ class _PlayScreenState extends State<PlayScreen> with SingleTickerProviderStateM
     return _anim.forward().orCancel.catchError((Object _) {});
   }
 
+  /// Back from the HUD or the system: confirm first when it costs a life.
+  Future<void> _leave() async {
+    if (c.levelInProgress) {
+      final leave = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Leave this level?'),
+          content: const Text('You have started it, so leaving costs 1 life.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Stay')),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Leave · 1 life')),
+          ],
+        ),
+      );
+      if (leave != true || !mounted) return;
+    }
+    c.quitToHome();
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = c.game;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    _Hud(c: c, onBack: () {
-                      c.quitToHome();
-                      Navigator.of(context).pop();
-                    }),
-                    AnimatedBuilder(
-                      animation: _anim,
-                      builder: (context, _) => LiftShaft(
-                        game: g,
-                        cabinDy: _dy.value,
-                        cabinTilt: _tilt.value,
-                        onTapLift: c.tapLift,
-                        onSend: c.send,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      _Hud(c: c, onBack: _leave),
+                      AnimatedBuilder(
+                        animation: _anim,
+                        builder: (context, _) => LiftShaft(
+                          game: g,
+                          cabinDy: _dy.value,
+                          cabinTilt: _tilt.value,
+                          onTapLift: c.tapLift,
+                          onSend: c.send,
+                        ),
                       ),
-                    ),
-                    SizedBox(
-                      height: 32,
-                      child: Center(
-                        child: Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            c.message,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: LL.brass),
+                      SizedBox(
+                        height: 32,
+                        child: Center(
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              c.message,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: LL.brass),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    BenchRow(game: g, onTapSeat: c.tapBench),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: QueueLanes(game: g, onTapLane: c.tapQueue),
+                      BenchRow(game: g, onTapSeat: c.tapBench),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: QueueLanes(game: g, onTapLane: c.tapQueue),
+                        ),
                       ),
-                    ),
-                    _Toolbar(c: c),
-                  ],
-                ),
-                if (g.phase == Phase.failed)
-                  FailSheet(
-                    c: c,
-                    onHome: () {
-                      c.quitToHome();
-                      Navigator.of(context).pop();
-                    },
+                      _Toolbar(c: c),
+                    ],
                   ),
-                if (g.phase == Phase.won) WinSheet(c: c),
-              ],
+                  if (g.phase == Phase.failed)
+                    FailSheet(
+                      c: c,
+                      onHome: () {
+                        c.quitToHome();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  if (g.phase == Phase.won) WinSheet(c: c),
+                ],
+              ),
             ),
           ),
         ),
@@ -222,7 +246,8 @@ class _Toolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final playing = c.game.phase == Phase.playing;
-    Widget tool({required IconData icon, required String label, required VoidCallback? onTap, String? tooltip}) => Expanded(
+    Widget tool({required IconData icon, required String label, required VoidCallback? onTap, String? tooltip}) =>
+        Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Tooltip(
@@ -230,7 +255,10 @@ class _Toolbar extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onTap,
                 icon: Icon(icon, size: 20),
-                label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                label: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                 style: FilledButton.styleFrom(
                   backgroundColor: LL.facade,
                   foregroundColor: LL.cream,
@@ -254,7 +282,12 @@ class _Toolbar extends StatelessWidget {
             tooltip: 'Preview where the selected resident would put the needle',
             onTap: playing ? c.useScale : null,
           ),
-          tool(icon: Icons.restart_alt_rounded, label: 'Restart', onTap: playing ? c.startLevel : null),
+          tool(
+            icon: Icons.restart_alt_rounded,
+            label: c.levelInProgress ? 'Restart · 1 life' : 'Restart',
+            tooltip: c.levelInProgress ? 'Start over. You have made moves, so this costs 1 life' : 'Start over',
+            onTap: playing && c.canRestart ? c.restart : null,
+          ),
         ],
       ),
     );

@@ -119,6 +119,7 @@ class FailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final kind = c.game.failKind!;
+    final seats = GameController.seatsLabel(c.game.continueSeats);
     final (title, body, adLabel) = switch (kind) {
       FailKind.crash => (
           'Overloaded!',
@@ -128,12 +129,12 @@ class FailSheet extends StatelessWidget {
       FailKind.outOfTrips => (
           'Out of trips',
           'Too many half-empty lifts. Residents are still waiting in the lobby.',
-          'Watch ad · +${Formulas.adTripsBonus} trips',
+          'Watch ad · +${Formulas.adTripsBonus} trips${seats.isEmpty ? '' : ' and $seats'}',
         ),
       FailKind.jam => (
           'Lobby jammed!',
           'The bench is full and nobody waiting can take this lift.',
-          'Watch ad · +1 bench seat',
+          'Watch ad · $seats',
         ),
     };
     return _Overlay(

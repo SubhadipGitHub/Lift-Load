@@ -101,15 +101,16 @@ pairs who must ride together; residents in a hurry.
 | Placement | Format | Reward | Cap |
 | --- | --- | --- | --- |
 | Crash fail | Rewarded | Repair: last rider returns to where they stood | 1 per attempt, then 300 coins |
-| Out of trips | Rewarded | +2 trips | 1 per attempt, then 300 coins |
-| Lobby jam | Rewarded | +1 bench seat | 1 per attempt, then 300 coins |
+| Out of trips | Rewarded | +2 trips, plus the bench seats the next lift needs if it would arrive jammed | 1 per attempt, then 300 coins |
+| Lobby jam | Rewarded | Bench seats enough to dig out the nearest resident for this lift (usually 1) | 1 per attempt, then 300 coins |
 | Win | Rewarded | Level coins ×3 | 1 per level |
 | Before a Hard level | Rewarded | 2 free Scale uses | 1 per Hard level |
 | 0 lives | Rewarded | +1 life | 3 per day |
 | Daily chest | Rewarded | Chest ×2 | 1 per day |
 | After a win, from L15 | Interstitial | none | ≥ 3 levels and ≥ 180 s apart, max 4 per session, never after a fail, never for payers |
 
-Total rewarded cap: 12 per day. IAP (test prices): Remove Ads ₹299; Starter Pack ₹99 one-time; Scale bundle ₹199
+Lives: a fail costs one life when the player retries or leaves. Restarting or leaving a level after the first move
+(a seat, a boarding or a send) costs one too, after a confirm; before it, both are free. Total rewarded cap: 12 per day. IAP (test prices): Remove Ads ₹299; Starter Pack ₹99 one-time; Scale bundle ₹199
 for 15. Scale costs 120 coins in the shop.
 
 ## Constraints and stack

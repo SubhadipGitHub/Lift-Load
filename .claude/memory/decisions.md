@@ -2,6 +2,18 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-21 · continues always work
+
+- **Restarting or leaving a started level costs a life.** It was a free escape from a bad start, which bypassed the
+  lives sink and the extra-life ad. Free before the first move; leaving asks first; restart needs a life left over.
+- **Normal cabin sign reads "MIND THE LOAD", not "MAX 4 PERSONS".** There is no rider cap; the old sign taught
+  players to under-fill.
+
+- **Jam continue adds as many seats as the nearest match needs, not a flat 1.** One seat could re-jam at once with
+  the ad already spent. The count is shown on the button before the player pays.
+- **+2 trips also adds those seats when the handed-over lift would arrive jammed.** Otherwise the ad led straight
+  into a second fail.
+
 ## 2026-10-21 · v1.2 variety pass
 
 - **Variety in two waves: content in 1–60, rules in World 2 (61–100).** Gate A must still measure weight guessing;
