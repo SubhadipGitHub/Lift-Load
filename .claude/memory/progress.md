@@ -3,6 +3,26 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-21 · v1.4 Gate A kit (branch ccr-445849fc-sjvxbg)
+
+**Done**
+- PRD v1.4 signed off: tester mode in the Pages build (`--dart-define=TESTER=true`), cap at L60, crash-fairness tap,
+  heavy-types question after L15, on-device tester log with Send results (download or code), report tool.
+- `attempt` on level events and `continues` on wins, in every build; profile stores attempts per level.
+- `tool/gate_a_report.dart` prints the four gate metrics, per-level detail, overloads, mean fill and the free-text
+  answers. `docs/gate-a.md` covers the invite, the observation script and the decision rules.
+- Checked end to end in Chromium: tester build, Send results download, report on the file. 138 tests green.
+- Also merged earlier today: PR #4 (polish review fixes: Android audio focus, music state, stale cabin sequences).
+
+**Open**
+- Who the 10–15 testers are (PRD open question) and when invites go out.
+- Pacing from L32 on (72 residents, 24–33 trips) means most testers stop around L15–25; Hard data mostly L10/20/25.
+
+**Next**
+1. Merge the Gate A kit PR so Pages carries the tester build.
+2. Owner plays L1–5 on a phone and sends a results file as a dry run.
+3. Send invites; collect files into an uncommitted `results/`; run the report; record the decision.
+
 ## 2026-10-21 · v1.3 polish pass (branch ccr-445849fc-sjvxbg, PR #3)
 
 **Done**

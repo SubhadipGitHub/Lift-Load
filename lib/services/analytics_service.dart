@@ -16,3 +16,18 @@ class DebugAnalytics implements AnalyticsService {
     if (kDebugMode) debugPrint('[analytics] $event $params');
   }
 }
+
+/// Sends every event to each sink, e.g. the debug console and the Gate A
+/// tester log.
+class FanOutAnalytics implements AnalyticsService {
+  FanOutAnalytics(this.sinks);
+
+  final List<AnalyticsService> sinks;
+
+  @override
+  void log(String event, [Map<String, Object> params = const {}]) {
+    for (final s in sinks) {
+      s.log(event, params);
+    }
+  }
+}

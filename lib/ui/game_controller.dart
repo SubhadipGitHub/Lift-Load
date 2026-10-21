@@ -12,6 +12,7 @@ import '../services/ads_service.dart';
 import '../services/analytics_service.dart';
 import '../services/feedback_service.dart';
 import '../services/profile.dart';
+import '../services/tester_log.dart';
 
 /// Glue between the pure engine, the player's profile and the services.
 /// Widgets read state from here and call these methods; nothing in the UI
@@ -27,6 +28,8 @@ class GameController extends ChangeNotifier {
     InterstitialPolicy? interstitials,
     DateTime Function()? clock,
     Level Function(int number)? levelFor,
+    this.tester = const TesterConfig(),
+    this.testerLog,
   })  : audio = audio ?? const SilentAudio(),
         feedback = feedback ?? FeedbackService(sfx: audio),
         interstitials = interstitials ?? InterstitialPolicy(clock: clock),
@@ -44,6 +47,10 @@ class GameController extends ChangeNotifier {
   final InterstitialPolicy interstitials;
   final DateTime Function() _clock;
   final Level Function(int) _levelFor;
+
+  /// Gate A tester build: level cap, in-game questions, results export.
+  final TesterConfig tester;
+  final TesterLog? testerLog;
 
   LiftGame? _game;
   LiftGame get game => _game!;
@@ -86,6 +93,12 @@ class GameController extends ChangeNotifier {
   String _lobbyNews = '';
   bool _lifeSpentForThisFail = false;
 
+  /// This level's attempt number (1 on the first try) and how many
+  /// continues it has used, for analytics.
+  int _attempt = 0;
+  int _continues = 0;
+  bool _crashRated = false;
+
   DateTime get now => _clock();
 
   // ── Level lifecycle ──
@@ -113,6 +126,7 @@ class GameController extends ChangeNotifier {
   }
 
   void startLevel() {
+    if (testComplete) return;
     _motions.clear();
     _pendingRewardCoins = 0;
     refused = null;
@@ -122,6 +136,11 @@ class GameController extends ChangeNotifier {
     _lobbyNews = '';
     tripleClaimed = false;
     _lifeSpentForThisFail = false;
+    final number = profile.level;
+    _attempt = profile.attempts[number] = (profile.attempts[number] ?? 0) + 1;
+    _continues = 0;
+    _crashRated = false;
+    _save();
     message = debutTip(game.level.number) ??
         scenarioTip(game.level.scenario) ??
         'Tap a resident, then the lift or a bench seat';
@@ -132,6 +151,7 @@ class GameController extends ChangeNotifier {
       'trips': game.tripsTotal,
       'venue': game.level.venue.name,
       if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
+      'attempt': _attempt,
     });
     notifyListeners();
   }
@@ -203,10 +223,44 @@ class GameController extends ChangeNotifier {
       'level': game.level.number,
       'via': via,
       'trips_used': game.tripsUsed,
+      'attempt': _attempt,
     });
     profile.spendLife(now);
     profile.winStreak = 0;
     _save();
+  }
+
+  // ── Gate A tester build ──
+
+  /// The tester has cleared every level Gate A measures.
+  bool get testComplete => tester.enabled && profile.level > TesterConfig.lastLevel;
+
+  /// One optional tap on the crash sheet; asked on the spot, once per crash.
+  bool get askCrashFair =>
+      tester.enabled && hasGame && game.phase == Phase.failed && game.failKind == FailKind.crash && !_crashRated;
+
+  void rateCrash({required bool fair}) {
+    if (!askCrashFair) return;
+    _crashRated = true;
+    analytics.log('crash_fairness', {'level': game.level.number, 'attempt': _attempt, 'fair': fair});
+    notifyListeners();
+  }
+
+  /// The unprompted "which residents are heaviest?" question, once, on the
+  /// first win from level 15 on.
+  bool get askHeavyTypes =>
+      tester.enabled &&
+      testerLog != null &&
+      !testerLog!.heavyTypesAsked &&
+      hasGame &&
+      game.phase == Phase.won &&
+      game.level.number >= TesterConfig.heavyTypesAfterLevel;
+
+  void answerHeavyTypes(String? answer) {
+    if (!askHeavyTypes) return;
+    final text = answer?.trim() ?? '';
+    analytics.log('exit_heavy_types', {'level': game.level.number, 'answer': text, 'skipped': text.isEmpty});
+    notifyListeners();
   }
 
   // ── Player input ──
@@ -334,6 +388,7 @@ class GameController extends ChangeNotifier {
 
   /// From the win screen. May show an interstitial first, per the policy.
   Future<void> nextLevel() async {
+    if (testComplete) return;
     final won = game.level.number;
     if (interstitials.shouldShowAfterWin(levelJustWon: won, isPayer: profile.adsRemoved)) {
       adInFlight = true;
@@ -449,7 +504,12 @@ class GameController extends ChangeNotifier {
             'trips_total': game.tripsTotal,
             'perfects': perfects,
             'coins': coins,
+            'attempt': _attempt,
+            'continues': _continues,
           });
+          if (tester.enabled && game.level.number == TesterConfig.lastLevel) {
+            analytics.log('test_complete', {'level': game.level.number});
+          }
           _save();
         case FailedEvent(:final kind):
           message = switch (kind) {
@@ -463,9 +523,12 @@ class GameController extends ChangeNotifier {
             if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
             'kind': kind.name,
             'trips_used': game.tripsUsed,
+            'attempt': _attempt,
           });
         case ContinuedEvent(:final kind, :final seatsAdded):
           _lifeSpentForThisFail = false;
+          _continues++;
+          _crashRated = false;
           final seats = seatsLabel(seatsAdded);
           message = switch (kind) {
             FailKind.crash => 'Lift repaired. They are back where they stood',

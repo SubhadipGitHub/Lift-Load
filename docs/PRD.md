@@ -1,8 +1,8 @@
 # Lift Load MVP: PRD
 
-Version 1.3, 2026-10-21. Owner: Subhadip. Living copy of the claude.ai doc "Lift Load MVP — PRD", with the
+Version 1.4, 2026-10-21. Owner: Subhadip. Living copy of the claude.ai doc "Lift Load MVP — PRD", with the
 simulation-driven changes marked v1.1, the variety pass marked v1.2 (see "v1.2 Variety and depth") and the polish
-pass marked v1.3 (see "v1.3 Polish: layout, art, motion, sound").
+pass marked v1.3 (see "v1.3 Polish: layout, art, motion, sound") and the Gate A kit marked v1.4.
 
 ## Problem
 
@@ -118,6 +118,72 @@ rule changes.
 
 **Queued (not in v1.2):** a best-play solver for tighter Hard levels and stars per level; cabin spots (max riders);
 pairs who must ride together; residents in a hurry.
+
+## v1.4 Gate A kit (signed off 2026-10-21)
+
+**Problem.** Gate A needs four numbers from 10–15 testers, and the tester build at
+`subhadipgithub.github.io/Lift-Load` cannot produce any of them. Analytics only prints in debug builds, so the
+release web build discards every event. No event carries an attempt number, so first-attempt win rate cannot be
+derived. Nothing asks the two exit questions, and a tester who clears level 60 walks into World 2, which this gate
+must not measure.
+
+**Success criteria for the kit.** Each of the four prototype metrics in "Success criteria" comes out of one
+command over the testers' returned files, with no manual counting except grading the free-text "heavy types"
+answer. A tester can return their results in under a minute without an account. No personal data is collected.
+
+**Scope.**
+
+- **Tester mode.** It is on in the Pages build through `--dart-define=TESTER=true`, and off by default so the
+  Android build is untouched. It does the following:
+  - Caps play at level 60 with a "that's the test, thank you" screen.
+  - Gives each install a random tester code made of three words; no name or email.
+  - Shows a small "Tester build" chip on Home.
+- **Attempt and session tracking.** These are added to every build, since M3 Firebase needs them too:
+  - `level_start`, `level_win`, `level_fail` and `level_abandon` gain `attempt` (1 on the first try at that level),
+    and `level_win` gains `continues`.
+  - Sittings: every event the tester log keeps carries a timestamp, and the report splits sittings at 30 minutes
+    idle. (Built this way instead of a `session` param on every event: same result, nothing new in the event
+    contract.)
+- **On-device tester log.** A `TesterLog` analytics sink keeps every event locally, capped at about 5,000 events,
+  alongside the existing debug sink.
+- **In-game questions,** in tester mode only:
+  - After each crash, the fail sheet asks one optional tap: "Was that crash fair?" (Fair / Unfair), logged as
+    `crash_fairness`. Asking on the spot is more reliable than asking at the exit.
+  - After the level 15 win, a once-only free-text card asks "Which residents do you think are the heaviest?",
+    with no choices shown so the answer is unprompted. It is logged as `exit_heavy_types`.
+- **Return results.** A "Send results" button on Home, and on the end screen, downloads a JSON file and copies a
+  compact code for pasting into WhatsApp or email. It works offline.
+- **Report.** `dart run tool/gate_a_report.dart results/*.json` prints:
+  - The four gate metrics against their targets.
+  - First-attempt win rate per level, with Hard levels flagged.
+  - Overloads by type and cargo.
+  - Abandons and fails per level.
+  - The free-text answers, for grading.
+- **Tester brief.** `docs/gate-a.md` covers:
+  - The message to send testers: link, add to home screen, about 30 minutes, play in one sitting, then tap Send
+    results.
+  - An in-person observation script.
+  - The owner's run checklist.
+  - How each number maps to the go / rework call.
+
+**Constraints.**
+- Rules 1–10 are unchanged.
+- The log, the export and the report never contain or derive kg. Type and cargo names are fine, because players
+  see them.
+- There is no backend. Nothing leaves the device unless the tester sends the file.
+- Event names are added to `docs/analytics.md`.
+
+**Out of scope.**
+- Firebase stays in M3.
+- Retuning levels before the test. Measure first.
+- A weight-blind solver.
+
+**Known risk.**
+- L32–60 are 72 residents and 24–33 trips each, so most testers will stop around L15–25.
+- The Hard-level metric will therefore rest mostly on L10, L20 and L25. The levels cleared in one sitting and the
+  heavy-types question after L15 are unaffected.
+- If Hard first-attempt wins land far below 45%, the slack of one trip over a weight-aware solver's par is the
+  first suspect.
 
 ## Monetization
 

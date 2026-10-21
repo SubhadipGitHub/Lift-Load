@@ -2,6 +2,16 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-21 · v1.4 Gate A kit
+
+- **Results return on-device, no backend.** Testers download a file or copy a code; Firebase stays in M3. No
+  accounts, no personal data, works on the existing Pages link.
+- **Ask on the spot, not at the exit.** Crash fairness is a tap on each crash sheet; the heavy-types question comes
+  once after the level 15 win, free text, so the answer is unprompted.
+- **`attempt` and `continues` in every build.** First-attempt win rate needs them, and M3's Firebase will too.
+- **Sittings from timestamps, not a session param.** Same measure, no change to the event contract.
+- **No retune before the test.** Measure first; pacing from L32 on is a known risk, recorded in docs/gate-a.md.
+
 ## 2026-10-21 · v1.3 polish pass
 
 - **Polish pulled forward from M4 for the tester build.** Owner's call; Gate A testers judge feel as well as rules.

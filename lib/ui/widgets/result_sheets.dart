@@ -6,6 +6,7 @@ import '../../game/venue.dart';
 import '../game_controller.dart';
 import '../theme.dart';
 import 'pressable.dart';
+import 'tester_sheets.dart';
 
 /// Dimmed full-screen layer with a centred card.
 class _Overlay extends StatelessWidget {
@@ -174,6 +175,10 @@ class FailSheet extends StatelessWidget {
         const SizedBox(height: 12),
         Text(body, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, height: 1.4, color: LL.inkSoft)),
         const SizedBox(height: 14),
+        if (c.askCrashFair) ...[
+          CrashFairRow(c: c),
+          const SizedBox(height: 12),
+        ],
         if (c.canContinueWithAd) ...[
           RewardedButton(
               label: c.adInFlight ? 'Loading ad…' : adLabel, onPressed: c.adInFlight ? null : c.continueWithAd),
@@ -208,9 +213,10 @@ class FailSheet extends StatelessWidget {
 }
 
 class WinSheet extends StatelessWidget {
-  const WinSheet({super.key, required this.c});
+  const WinSheet({super.key, required this.c, required this.onHome});
 
   final GameController c;
+  final VoidCallback onHome;
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +267,25 @@ class WinSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ],
-        PrimaryButton(label: 'Continue', onPressed: c.adInFlight ? null : c.nextLevel),
+        if (c.askHeavyTypes) ...[
+          HeavyTypesCard(c: c),
+          const SizedBox(height: 12),
+        ],
+        if (c.testComplete) ...[
+          const Text(
+            "That's the whole test. Thank you for playing!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: LL.ink),
+          ),
+          const SizedBox(height: 10),
+          PrimaryButton(label: 'Send results', onPressed: () => showResultsSheet(context, c)),
+          const SizedBox(height: 6),
+          TextButton(
+            onPressed: onHome,
+            child: const Text('Back to the tower', style: TextStyle(color: LL.inkSoft, fontWeight: FontWeight.w700)),
+          ),
+        ] else
+          PrimaryButton(label: 'Continue', onPressed: c.adInFlight ? null : c.nextLevel),
       ],
     );
   }

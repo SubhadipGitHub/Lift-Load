@@ -29,3 +29,6 @@ Thumbs.db
 
 # Claude Code local-only files
 .claude/settings.local.json
+
+# Gate A tester result files (docs/gate-a.md); free-text answers stay out of git
+results/

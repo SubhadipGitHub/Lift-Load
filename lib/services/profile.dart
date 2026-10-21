@@ -19,7 +19,8 @@ class Profile {
     this.soundOn = true,
     this.musicOn = true,
     this.hapticsOn = true,
-  });
+    Map<int, int>? attempts,
+  }) : attempts = attempts ?? {};
 
   factory Profile.fresh(DateTime now) => Profile(
         level: 1,
@@ -47,6 +48,10 @@ class Profile {
   bool soundOn;
   bool musicOn;
   bool hapticsOn;
+
+  /// How many times each level has been started, so analytics can tell a
+  /// first attempt from a retry.
+  final Map<int, int> attempts;
 
   /// Apply life regeneration up to [now].
   void regenLives(DateTime now) {
@@ -88,6 +93,7 @@ class Profile {
         'soundOn': soundOn,
         'musicOn': musicOn,
         'hapticsOn': hapticsOn,
+        'attempts': {for (final e in attempts.entries) '${e.key}': e.value},
       };
 
   static Profile fromJson(Map<String, dynamic> j, DateTime now) {
@@ -110,6 +116,10 @@ class Profile {
         soundOn: j['soundOn'] as bool? ?? true,
         musicOn: j['musicOn'] as bool? ?? true,
         hapticsOn: j['hapticsOn'] as bool? ?? true,
+        attempts: {
+          for (final e in (j['attempts'] as Map<String, dynamic>? ?? const {}).entries)
+            int.parse(e.key): (e.value as num).toInt(),
+        },
       );
     } on Object {
       return Profile.fresh(now);
