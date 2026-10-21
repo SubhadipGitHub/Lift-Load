@@ -99,9 +99,53 @@ class GameController extends ChangeNotifier {
     startLevel();
   }
 
+  /// The player has seated someone, boarded someone or sent a lift, so
+  /// leaving now gives up this attempt. Selecting alone does not count.
+  bool get levelInProgress =>
+      hasGame &&
+      (game.phase == Phase.playing || game.phase == Phase.departing || game.phase == Phase.falling) &&
+      (game.tripsUsed > 0 || game.riders.isNotEmpty || game.benchUsed > 0);
+
+  /// Restart is free before the first move. After it, restarting gives up the
+  /// attempt like a fail (one life) and, like Retry, needs a life left over
+  /// to start again.
+  bool get canRestart {
+    if (game.phase != Phase.playing) return false;
+    if (!levelInProgress) return true;
+    profile.regenLives(now);
+    return profile.lives > 1;
+  }
+
+  void restart() {
+    if (!canRestart) {
+      message = 'Restarting would use your last life. Finish this one first';
+      notifyListeners();
+      return;
+    }
+    if (levelInProgress) _abandon('restart');
+    startLevel();
+  }
+
   void quitToHome() {
-    if (hasGame && game.phase == Phase.failed) _spendLifeForFail();
+    if (hasGame && game.phase == Phase.failed) {
+      _spendLifeForFail();
+    } else if (levelInProgress) {
+      _abandon('quit');
+    }
     notifyListeners();
+  }
+
+  /// Leaving a level in progress costs one life, the same as failing it, so
+  /// a bad start cannot be dodged for free.
+  void _abandon(String via) {
+    analytics.log('level_abandon', {
+      'level': game.level.number,
+      'via': via,
+      'trips_used': game.tripsUsed,
+    });
+    profile.spendLife(now);
+    profile.winStreak = 0;
+    _save();
   }
 
   // ── Player input ──

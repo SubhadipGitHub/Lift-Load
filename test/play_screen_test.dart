@@ -61,7 +61,7 @@ void main() {
     final c = controller(DebugAnalytics());
     await pumpPlay(tester, c);
     expect(find.text('Lv 12'), findsOneWidget);
-    expect(find.text('MAX 4 PERSONS'), findsOneWidget);
+    expect(find.text('MIND THE LOAD'), findsOneWidget);
     expect(find.text('Send'), findsOneWidget);
     // Hidden weights must never reach the screen.
     expect(find.textContaining('kg'), findsNothing);
@@ -128,6 +128,81 @@ void main() {
     await tester.pumpAndSettle();
     expect(c.message, contains('Rush hour: +2'));
     expect(c.message, contains('arriving'));
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
+  testWidgets('restart is free before the first move and costs a life after it', (tester) async {
+    final analytics = DebugAnalytics();
+    final c = controller(analytics);
+    await pumpPlay(tester, c);
+    expect(c.levelInProgress, isFalse);
+    c.tapQueue(0); // selecting alone is not a move
+    c.restart();
+    expect(c.profile.lives, Formulas.maxLives);
+
+    c.tapQueue(0);
+    c.tapLift();
+    await tester.pump();
+    expect(find.text('Restart · 1 life'), findsOneWidget);
+    c.restart();
+    await tester.pump();
+    expect(c.profile.lives, Formulas.maxLives - 1);
+    expect(c.game.riders, isEmpty);
+    expect(analytics.history.where((e) => e.$1 == 'level_abandon'), hasLength(1));
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
+  testWidgets('restart with one life left is refused once moves are made', (tester) async {
+    final c = controller(DebugAnalytics());
+    c.profile
+      ..lives = 1
+      ..livesStampedAt = c.now; // no regen before the check
+    await pumpPlay(tester, c);
+    c.tapQueue(0);
+    c.tapLift();
+    expect(c.canRestart, isFalse);
+    c.restart();
+    expect(c.profile.lives, 1);
+    expect(c.game.riders, hasLength(1));
+    expect(c.message, contains('last life'));
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
+  testWidgets('leaving a level in progress asks first and costs a life', (tester) async {
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final c = controller(DebugAnalytics());
+    c.startLevel();
+    await tester.pumpWidget(MaterialApp(theme: LL.theme(), home: const Scaffold(body: Text('home'))));
+    tester.state<NavigatorState>(find.byType(Navigator)).push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
+    await tester.pumpAndSettle();
+
+    c.tapQueue(0);
+    c.tapLift();
+    await tester.tap(find.byTooltip('Back to the tower'));
+    await tester.pumpAndSettle();
+    expect(find.text('Leave this level?'), findsOneWidget);
+    await tester.tap(find.text('Stay'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlayScreen), findsOneWidget);
+    expect(c.profile.lives, Formulas.maxLives);
+
+    await tester.tap(find.byTooltip('Back to the tower'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave · 1 life'));
+    await tester.pumpAndSettle();
+    expect(find.text('home'), findsOneWidget);
+    expect(c.profile.lives, Formulas.maxLives - 1);
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
+  testWidgets('leaving an untouched level is free and does not ask', (tester) async {
+    final c = controller(DebugAnalytics());
+    c.startLevel();
+    await tester.pumpWidget(MaterialApp(theme: LL.theme(), home: const Scaffold(body: Text('home'))));
+    tester.state<NavigatorState>(find.byType(Navigator)).push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Back to the tower'));
+    await tester.pumpAndSettle();
+    expect(find.text('home'), findsOneWidget);
+    expect(c.profile.lives, Formulas.maxLives);
   }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('board, send, and the next lift arrives', (tester) async {

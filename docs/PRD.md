@@ -109,7 +109,8 @@ pairs who must ride together; residents in a hurry.
 | Daily chest | Rewarded | Chest ×2 | 1 per day |
 | After a win, from L15 | Interstitial | none | ≥ 3 levels and ≥ 180 s apart, max 4 per session, never after a fail, never for payers |
 
-Total rewarded cap: 12 per day. IAP (test prices): Remove Ads ₹299; Starter Pack ₹99 one-time; Scale bundle ₹199
+Lives: a fail costs one life when the player retries or leaves. Restarting or leaving a level after the first move
+(a seat, a boarding or a send) costs one too, after a confirm; before it, both are free. Total rewarded cap: 12 per day. IAP (test prices): Remove Ads ₹299; Starter Pack ₹99 one-time; Scale bundle ₹199
 for 15. Scale costs 120 coins in the shop.
 
 ## Constraints and stack

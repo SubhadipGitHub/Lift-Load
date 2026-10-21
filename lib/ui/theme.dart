@@ -157,7 +157,7 @@ class LiftKindStyle {
   final IconData? icon;
 
   static LiftKindStyle of(LiftKind k) => switch (k) {
-        LiftKind.normal => const LiftKindStyle(LL.brass, 'MAX 4 PERSONS', null),
+        LiftKind.normal => const LiftKindStyle(LL.brass, 'MIND THE LOAD', null),
         LiftKind.old => const LiftKindStyle(Color(0xFFB9824F), 'OLD LIFT · GO EASY', Icons.build_rounded),
         LiftKind.service => const LiftKindStyle(Color(0xFF9AA6BA), 'SERVICE LIFT', Icons.local_shipping_rounded),
         LiftKind.express => const LiftKindStyle(LL.mint, 'EXPRESS · TWO STOPS', Icons.bolt_rounded),

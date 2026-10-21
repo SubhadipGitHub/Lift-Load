@@ -262,7 +262,7 @@ void main() {
   });
 
   test('the concept slice traps four-person loads: gym+rider+officeM+kid crashes', () {
-    // 92 + 86 + 74 + 30 = 282 > 280, the "MAX 4 PERSONS" trap.
+    // 92 + 86 + 74 + 30 = 282 > 280, the four-person trap.
     final g = LiftGame(tiny([
       [(c, ResidentType.gym), (c, ResidentType.rider), (c, ResidentType.officeM), (c, ResidentType.kid)],
     ], floors: const [c]));

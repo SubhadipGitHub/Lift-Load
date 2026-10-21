@@ -10,6 +10,7 @@ with this file. Logged through `AnalyticsService` (`DebugAnalytics` in M1, Fireb
 | `level_fail` | level, venue, scenario (if any), kind (crash / outOfTrips / jam), trips_used | A fail screen appears | Fail mix, unfair-crash review |
 | `overload` | level, type, cargo, lift_kind, scenario (if any), riders | The cable snaps | Which types, props and lift kinds players misjudge |
 | `trip_sent` | level, rating, fill_pct, riders, lift_kind | Send pressed | Fill distribution, push-your-luck behaviour |
+| `level_abandon` | level, via (restart / quit), trips_used | A started level is restarted or left (costs a life) | Rage-quit rate per level, lives sink |
 | `scale_used` | level, left | Scale booster used | IAP intent |
 | `coin_continue` | level, kind | 300-coin continue | Economy sink |
 | `rewarded_offer_accepted` | placement, level | Player taps a rewarded button | Opt-in rate |
