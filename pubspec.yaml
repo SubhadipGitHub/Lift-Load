@@ -1,0 +1,23 @@
+name: lift_load
+description: "Lift Load: a hybrid-casual lift puzzle. Guess who fits, fill the lift, never overload it."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  # M3 adds: google_mobile_ads, in_app_purchase, firebase_core, firebase_analytics
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  # M4 adds: fonts (Baloo 2, Nunito Sans) and assets/sfx/*.ogg

@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed --line-length 120 lib test tool
+        continue-on-error: true
+      - name: Unit, widget and architecture tests
+        run: flutter test --reporter expanded
+      - name: Level table (solver par and trip budgets)
+        run: dart run tool/simulate.dart 1 60
+
+  web-build:
+    # Tester build for Gate A. Platform folders are generated here until
+    # they are committed (see README, "First-time setup").
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate web platform files if missing
+        run: |
+          if [ ! -d web ]; then
+            flutter create --platforms=web --project-name lift_load --org com.liftload .
+            rm -f test/widget_test.dart
+          fi
+      - run: flutter pub get
+      - run: flutter build web --release --base-href /
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lift-load-web
+          path: build/web
+          retention-days: 14
