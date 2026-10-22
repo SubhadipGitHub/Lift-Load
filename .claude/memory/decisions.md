@@ -13,6 +13,9 @@ Newest first. One line of decision, one line of why. Reopen a decision only with
 - **One image per character, never a sprite sheet.** A sheet of 14 leaves each figure a tenth of the resolution.
 - **The keyer reads the backdrop from the image border.** Gemini's green is not #00FF00.
 - **Art lands after Gate A.** The metric being measured is how well testers learn today's silhouettes.
+- **The approved sprites are committed, under `docs/art/approved/`.** Not shipped (outside `assets/`), about 0.5 MB.
+  Why: raw images and the review scripts lived only in one container; a new session needs the cast to line new art up
+  against. This narrows the earlier "nothing generated is committed" rule to the raw and working files.
 
 ## 2026-10-21 · v1.4 Gate A kit
 

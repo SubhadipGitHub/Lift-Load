@@ -49,7 +49,17 @@ python3 tool/art/gemini_art.py process && python3 tool/art/gemini_art.py sheet
    - It cover-crops each scene to its frame and writes WebP to `art/processed/`.
 
    Blink frames reuse their idle frame's exact crop and scale, so the swap never jumps.
-4. **Review** `art/processed/_cast_lineup.png` against the checklist below, then regenerate what fails.
+4. **Review.** Run `python3 tool/art/gemini_art.py review`. It prints, per resident, the face colour against the card's
+   skin hex, torso and leg width, silhouette area, and green-pixel counts. It also reports the build order against the
+   design's, and writes `art/review/zoom_cream.png` and `zoom_night.png` (2x, on the lobby and night colours). Then
+   look at `art/processed/_cast_lineup.png` (`sheet`) against the checklist below, and regenerate what fails. The
+   numbers catch what the eye misses at phone size; they do not replace the sheets. Two readings to know:
+   - Lit skin renders lighter than the flat hex, so the face limit is 40 per channel (the approved cast sits within
+     35). A pale face on a deep-brown card is far past it.
+   - The approved cast scores a build-order rank correlation of 0.87 (area against `design_build`, liars left out).
+     Below 0.8, something drifted.
+
+   `review --dir docs/art/approved` runs the same check on the approved cast.
 
 Without an API key you can do the same by hand. Run `python3 tool/art/gemini_art.py prompts > art/prompts.md` and
 paste each prompt into the Gemini app or AI Studio, one new chat per image, attaching the reference image the step
@@ -60,8 +70,11 @@ characters and props, because it removes every island under 5% of the largest. C
 **Cost.** Expect roughly a few dollars to about $15 per full pass of 53 images on the pro model, plus retries.
 Check current pricing before a full run.
 
-`art/` is git-ignored. Nothing generated is committed until the integration PR moves the chosen files into
-`assets/`.
+`art/` (raw images and working output) is git-ignored. The approved, processed cast is the one exception:
+`docs/art/approved/` holds the 17 WebP sprites (14 residents, 3 cargo props, about 0.5 MB) so a new session or machine
+can line new art up against them with `review --dir` and `sheet`. It sits under `docs/`, outside `pubspec.yaml`'s
+assets, so none of it ships. Add each new approved sprite there when you approve it. The integration PR moves the
+chosen files into `assets/`.
 
 ## Review checklist (per character, on the line-up)
 

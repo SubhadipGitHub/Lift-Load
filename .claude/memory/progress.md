@@ -3,7 +3,7 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
-## 2026-10-22 · Gemini art pack (PRs #6, #7, #8, merged)
+## 2026-10-22 · Gemini art pack (PRs #6, #7, #8 merged; handoff prep on branch ccr-445849fc-sjvxbg)
 
 **Done**
 - Tooling: `tool/art/art_pack.json` (style bible plus 53 prompts), `gemini_art.py` (generate, prompts, process, sheet),
@@ -17,6 +17,19 @@ entries; fold older ones into "Earlier".
   the image border; a 4 px rim despill removes the green outline on pale clothes; the app's corner watermark is dropped
   as a small island; green bounce light on glossy greys (the wheelchair's metal came back teal) is neutralised.
 - Every resident prompt now carries a skin tone and hex read from `ResidentLook`.
+
+**Handoff for a new session**
+- The 17 approved processed sprites are committed in `docs/art/approved/` (about 0.5 MB, not shipped). Raw images stay
+  with the owner; `/art/` is still git-ignored.
+- `gemini_art.py review [--dir docs/art/approved]` now reproduces the per-image checks: face colour against the card's
+  skin hex (limit 40, lit skin renders lighter), torso, leg and area widths, green-pixel counts, build order against
+  the new `design_build` field in `art_pack.json` (the approved cast scores rho 0.87; the wheelchair shows 12 green
+  pixels, the known rim), and 2x cream and night sheets in `art/review/`. The numbers assist the sheets, they do not
+  replace looking.
+- To resume: the owner sends the next images (lifts, venues, home, store, icon). Save each to `art/raw/<id>.png`, run
+  `process` then `review`, and copy each approved sprite into `docs/art/approved/`. Scenes are cover-cropped by
+  `process` but `review` only measures residents so far; check scenes on the sheet by eye.
+- Prompt page: claude.ai artifact 9H2UEdWaxV8uhzUsKttGGo (copy buttons and the done-tracker).
 
 **Cast status** (originals live with the owner; `/art/` is git-ignored)
 - All 14 residents approved: schoolkid (style anchor), puffer teen, student, office woman, grandpa (second take),
