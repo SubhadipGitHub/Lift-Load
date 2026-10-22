@@ -76,6 +76,16 @@ entries; fold older ones into "Earlier".
   under lane 4's text, strong perspective. Prompt rewritten (near top-down, one pale cream, nothing on it). `_remove_sparkle`
   now tries several strengths and keeps the smoothest patch (a dark ghost appeared on the dark shaft). Waiting on the new
   lobby image; the other venues follow once Sunrise looks right.
+- Layout (owner: "improve the placement of the queue, lift, Send, boosters and lobby waiting slots, more natural and
+  user friendly"): layout frame is claude.ai artifact H19rviJHr3VVSfCVd3J51f (source `docs/art/layout-frame/index.html`),
+  as-built beside proposed, with thumb-reach and tap-order overlays. NOTE: my first style frame had the bench and queue
+  swapped; the real order (play_screen.dart) is HUD, shaft, message, bench, lanes, toolbar, and lane fronts are at the TOP.
+  Findings: Send is in the shaft's right column (about y 210-280 of 844, the hardest reach) while Scale and Restart own the
+  easy bottom strip; Restart costs a life. Proposal: Send moves to a wide bottom-right button showing the rider count, Scale
+  becomes a round booster beside it, Restart moves into the pause menu with a confirm, order stays lift, bench, queue; queue
+  front big (+60%) with smaller, dimmer ones behind; bench becomes a bench (rail, taller seats); gauge takes the freed column
+  and gets a rider count. Open: left-handed mirror, drag-to-board. Waiting on the owner's verdict (this widens "reskin only"
+  to include layout, which the owner has now asked for).
 - Next in the restyle, after the backdrops:  the integration spec for lib/ (figures +60%, contact
   shadows, door leaves, icons in place of Material icons, 3D button recipe, punch). No lib/ work until the owner says go.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
