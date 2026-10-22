@@ -311,7 +311,7 @@ class _Cabin extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           width: m.cabinWidth,
           height: m.cabinHeight,
-          padding: EdgeInsets.all(7 * s),
+          padding: EdgeInsets.all(m.cabinPadding),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -387,12 +387,15 @@ class _Cabin extends StatelessWidget {
                               ),
                             ),
                           ),
+                        // Feet at the cabin's feet line, mid-floor.
                         Positioned(
                           left: 0,
                           right: 0,
-                          bottom: 10 * s,
+                          bottom: m.cabinFeetInset - m.cabinFigure * ResidentFigure.belowFeet,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
+                            // Shrinking a full cabin keeps the feet on the line.
+                            alignment: Alignment.bottomCenter,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,

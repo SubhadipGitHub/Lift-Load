@@ -11,6 +11,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../game/cast.dart';
+import 'painters/resident_painter.dart';
+
 enum FormFactor { compactPhone, phone, tabletPortrait, twoPane }
 
 class Metrics {
@@ -108,18 +111,92 @@ class Metrics {
   double get nextChip => 42 * scale;
   double get cabinWidth => 196 * scale;
   double get cabinHeight => 214 * scale;
-  double get cabinFigure => 80 * scale;
+  double get cabinPadding => 7 * scale;
+  double get cabinFigure => 128 * scale;
   double get gaugeWidth => 92 * scale;
+
+  /// Riders' feet sit at this fraction of the cabin's height, mid-floor
+  /// (`docs/art/gemini-art-pack.md`, Integration).
+  static const double cabinFeetLine = 0.90;
+
+  /// From the bottom of the cabin interior up to the riders' feet.
+  double get cabinFeetInset => cabinHeight * (1 - cabinFeetLine) - cabinPadding;
 
   /// Scale button on the gauge plate.
   Size get scaleButton => Size(math.max(92 * scale, minTouch), math.max(46 * scale, minTouch));
 
+  // Figures. The design sizes are 60% larger than the v1.6 ones; lanes and
+  // seats shrink a figure only as far as their width forces, never below the
+  // v1.6 size ([_laneFigureFloor], [_benchFigureFloor]).
+  double get laneFigure => 86 * scale;
+
+  /// The bench is capped at this share of the lane figure, so its taller seats
+  /// do not push the lanes off the screen (owner, 2026-10-22).
+  static const double benchToLane = 0.7;
+  double get benchFigure => laneFigure * benchToLane;
+  double get _laneFigureFloor => 54 * scale;
+  double get _benchFigureFloor => 52 * scale;
+
+  /// The widest figure box in design units (a pram or a trolley; those never
+  /// carry cargo), so one figure size fits every resident in a lane or seat.
+  static final double widestFigure = [
+    for (final t in ResidentType.values)
+      for (final c in Cargo.values)
+        if (t.canCarry || c == Cargo.none) ResidentLook.designWidth(t, c),
+  ].reduce(math.max);
+
+  double _fit(double target, double floor, double room) =>
+      math.min(target, math.max(floor, room / widestFigure * designHeight));
+
+  /// Contact shadow under a sprite, as fractions: its width of the sprite's
+  /// width, its height of its own width, its blur of its own width.
+  static const double contactShadowWidth = 0.62;
+  static const double contactShadowHeight = 0.20;
+  static const double contactShadowBlur = 0.035;
+
+  /// The unknown ghost: its opacity, and its glow's blur as a fraction of its width.
+  static const double ghostOpacity = 0.85;
+  static const double ghostGlowBlur = 0.08;
+
+  // Lobby lanes: the floor's inset and padding, and each slot's padding and
+  // thickest border (Swap targeting), which share a lane's width.
+  double get lanePadding => 6 * scale;
+  double get slotPadding => 8 * scale;
+  static const double slotBorder = 3;
+  static const double slotBorderThin = 2;
+
+  /// The height of a compact floor tag, so an unknown slot lines up with a known one.
+  static const double compactTagHeight = 14;
+
+  /// Width the lobby lanes share: the column, or the right pane.
+  double get lanesWidth => twoPane ? math.min(size.width, twoPaneMaxWidth) - columnWidth : columnWidth;
+
+  /// Figure height in a lobby of [lanes] lanes.
+  double laneFigureFor(int lanes) {
+    final lane = (lanesWidth - 2 * (gap + lanePadding)) / math.max(lanes, 1);
+    return _fit(laneFigure, _laneFigureFloor, lane - 2 * (slotPadding + slotBorder));
+  }
+
   /// Bench seats in one row; beyond this the bench wraps into two even rows.
   static const int benchRowMax = 5;
+  static int benchPerRow(int seats) => seats <= benchRowMax ? seats : (seats + 1) ~/ 2;
 
-  double get seatHeight => math.max(74 * scale, minTouch);
-  double get benchFigure => 52 * scale;
-  double get laneFigure => 54 * scale;
+  double get benchInset => gap + 2 * scale;
+  double get seatGap => 8 * scale;
+  static const double seatBorder = 2;
+
+  /// Room in a seat above the figure: its floor tag and border.
+  double get _seatChrome => (compactTagHeight + 4) * scale + 2 * seatBorder;
+
+  /// Figure height on a bench of [seats] seats.
+  double benchFigureFor(int seats) {
+    final perRow = math.max(benchPerRow(seats), 1);
+    final seat = (columnWidth - 2 * benchInset - (perRow - 1) * seatGap) / perRow;
+    return _fit(benchFigure, _benchFigureFloor, seat - 2 * seatBorder);
+  }
+
+  /// A seat tall enough for a [figure]-high resident and their floor tag.
+  double seatHeightFor(double figure) => math.max(figure + _seatChrome, minTouch);
 
   /// Residents drawn per lane before the rest are counted.
   int get visibleDepth => switch (form) {

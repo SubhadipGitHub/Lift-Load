@@ -43,6 +43,10 @@ const double personWidth = 60;
 const double vehicleWidth = 30;
 const double cargoWidth = 16;
 
+/// Height of the figure box in design units, and the feet line within it.
+const double designHeight = 120;
+const double feetY = 116;
+
 class ResidentLook {
   const ResidentLook({
     required this.height,

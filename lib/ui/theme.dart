@@ -26,6 +26,13 @@ abstract final class LL {
   static const steel = Color(0xFFD9DDE3);
   static const steelFloor = Color(0xFF9AA1AB);
 
+  /// Contact shadow under a sprite figure: warm near-black (24, 14, 10) at
+  /// about 41% (`docs/art/gemini-art-pack.md`, Integration).
+  static const contactShadow = Color(0x69180E0A);
+
+  /// The halo around the unknown ghost: the same for everyone.
+  static const ghostGlow = Color(0x99A9C8FF);
+
   // Baloo 2 for display, Nunito Sans for everything else (bundled, OFL).
   static const displayFont = 'Baloo2';
   static const bodyFont = 'NunitoSans';

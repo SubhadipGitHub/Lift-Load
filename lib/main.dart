@@ -9,10 +9,12 @@ import 'services/analytics_service.dart';
 import 'services/audio_service.dart';
 import 'services/profile.dart';
 import 'services/tester_log.dart';
+import 'ui/art_assets.dart';
 import 'ui/game_controller.dart';
 import 'ui/layout.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/theme.dart';
+import 'ui/widgets/resident_figure.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,10 @@ Future<void> main() async {
   // Gate A tester build (Pages): keep the events testers send back.
   const tester = TesterConfig.fromEnvironment;
   final testerLog = tester.enabled ? await TesterLog.open(await SharedPreferences.getInstance()) : null;
+
+  // The cast sprites: the first frame waits briefly so figures do not swap
+  // from painted to sprite on screen; past the wait they swap in when ready.
+  await SpriteCache.instance.load().timeout(ArtAssets.preloadWait, onTimeout: () {});
 
   final controller = GameController(
     profile: store.load(DateTime.now()),
@@ -63,7 +69,7 @@ class LiftLoadApp extends StatelessWidget {
             data: MediaQuery.of(context).copyWith(
               textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
             ),
-            child: child!,
+            child: SpriteArtScope(enabled: controller.profile.useSpriteArt, child: child!),
           );
         },
         home: HomeScreen(controller: controller),

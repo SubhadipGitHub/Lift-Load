@@ -223,17 +223,20 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       final seat = mo.to.seat;
       final to = seat != null ? _rectOf(_seatKey(seat)) : _rectOf(_cabinKey);
       if (from == null || to == null) continue;
-      final fromHeight = mo.from.fromBench ? m.benchFigure : m.laneFigure;
-      final toHeight = seat != null ? m.benchFigure : m.cabinFigure;
+      final bench = m.benchFigureFor(c.game.bench.length);
+      final fromHeight = mo.from.fromBench ? bench : m.laneFigureFor(c.game.laneCount);
+      final toHeight = seat != null ? bench : m.cabinFigure;
       _hidden.add(mo.resident.id);
       _flights.add(_Flight(
         resident: mo.resident,
-        // Feet positions: the bottom of a seat, the cabin floor, or just under
-        // the floor tag at the front of a lane.
+        // Bottoms of the figure box: the bottom of a seat, the cabin's feet
+        // line, or just under the floor tag at the front of a lane.
         from: mo.from.fromBench
             ? from.bottomCenter - Offset(0, 6 * m.scale)
             : from.topCenter + Offset(0, 18 * m.scale + fromHeight),
-        to: to.bottomCenter - Offset(0, (seat != null ? 6 : 14) * m.scale),
+        to: seat != null
+            ? to.bottomCenter - Offset(0, 6 * m.scale)
+            : to.bottomCenter - Offset(0, m.cabinFeetInset - toHeight * ResidentFigure.belowFeet),
         fromHeight: fromHeight,
         toHeight: toHeight,
       ));
@@ -268,7 +271,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final m = Metrics.of(context);
     _effects.currentState?.add(Burst(
       kind: BurstKind.sparkle,
-      origin: rect.topCenter + Offset(0, 18 * m.scale + m.laneFigure * 0.5),
+      origin: rect.topCenter + Offset(0, 18 * m.scale + m.laneFigureFor(c.game.laneCount) * 0.5),
       count: revealSparkles,
     ));
   }
@@ -565,7 +568,7 @@ class _FlightViewState extends State<_FlightView> with SingleTickerProviderState
           final h = f.fromHeight + (f.toHeight - f.fromHeight) * t;
           final feet = Offset.lerp(f.from, f.to, t)! -
               Offset(0, 26 * math.sin(math.pi * t) + 2.5 * math.sin(t * math.pi * 6).abs());
-          final w = h / 120 * ResidentLook.designWidth(f.resident.type, f.resident.cargo);
+          final w = h / designHeight * ResidentLook.designWidth(f.resident.type, f.resident.cargo);
           return Positioned(
             left: feet.dx - w / 2,
             top: feet.dy - h,
