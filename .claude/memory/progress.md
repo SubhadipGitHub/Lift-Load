@@ -96,7 +96,13 @@ entries; fold older ones into "Earlier".
   lane front is hidden (identical dim silhouettes, no look, no floor tag, count only), lanes longer and more uneven with level.
   Flagged: this reopens locked rule 1, makes the power cut scenario redundant, raises difficulty (slack +1 until Gate A), and the
   500-coin price makes the 300-coin fail rescue the cheaper path. Layout frame updated (v3): silhouettes, empty powers with + and
-  a get-more sheet, mirror toggle. (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
+  a get-more sheet, mirror toggle.
+  v3 of the addendum (owner's second round): the queue is NOT always hidden. Early levels show everyone; from L11 a growing
+  share behind the front are unknown ghosts (one identical glowing silhouette, revealed on reaching the front); lane count varies
+  (3-5 from L16), lane spread and liar weight rise; the power cut scenario is REMOVED (rule 10 reworded); powers cost 150 coins
+  (configurable) or 1 ad. New Gemini asset `unknown_ghost` (prompt on the prompt page, version 13). Unlock plan: unknown L11,
+  lane variety L16, Swap L14, +2 seats L19, +1 trip L27, Express L29. Frame v5 shows ghosts, 5 lanes, 150-coin sheet.
+  Still waiting for an explicit "signed off"; two questions left (lane-count meaning, accept the curves/caps/unlocks). (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
   Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
   verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).
