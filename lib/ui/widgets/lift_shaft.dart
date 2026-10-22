@@ -16,7 +16,8 @@ import 'pressable.dart';
 import 'resident_figure.dart';
 
 /// The shaft panel: upcoming lifts, the cabin (a tap target that shows who
-/// is riding), and the load gauge with the Send button.
+/// is riding), and the load gauge with the Scale booster under it. Send lives
+/// in the bottom bar.
 class LiftShaft extends StatelessWidget {
   const LiftShaft({
     super.key,
@@ -24,7 +25,9 @@ class LiftShaft extends StatelessWidget {
     required this.cabinDy,
     required this.cabinTilt,
     required this.onTapLift,
-    required this.onSend,
+    required this.onScale,
+    required this.scaleLeft,
+    required this.scaleReady,
     this.doorOpen = 1,
     this.cabinKey,
     this.hiddenIds = const {},
@@ -34,7 +37,12 @@ class LiftShaft extends StatelessWidget {
   final double cabinDy;
   final double cabinTilt;
   final VoidCallback onTapLift;
-  final VoidCallback onSend;
+
+  /// The Scale booster on the gauge plate: its handler (null while the lift
+  /// is moving), the uses left, and whether a tap would preview someone now.
+  final VoidCallback? onScale;
+  final int scaleLeft;
+  final bool scaleReady;
 
   /// Cabin doors: 0 closed, 1 open. Driven by the send animation.
   final double doorOpen;
@@ -157,7 +165,7 @@ class LiftShaft extends StatelessWidget {
                         width: m.gaugeWidth,
                       ),
                       SizedBox(height: 10 * s),
-                      _SendButton(enabled: game.canSend, onPressed: onSend),
+                      _ScaleButton(left: scaleLeft, ready: scaleReady, onPressed: onScale),
                     ],
                   ),
                 ),
@@ -450,59 +458,59 @@ class _FloorPill extends StatelessWidget {
   }
 }
 
-class _SendButton extends StatelessWidget {
-  const _SendButton({required this.enabled, required this.onPressed});
+/// Scale: previews the selected resident as a dashed needle on the gauge.
+class _ScaleButton extends StatelessWidget {
+  const _ScaleButton({required this.left, required this.ready, required this.onPressed});
 
-  final bool enabled;
-  final VoidCallback onPressed;
+  final int left;
+  final bool ready;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
-    final radius = BorderRadius.circular(16 * m.scale);
-    return Opacity(
-      opacity: enabled ? 1 : 0.45,
-      child: PressScale(
-        enabled: enabled,
-        child: DecoratedBox(
-          // A raised brass key: darker edge below, soft drop shadow.
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            boxShadow: [
-              BoxShadow(color: LL.brassDark, offset: Offset(0, 4 * m.scale)),
-              const BoxShadow(color: Color(0x55000000), blurRadius: 10, offset: Offset(0, 6)),
-            ],
-          ),
-          child: SizedBox(
-            width: m.sendSize.width,
-            height: m.sendSize.height,
-            child: FilledButton(
-              onPressed: enabled ? onPressed : null,
-              style: FilledButton.styleFrom(
-                backgroundColor: LL.brass,
-                disabledBackgroundColor: LL.brass,
-                foregroundColor: LL.ink,
-                disabledForegroundColor: LL.ink,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(borderRadius: radius),
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.notifications_rounded, size: 26 * m.scale),
-                    SizedBox(height: 2 * m.scale),
-                    Text(
-                      'Send',
-                      style: TextStyle(
-                        fontFamily: LL.displayFont,
-                        fontSize: m.font(19),
-                        fontWeight: FontWeight.w800,
-                        height: 1,
+    final size = m.scaleButton;
+    final usable = onPressed != null && ready && left > 0;
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      onTap: onPressed,
+      label: 'Scale: preview where the selected resident would put the needle, $left left',
+      child: ExcludeSemantics(
+        child: PressScale(
+          enabled: onPressed != null,
+          child: Opacity(
+            opacity: usable ? 1 : 0.6,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: Material(
+                color: LL.cream,
+                shape: StadiumBorder(side: BorderSide(color: LL.brassDark, width: 2 * m.scale)),
+                child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: onPressed,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6 * m.scale),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.scale_rounded, size: 18 * m.textScale, color: LL.ink),
+                          SizedBox(width: 4 * m.scale),
+                          Text('Scale',
+                              style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.ink)),
+                          SizedBox(width: 5 * m.scale),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6 * m.scale, vertical: 1),
+                            decoration: BoxDecoration(color: LL.brass, borderRadius: BorderRadius.circular(999)),
+                            child: Text('$left', style: LL.display.copyWith(fontSize: m.font(12), color: LL.ink)),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

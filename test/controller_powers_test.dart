@@ -56,8 +56,10 @@ void main() {
     return (ctl: ctl, log: log, profile: profile);
   }
 
-  List<Map<String, Object>> events(DebugAnalytics a, String name) =>
-      [for (final (n, params) in a.history) if (n == name) params];
+  List<Map<String, Object>> events(DebugAnalytics a, String name) => [
+        for (final (n, params) in a.history)
+          if (n == name) params
+      ];
 
   group('empty stock', () {
     test('a tap with nothing in stock spends nothing and logs the tap', () {
@@ -94,6 +96,7 @@ void main() {
       m.ctl.usePower(Power.seats);
       expect(m.profile.stock(Power.seats), 2);
       expect(m.ctl.game.benchLength, 4);
+      expect(m.ctl.message, contains('Already used'));
     });
 
     test('Express needs a selection, then delivers and spends one', () {

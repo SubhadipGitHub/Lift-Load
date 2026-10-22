@@ -3,12 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lift_load/game/cast.dart';
 import 'package:lift_load/game/formulas.dart';
 import 'package:lift_load/game/level.dart';
+import 'package:lift_load/game/powers.dart';
 import 'package:lift_load/game/scenario.dart';
 import 'package:lift_load/game/venue.dart';
 import 'package:lift_load/services/analytics_service.dart';
 import 'package:lift_load/ui/layout.dart';
 import 'package:lift_load/ui/screens/home_screen.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
+import 'package:lift_load/ui/widgets/power_dock.dart';
 
 import 'helpers.dart';
 
@@ -109,6 +111,64 @@ void main() {
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp('Tap to board the selected resident')), 'cabin');
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp(r'^(?!Bench).* going to \dF')), 'lane front');
       expect(tester.getSize(find.widgetWithText(FilledButton, 'Send')).height, greaterThanOrEqualTo(Metrics.minTouch));
+      handle.dispose();
+    });
+
+    testWidgets('play with the power dock fits at $name', (tester) async {
+      await sized(tester, size);
+      final handle = tester.ensureSemantics();
+      for (final lanes in [3, 4, 5]) {
+        for (final leftHanded in [false, true]) {
+          final c =
+              powerController(DebugAnalytics(), level: dockLevel(lanes: lanes), stock: {Power.swap: 1, Power.seats: 1});
+          c.profile.leftHanded = leftHanded;
+          c.startLevel();
+          await tester.pumpWidget(app(PlayScreen(controller: c), textScale: 1.3));
+          final reason = '$lanes lanes, left-handed $leftHanded';
+          // All four powers on the bar, one with stock and three empty.
+          for (final p in Power.values) {
+            expectTouchTarget(tester, find.bySemanticsLabel(RegExp('^${RegExp.escape(p.dockLabel)}: ')), p.name);
+          }
+          expectTouchTarget(tester, find.bySemanticsLabel(RegExp('^Scale: ')), 'scale');
+          expect(
+              tester.getSize(find.widgetWithText(FilledButton, 'Send')).height, greaterThanOrEqualTo(Metrics.minTouch));
+          // Swap armed with its first lane picked, then the unknown people stepping up.
+          await tester.tap(find.byKey(const ValueKey('power-swap')));
+          await tester.pump();
+          expect(tester.takeException(), isNull, reason: 'armed, $reason');
+          c.tapQueue(0);
+          await tester.pump();
+          expect(tester.takeException(), isNull, reason: 'picked, $reason');
+          c.cancelPower();
+          c.tapQueue(0);
+          c.tapBench(0);
+          await tester.pump();
+          expect(tester.takeException(), isNull, reason: 'revealed, $reason');
+          // +2 seats: the bench wraps into two rows and every seat stays a touch target.
+          c.usePower(Power.seats);
+          c.tapQueue(1);
+          c.tapBench(1);
+          await tester.pump();
+          expect(c.game.benchLength, 6);
+          expect(tester.takeException(), isNull, reason: 'seats, $reason');
+          expectTouchTarget(tester, find.bySemanticsLabel(RegExp(r'^Empty bench seat$')), 'bench seat, $reason');
+          // The get-more sheet and the settings sheet over it.
+          await tester.tap(find.byKey(const ValueKey('power-express')));
+          await tester.pumpAndSettle();
+          expect(find.textContaining('Spend'), findsOneWidget, reason: reason);
+          expect(tester.takeException(), isNull, reason: 'sheet, $reason');
+          await tester.tap(find.text('Not now'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byTooltip('Settings'));
+          await tester.pumpAndSettle();
+          expect(find.text('Left-handed layout'), findsOneWidget);
+          expect(find.text('Restart level'), findsOneWidget);
+          expect(tester.takeException(), isNull, reason: 'settings, $reason');
+          await tester.tap(find.text('Left-handed layout'));
+          await tester.pumpAndSettle();
+          await tester.pumpWidget(const SizedBox());
+        }
+      }
       handle.dispose();
     });
 

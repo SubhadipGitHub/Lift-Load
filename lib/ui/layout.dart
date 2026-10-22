@@ -85,7 +85,23 @@ class Metrics {
   double get radius => 22 * scale;
   double get hudHeight => math.max(50 * scale, minTouch);
   double get messageHeight => 32 * textScale;
-  double get toolbarHeight => math.max(66 * scale, 56);
+
+  /// The bottom bar: the power dock and Send (mirrored for left-handed play).
+  /// Tall enough for a 48 px button and its label at the largest text size.
+  /// A phone held sideways has no height to spare: the dock drops its labels
+  /// (each button keeps its accessibility label) and the bar stays slim, and
+  /// sheets lay their buttons side by side.
+  bool get shortLandscape => twoPane && size.height < 700;
+  bool get dockLabels => !shortLandscape;
+  double get bottomBarHeight => dockLabels ? math.max(88 * scale, 80) : 56;
+  double get barPadding => 14 * scale;
+  double get dockButton => math.max(52 * scale, minTouch);
+  double get dockGap => 7 * scale;
+
+  /// Send beside a dock, and Send on its own before any power unlocks.
+  double get sendWidth => 118 * scale;
+  double get sendWidthSolo => 224 * scale;
+  double get sendHeight => math.max(62 * scale, minTouch);
 
   double get shaftHeight => 262 * scale;
   double get nextColumn => 44 * scale;
@@ -94,7 +110,12 @@ class Metrics {
   double get cabinHeight => 214 * scale;
   double get cabinFigure => 80 * scale;
   double get gaugeWidth => 92 * scale;
-  Size get sendSize => Size(math.max(92 * scale, minTouch), math.max(76 * scale, minTouch));
+
+  /// Scale button on the gauge plate.
+  Size get scaleButton => Size(math.max(92 * scale, minTouch), math.max(46 * scale, minTouch));
+
+  /// Bench seats in one row; beyond this the bench wraps into two even rows.
+  static const int benchRowMax = 5;
 
   double get seatHeight => math.max(74 * scale, minTouch);
   double get benchFigure => 52 * scale;

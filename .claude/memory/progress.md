@@ -3,6 +3,26 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · PRD v1.6 UI slice 1 (branch ui-powers-v16, stacked on engine-powers-v16)
+
+**Done**
+- Bottom bar (`widgets/play_bar.dart`): power dock on the left, Send on the right, mirrored when `profile.leftHanded`.
+  `widgets/power_dock.dart`: one round button per unlocked power with a stock badge (0 reads empty), armed state for Swap,
+  `PowerIcon` is the single sprite slot (Material icon placeholders). `widgets/power_sheets.dart`: get-more sheet with
+  "Spend 150 coins" and an explicit "Watch an ad" naming its reward; one-line reasons when a button is off.
+- Send left the shaft; Scale moved onto the gauge plate; Restart moved from the toolbar into the settings sheet (in a level
+  only; confirm when it costs a life). Settings gained "Left-handed layout".
+- Lanes: Swap targeting frames (mint = pickable, brass = picked); reveal pop plus a sparkle burst (`BurstKind.sparkle`),
+  both off under reduce-motion. Lane keys are made on demand (they were fixed at 4, a latent crash on 5 lanes).
+- Bench wraps into two even rows above five seats (the +2 seats power makes 6 to 7 routine).
+- Controller: one message fix (a capped power said "needs two lanes"; now "Already used on this level").
+- Tests: `power_dock_test`, responsive sweep with the dock at 3, 4 and 5 lanes, left-handed, sheets, 14 sizes.
+
+**Open**
+- Swap and Express icons, ghost art, glossy 3D restyle of the new buttons, Express has no walk animation (the person
+  vanishes), audio cues per power and reveal, the empty badge shows "0" where the frame had "+".
+- Landscape phones (twoPane under 700 high) drop the dock labels to keep the bar slim.
+
 ## 2026-10-22 · PRD v1.6 engine (branch engine-powers-v16, stacked on the art PR)
 
 **Done**
@@ -268,27 +288,6 @@ entries; fold older ones into "Earlier".
 2. Gate A with levels 1–60.
 3. Queued depth: best-play solver, trap Hard levels, stars, cabin spots, pairs, hurry residents.
 
-## 2026-10-21 · M1 scaffold
-
-**Done**
-- Concept canvas (style guide, asset sheet, interactive Play slice, logic) and PRD v1.1 signed off with Flutter.
-- Pure-Dart engine: cast with hidden weights, formulas, state machine with events, greedy solver, seeded generator.
-- Flutter UI: Home, Play (cabin send and crash animations, springy gauge, bench, lanes), Fail and Win sheets.
-- Services: ad policy (interstitial gating, rewarded caps), stub ads, debug analytics, profile save, haptics.
-- Tests: engine, generator (levels 1–60 solvable), ad policy, play-screen widget, architecture guards.
-- CI: analyze, test, level table, web build artifact.
-
-**Verified in CI**
-- `flutter analyze` clean on the first run (code was written without a local Flutter SDK).
-- 24 of 27 tests pass: engine, generator (levels 1–60 solvable), ad policy, architecture.
-- The 3 widget tests failed: HUD row overflow under the test font (fixed: trips label ellipsizes) and a fake-time
-  hang on the stub ad's zero-length timer (fixed: no timer for a zero delay).
-
-**Next**
-1. Get CI green; commit `android/` and `web/` from `flutter create`.
-2. Play the browser build; tune feel (needle spring, cabin timings, lane depth).
-3. M2: tester build to 10–15 people, level table review, onboarding tips on type debuts.
-
 ## Earlier
 
-Nothing yet.
+M1 scaffold (2026-10-21): concept canvas, PRD v1.1, pure-Dart engine, Flutter Home/Play/sheets, services, CI; 24 of 27 tests green on the first CI run, widget-test fixes followed.
