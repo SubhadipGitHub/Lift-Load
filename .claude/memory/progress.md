@@ -15,13 +15,14 @@ entries; fold older ones into "Earlier".
   lobby and night colours.
 - Keyer fixes found on real images: Gemini's backdrop is about (35, 183, 27), not #00FF00, so thresholds now come from
   the image border; a 4 px rim despill removes the green outline on pale clothes; the app's corner watermark is dropped
-  as a small island.
+  as a small island; green bounce light on glossy greys (the wheelchair's metal came back teal) is neutralised.
 - Every resident prompt now carries a skin tone and hex read from `ResidentLook`.
 
 **Cast status** (originals live with the owner; `/art/` is git-ignored)
-- Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard.
+- Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard,
+  wheelchair patient.
 - Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult), rider (sturdier).
-- Not yet sent: student, wheelchair patient, parent with the pram, bellhop. After them: 3 cargo props, blink frames,
+- Not yet sent: student, parent with the pram, bellhop. After them: 3 cargo props, blink frames,
   four lift kinds, five venues, home art, store art, icon.
 
 **Open**
