@@ -24,6 +24,14 @@ entries; fold older ones into "Earlier".
   Slack, unknown share, lane spread, caps and price are untuned until then.
 - Art: Swap and Express icons, backdrops for office, hospital, mall, hotel.
 
+**Review (two read-only reviewers, a fuzz run of 3600 games)**
+- Fixed: a crash no longer reveals the person behind the rider (and the lane shows them unknown while the lift falls);
+  Express is refused when it would jam the lobby; refills gated on unlock and phase; tolerant power parsing.
+- Open for the owner: (a) 6 refill ads plus 3 life plus 1 chest leave 2 of 12 daily views for continues, so reserve
+  the last 2 for fail sheets?; (b) unknown people's floors leak through the NEXT strip and the jam sheet's "+N seats";
+  (c) +1 trip cannot rescue an out-of-trips fail because the fail sheet comes first (spend owned stock there, or hint
+  at the last trip).
+
 **Next**
 1. Level-designer pass on the two solver studies; adjust `Formulas`, regenerate the level table.
 2. UI per docs/PRD-v1.6-powers.md; monetization-auditor and code-reviewer on the diff.

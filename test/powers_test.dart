@@ -86,16 +86,18 @@ void main() {
       expect(g.drainEvents().whereType<RevealedEvent>().single.resident.id, 5);
     });
 
-    test('someone who is known stays known after a repair puts the rider back', () {
+    test('a crash reveals nobody: the person behind stays unknown, before and after the repair', () {
       final g = LiftGame(lobby(capacity: 5)); // anyone overloads the lift
       g.tapQueue(0);
       g.tapLift();
       expect(g.phase, Phase.falling);
+      expect(g.visibleLanes[0][0], isNull, reason: 'person 2 has not stepped up while the lift falls');
+      expect(g.frontOf(0), isNull);
+      expect(g.drainEvents().whereType<RevealedEvent>(), isEmpty);
       g.finishCrash();
       g.continueAfterFail(viaAd: false);
       expect(g.queues[0].map((r) => r.id), [1, 2, 3]);
-      expect(g.visibleLanes[0][1]?.id, 2, reason: 'person 2 was revealed at the front and stays known');
-      expect(g.visibleLanes[0][2], isNull, reason: 'person 3 was never at the front');
+      expect(g.visibleLanes[0].map((r) => r?.id), [1, null, null]);
     });
 
     test('the UI-facing lanes carry no type, cargo or floor for an unknown person', () {
@@ -314,6 +316,70 @@ void main() {
       for (final p in Power.values) {
         expect(g.powerUses(p), 0);
       }
+    });
+  });
+
+  group('express jam guard', () {
+    // One bench seat, already holding a teal. The lift is for coral. The only
+    // boardable person is lane 0's front coral: Express on them would jam.
+    Level jammed() => tiny([
+          [(c, ResidentType.kid), (t, ResidentType.aunty), (c, ResidentType.officeW)],
+          [(t, ResidentType.uncle)],
+        ], bench: 1);
+
+    test('Express is refused when it would leave an empty lift, a full bench and nobody to board', () {
+      final g = LiftGame(jammed());
+      g.tapQueue(1);
+      g.tapBench(0);
+      g.tapQueue(0);
+      expect(g.canUsePower(Power.express), isFalse);
+      expect(g.expressDeliver(), isNull);
+      expect(g.phase, Phase.playing);
+      expect(g.powerUses(Power.express), 0);
+      expect(g.queues[0].first.id, 1, reason: 'nothing changed');
+    });
+
+    test('Express is allowed when someone else can still board', () {
+      final g = LiftGame(tiny([
+        [(c, ResidentType.kid)],
+        [(c, ResidentType.aunty)],
+        [(t, ResidentType.uncle)],
+      ], bench: 1));
+      g.tapQueue(2);
+      g.tapBench(0);
+      g.tapQueue(0);
+      expect(g.canUsePower(Power.express), isTrue);
+      expect(g.expressDeliver()?.id, 1);
+      expect(g.phase, Phase.playing);
+    });
+  });
+
+  group('powers only work while playing', () {
+    test('Swap and Express are refused during a send and a fall', () {
+      final g = LiftGame(tiny([
+        [(c, ResidentType.kid)],
+        [(c, ResidentType.aunty)],
+        [(c, ResidentType.uncle), (t, ResidentType.kid)],
+      ]));
+      g.tapQueue(0);
+      g.tapLift();
+      g.send();
+      expect(g.phase, Phase.departing);
+      expect(g.canUsePower(Power.swap), isFalse);
+      expect(g.swapFronts(1, 2), isFalse);
+      g.tapQueue(1);
+      expect(g.canUsePower(Power.express), isFalse);
+      expect(g.expressDeliver(), isNull);
+    });
+
+    test('Swap leaves the people behind the fronts masked', () {
+      final g = LiftGame(tiny([
+        [(c, ResidentType.kid), (t, ResidentType.uncle)],
+        [(t, ResidentType.officeW), (c, ResidentType.gym)],
+      ], unknown: {2, 4}));
+      expect(g.swapFronts(0, 1), isTrue);
+      expect(g.visibleLanes[0].map((r) => r?.id), [3, null]);
+      expect(g.visibleLanes[1].map((r) => r?.id), [1, null]);
     });
   });
 }

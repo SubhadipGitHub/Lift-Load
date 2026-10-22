@@ -259,13 +259,15 @@ class LiftGame {
 
   /// True when the person at [depth] in [lane] is still unknown to the player.
   bool isUnknownAt(int lane, int depth) {
-    if (depth == 0) return false;
+    // A front is known, except while a crash is pending: the person behind the
+    // rider who snapped the cable has not stepped up.
+    if (depth == 0 && _beforeCrash == null) return false;
     final id = _queues[lane][depth].id;
     return level.unknownIds.contains(id) && !_revealed.contains(id);
   }
 
-  /// The front of [lane], who is always known.
-  Resident? frontOf(int lane) => _queues[lane].isEmpty ? null : _queues[lane].first;
+  /// The front of [lane], who is always known except while a crash is pending.
+  Resident? frontOf(int lane) => _queues[lane].isEmpty || isUnknownAt(lane, 0) ? null : _queues[lane].first;
 
   int get laneCount => _queues.length;
   List<Resident?> get bench => List.unmodifiable(_bench);
@@ -398,18 +400,20 @@ class LiftGame {
       _bench[s.index] = null;
     } else {
       _queues[s.index].removeAt(0);
-      _revealFronts();
     }
     _riders.add(r);
     load += r.kg;
     selection = null;
     ghostLoad = null;
     if (load > capacity) {
+      // Nobody steps up on a crash: whoever is behind stays unknown, and a
+      // repair puts the rider back.
       _beforeCrash = before;
       phase = Phase.falling;
       _emit(OverloadEvent(r));
       return BoardResult.overloaded;
     }
+    if (!s.fromBench) _revealFronts();
     _emit(BoardedEvent(r, zone));
     return BoardResult.boarded;
   }
@@ -437,8 +441,33 @@ class LiftGame {
     return switch (p) {
       Power.swap => _queues.indexed.where((e) => e.$2.isNotEmpty && !isLaneLocked(e.$1)).length >= 2,
       Power.seats || Power.trip => true,
-      Power.express => selected != null,
+      Power.express => selected != null && !_expressWouldJam(),
     };
+  }
+
+  /// True when delivering the selected person by Express would leave the lobby
+  /// jammed (empty lift, full bench, nobody who can board), so the power is
+  /// refused instead of spent on a fail. Mirrors [_settleAfterExpress] without
+  /// changing anything.
+  bool _expressWouldJam() {
+    final s = selection;
+    if (s == null || _riders.isNotEmpty) return false;
+    if (s.fromBench) return false; // the seat it frees keeps the bench open
+    final gone = _queues[s.index].removeAt(0);
+    try {
+      if (_bench.contains(null) || remainingTotal == 0) return false;
+      var floors = liftFloors;
+      if (!floors.any(_reachable)) {
+        final next = _stopAfter(_prevServed, tripsUsed);
+        if (next == null) return false; // late arrivals or the coned-off lane bring someone in
+        floors = next.floors;
+      }
+      if (_canBoardFor(floors)) return false;
+      final locked = _lockedLane;
+      return !(locked != null && _queues[locked].isNotEmpty && floors.contains(_queues[locked].first.floor));
+    } finally {
+      _queues[s.index].insert(0, gone);
+    }
   }
 
   /// Swap: the front residents of two open, non-empty lanes change places.
@@ -615,7 +644,6 @@ class LiftGame {
           ..addAll(snap.riders);
         load = snap.load;
         _beforeCrash = null;
-        _revealFronts();
       case FailKind.outOfTrips:
         tripsTotal += Formulas.adTripsBonus;
       case FailKind.jam:
