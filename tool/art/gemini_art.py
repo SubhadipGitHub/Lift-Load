@@ -43,7 +43,7 @@ PROP_HEIGHT_PX = 300
 RIM_PX = 4  # width of the edge band that gets despilled, in source pixels
 NEUTRAL_RB_GAP = 25  # a green-tinted grey has red and blue this close (0-255)
 NEUTRAL_LEAN = 40  # ...and green above both by less than this
-SCENE_SIZE = {"9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
+SCENE_SIZE = {"3:2": (1200, 800), "4:3": (1200, 900), "9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
 
 ICON_BG = {"green": ("green", "#00FF00"), "magenta": ("magenta", "#FF00FF")}
 ICON_PX = 256  # every processed icon sits centred on a square canvas this size
@@ -74,7 +74,7 @@ def full_prompt(pack: dict, a: dict) -> str:
 
 
 # The Gemini app has no aspect-ratio setting, so app prompts say it in words.
-SHAPE = {"3:2": "Landscape image, 3:2 aspect ratio.", "2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
+SHAPE = {"4:3": "Landscape image, 4:3 aspect ratio.", "3:2": "Landscape image, 3:2 aspect ratio.", "2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
          "9:16": "Tall portrait image, 9:16 aspect ratio.", "4:5": "Portrait image, 4:5 aspect ratio.",
          "16:9": "Wide landscape image, 16:9 aspect ratio.", "1:1": "Square image, 1:1 aspect ratio."}
 
@@ -498,6 +498,16 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
             img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
             left, top = (img.width - size[0]) // 2, (img.height - size[1]) // 2
             img = img.crop((left, top, left + size[0], top + size[1]))
+        if a.get("ink") and a["kind"] == "scene":
+            import numpy as np
+
+            lin = np.asarray(img.convert("RGB")).astype(np.float32) / 255.0
+            lin = np.where(lin <= 0.03928, lin / 12.92, ((lin + 0.055) / 1.055) ** 2.4)
+            lum = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+            ink = np.array([int(a["ink"][i:i + 2], 16) for i in (1, 3, 5)], np.float32) / 255.0
+            ink = np.where(ink <= 0.03928, ink / 12.92, ((ink + 0.055) / 1.055) ** 2.4) @ np.array([0.2126, 0.7152, 0.0722])
+            p5 = (float(np.percentile(lum, 5)) + 0.05) / (float(ink) + 0.05)
+            print(f"check  {a['id']}: lane ink {a['ink']} contrast p5 {p5:.1f}:1 (need >= 4.3)")
         dest = OUT / f"{a['id']}.webp"
         img.save(dest, "WEBP", quality=90, method=6)
         print(f"wrote  {dest.relative_to(ROOT)}  {img.width}x{img.height}  {dest.stat().st_size // 1024} KB")

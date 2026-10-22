@@ -65,7 +65,11 @@ entries; fold older ones into "Earlier".
   (plum to #A066F5), and an exact Gemini-sparkle remover (`tool/art/sparkle_alpha.png`; the sparkle sits 120 px in from the
   bottom-right corner at every size, so the earlier hand patches on cabins and the star are no longer needed). Lift kinds read
   apart at a glance (pocket watch, toolbox, blue bolt on chrome).
-- Next in the restyle: painted Gemini backdrops (lobby and shaft), then the integration spec for lib/ (figures +60%, contact
+- Backdrops (owner: backdrops first, then the spec): four Gemini prompts for Sunrise Towers, `bg_society_shaft_{ground,mid,high}`
+  (3:2, centre third empty, detail in the side fifths, dark and calm) and `bg_society_lobby` (4:3, pale floor; `process` prints its
+  lane-ink contrast). Review each on the real layout with `python3 tool/art/compose_screen.py --shaft .. --lobby ..`. Prompt
+  page version 11. Waiting on the owner's four images; the other venues follow once Sunrise looks right.
+- Next in the restyle, after the backdrops:  the integration spec for lib/ (figures +60%, contact
   shadows, door leaves, icons in place of Material icons, 3D button recipe, punch). No lib/ work until the owner says go.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
   each with its own palette and storey bands) or stay with Gemini.
