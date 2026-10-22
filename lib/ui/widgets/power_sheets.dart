@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../game/formulas.dart';
 import '../../game/powers.dart';
 import '../../services/ad_policy.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../theme.dart';
+import 'glossy.dart';
 import 'power_dock.dart';
 import 'result_sheets.dart';
 
@@ -84,8 +86,11 @@ class _GetMoreSheetState extends State<GetMoreSheet> {
           final coinWhy = _coinWhy;
           final adWhy = _adWhy;
           final short = Metrics.of(context).shortLandscape;
-          final coinButton =
-              PrimaryButton(label: 'Spend $price coins', onPressed: coinWhy == null && !busy ? _buy : null);
+          final coinButton = PrimaryButton(
+            icon: GameIcon.coin,
+            label: 'Spend $price coins',
+            onPressed: coinWhy == null && !busy ? _buy : null,
+          );
           final adButton = RewardedButton(
             label: busy ? 'Loading ad…' : 'Watch an ad · +${Formulas.powerAdUses} ${power.rewardName}',
             onPressed: adWhy == null ? _watch : null,
@@ -105,15 +110,15 @@ class _GetMoreSheetState extends State<GetMoreSheet> {
                     child: Column(
                       children: [
                         if (!short)
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: LL.ink,
-                              border: Border.all(color: LL.brass, width: 3),
+                          Glossy(
+                            style: SurfaceStyle.plum,
+                            depth: SurfaceDepth.chip,
+                            inset: false,
+                            width: Metrics.sheetPower,
+                            height: Metrics.sheetPower,
+                            child: Center(
+                              child: PowerIcon(power, size: Metrics.sheetPower * Metrics.dockIconShare, color: LL.cream),
                             ),
-                            child: Center(child: PowerIcon(power, size: 34, color: LL.cream)),
                           ),
                         if (!short) const SizedBox(height: 8),
                         Text(power.dockLabel,
@@ -133,14 +138,14 @@ class _GetMoreSheetState extends State<GetMoreSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(child: Column(children: [coinButton, if (coinNote != null) coinNote])),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: Metrics.sheetButtonGap),
                         Expanded(child: Column(children: [adButton, if (adNote != null) adNote])),
                       ],
                     )
                   else ...[
                     coinButton,
                     if (coinNote != null) coinNote,
-                    const SizedBox(height: 10),
+                    const SizedBox(height: Metrics.sheetButtonGap),
                     adButton,
                     if (adNote != null) adNote,
                   ],

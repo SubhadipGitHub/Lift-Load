@@ -3,6 +3,31 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · PRD v1.7 restyle slice 3: surfaces and icons (branch restyle-slice3)
+
+**Done**
+- 3D surface recipe from the style frame: `SurfaceStyle` (mint, brass, cream, plum, chip, seat, off, per floor) and
+  `SurfaceDepth` in `theme.dart`, sizes in `Metrics.surface`, drawn by `widgets/glossy.dart` (`Glossy`,
+  `GlossyButton`, `SendGlyphPainter`). Inset for buttons (whole box is the touch target), outset for tags, chips,
+  seats and round buttons (layout unchanged). Press-down through `Pressable` (`pressable.dart`), still under
+  reduce-motion. Disabled buttons turn flat slate.
+- Applied: mint Send with the up arrow, dock, Scale, HUD (back, settings, level, trips, lives, coins), NEXT chips with a
+  kind badge on the corner, floor tags and cabin pills, bench seats, fail/win/get-more sheet buttons, settings rows,
+  home stats and Play. Cabin rim is the kind colour between two dark lines; gauge has a plate, dark bed, gloss line and
+  a glow tied to the engine's zone (never the Scale ghost or the springing needle).
+- Icons: 17 approved icons in `assets/art` through `ArtAssets.icon` / `kindIcon` / `scenarioIcon`, drawn by
+  `widgets/art_icon.dart` with the Material fallback when the switch is off or an image fails. Floor badges are not
+  shipped: on a floor-coloured tag they vanish, so tags keep the painted white glyph. Power cut not shipped.
+- Tests: `surfaces_test` (icons decode and match the table, fallbacks, Send mint vs slate, press-down, face geometry,
+  floor and seat surfaces, lock on a capped power, glow ignores the ghost); responsive sweep checks every glossy button
+  and the back and settings targets on play, sheets and home. 271 green.
+
+**Open**
+- Web build 45.88 MB before, 46.15 MB after (+0.27 MB).
+- Not in this slice: lane cards and lobby floor (slice 4), the Send ring pulse, a dark get-more sheet as in the layout
+  frame (sheets stay cream), the empty dock badge still reads "0".
+- The old-lift badge (a pocket watch) is the weakest icon at 22 dp.
+
 ## 2026-10-22 · PRD v1.7 restyle slice 2: cabins and doors (branch restyle-slice2)
 
 **Done**

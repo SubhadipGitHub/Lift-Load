@@ -4,10 +4,13 @@ import '../theme.dart';
 
 /// Draws a floor's shape in a 12×12 design box, scaled to the paint size.
 class FloorShapePainter extends CustomPainter {
-  const FloorShapePainter(this.shape, this.color);
+  const FloorShapePainter(this.shape, this.color, {this.shadow});
 
   final FloorShape shape;
   final Color color;
+
+  /// A hard drop shadow one design unit under the shape (a glyph on a glossy chip).
+  final Color? shadow;
 
   static Path pathFor(FloorShape shape) {
     final p = Path();
@@ -64,10 +67,12 @@ class FloorShapePainter extends CustomPainter {
       ..save()
       ..translate((size.width - 12 * s) / 2, (size.height - 12 * s) / 2)
       ..scale(s);
-    canvas.drawPath(pathFor(shape), Paint()..color = color);
+    final path = pathFor(shape);
+    if (shadow case final s?) canvas.drawPath(path.shift(const Offset(0, 1)), Paint()..color = s);
+    canvas.drawPath(path, Paint()..color = color);
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(FloorShapePainter old) => old.shape != shape || old.color != color;
+  bool shouldRepaint(FloorShapePainter old) => old.shape != shape || old.color != color || old.shadow != shadow;
 }

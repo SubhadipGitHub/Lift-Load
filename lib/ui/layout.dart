@@ -13,6 +13,13 @@ import 'package:flutter/widgets.dart';
 
 import '../game/cast.dart';
 import 'painters/resident_painter.dart';
+import 'theme.dart';
+
+/// The parts of a 3D surface, in logical pixels: the dark outline around the
+/// face, the thick bottom edge and the drop under it, the white line inside
+/// the top, the shade inside the bottom, and how far the face travels down
+/// while pressed (`widgets/glossy.dart`).
+typedef SurfaceSize = ({double outline, double edge, double drop, double highlight, double shade, double press});
 
 enum FormFactor { compactPhone, phone, tabletPortrait, twoPane }
 
@@ -88,6 +95,7 @@ class Metrics {
   double get radius => 22 * scale;
   double get hudHeight => math.max(50 * scale, minTouch);
   double get messageHeight => 32 * textScale;
+  static const double messageRim = 1.5;
 
   /// The bottom bar: the power dock and Send (mirrored for left-handed play).
   /// Tall enough for a 48 px button and its label at the largest text size.
@@ -137,6 +145,108 @@ class Metrics {
   /// Scale button on the gauge plate.
   Size get scaleButton => Size(math.max(92 * scale, minTouch), math.max(46 * scale, minTouch));
 
+  // The 3D surfaces (style frame, `.g3d`): each depth in design units.
+  SurfaceSize surface(SurfaceDepth depth) {
+    final (o, e, d, hl, sh, p) = switch (depth) {
+      SurfaceDepth.button => (2.5, 4.0, 3.0, 2.0, 5.0, 4.0),
+      SurfaceDepth.chip => (2.0, 3.0, 0.0, 2.0, 3.0, 2.0),
+      SurfaceDepth.tag => (1.5, 2.0, 0.0, 1.5, 0.0, 0.0),
+      SurfaceDepth.seat => (2.0, 4.0, 0.0, 2.0, 0.0, 0.0),
+    };
+    return (
+      outline: o * scale,
+      edge: e * scale,
+      drop: d * scale,
+      highlight: hl * scale,
+      shade: sh * scale,
+      press: p * scale,
+    );
+  }
+
+  /// The gloss band over a surface's face, as fractions of the face: its
+  /// side inset, its top and its height (style frame, `.g3d::after`).
+  static const double glossInset = 0.07;
+  static const double glossTop = 0.05;
+  static const double glossHeight = 0.38;
+
+  /// Corner radius of the big buttons (Send, the sheets) and of the dock and
+  /// Scale buttons' pills.
+  double get buttonRadius => 22 * scale;
+
+  /// Send: the up arrow beside its word.
+  Size get sendGlyph => Size(26 * scale, 20 * scale);
+
+  /// The HUD: round back and settings buttons (drawn inside a full touch
+  /// target), the icons on them and in the lives, coins and trips pills.
+  double get hudRound => 36 * scale;
+  double get hudRoundIcon => 22 * scale;
+  double get hudChipIcon => 24 * scale;
+  double get hudChipGap => 3 * scale;
+
+  /// The icon on a dock button, as a share of the button.
+  static const double dockIconShare = 0.62;
+
+  /// The lock on a power used up for this level.
+  double get dockLock => 20 * scale;
+
+  /// The stock badge on a dock button: its size, how far it hangs off the
+  /// corner, its side padding, and the gap above the button's label (room
+  /// for the button's bottom edge).
+  double get dockBadge => 22 * scale;
+  double get dockBadgeOffset => 4 * scale;
+  double get dockBadgePad => 4 * scale;
+  double get dockLabelGap => 11 * scale;
+
+  /// The Scale button's icon.
+  double get scaleIcon => 24 * scale;
+
+  /// A lift kind's badge on the corner of a NEXT chip, and on the cabin.
+  double get kindBadge => 22 * scale;
+  double get cabinKindBadge => 24 * scale;
+
+  /// The corner radius of a NEXT chip; the lifts after the next one sit
+  /// back at this opacity and scale; a kind's art fills this share of its
+  /// badge's disc.
+  double get nextChipRadius => 14 * scale;
+  static const double nextDimOpacity = 0.62;
+  static const double nextDimScale = 0.88;
+  static const double kindBadgeArt = 0.92;
+
+  /// The load gauge's plate: corner, padding and rim.
+  double get gaugePlateRadius => 16 * scale;
+  double get gaugePlatePadding => 6 * scale;
+  static const double gaugePlateRim = 2;
+  double get gaugeLabelGlow => 10 * scale;
+
+  /// The thin dark lines either side of the cabin's coloured rim.
+  double get cabinRimLine => 1.5 * scale;
+
+  /// Bench seats: their corner radius, and the glow around a picked seat or
+  /// one that can take the selected resident.
+  double get seatRadius => 14 * scale;
+  double get seatGlow => 14 * scale;
+
+  /// Sheets (fail, win, get more, settings): the round badge at the top and
+  /// its icon, the icon on a sheet button, the gap between stacked buttons
+  /// (room for their bottom edge), and the icon on a settings row.
+  static const double sheetBadge = 76;
+  static const double sheetBadgeIcon = 50;
+  static const double sheetButtonIcon = 26;
+  static const double sheetStar = 20;
+
+  /// The power's round badge at the top of the get-more sheet.
+  static const double sheetPower = 64;
+  static const double sheetButtonGap = 12;
+  static const double sheetButtonRadius = 18;
+  static const double settingsIcon = 28;
+
+  /// A settings row that cannot be used right now fades to this.
+  static const double disabledRow = 0.6;
+  static const double sheetRowGap = 10;
+
+  /// The icon on a home-screen stat pill.
+  double get statIcon => 22 * scale;
+
   // Figures. The design sizes are 60% larger than the v1.6 ones; lanes and
   // seats shrink a figure only as far as their width forces, never below the
   // v1.6 size ([_laneFigureFloor], [_benchFigureFloor]).
@@ -179,6 +289,12 @@ class Metrics {
 
   /// The height of a compact floor tag, so an unknown slot lines up with a known one.
   static const double compactTagHeight = 14;
+  static const double tagHeight = 20;
+
+  /// Scenario icons on the lobby floor, in design units: the rush-hour
+  /// banner's and the cones over a closed lane.
+  static const double bannerIcon = 18;
+  static const double coneIcon = 34;
 
   /// Width the lobby lanes share: the column, or the right pane.
   double get lanesWidth => twoPane ? math.min(size.width, twoPaneMaxWidth) - columnWidth : columnWidth;

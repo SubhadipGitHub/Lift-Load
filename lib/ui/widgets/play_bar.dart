@@ -6,7 +6,7 @@ import '../game_controller.dart';
 import '../layout.dart';
 import '../theme.dart';
 import 'power_dock.dart';
-import 'pressable.dart';
+import 'glossy.dart';
 
 /// The bottom bar of the play screen: the power dock and Send. Right-handed
 /// play puts the dock on the left and Send at the right edge, where the thumb
@@ -55,7 +55,9 @@ class PlayBottomBar extends StatelessWidget {
   }
 }
 
-/// The raised brass key that sends the lift.
+/// The mint glossy key that sends the lift (style frame): an up arrow and
+/// the word. With nobody aboard it turns to flat slate, so it never reads as
+/// live.
 class SendButton extends StatelessWidget {
   const SendButton({super.key, required this.enabled, required this.onPressed, required this.width});
 
@@ -63,56 +65,43 @@ class SendButton extends StatelessWidget {
   final VoidCallback onPressed;
   final double width;
 
+  /// Finds the button in tests.
+  static const Key buttonKey = ValueKey('send');
+
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
-    final radius = BorderRadius.circular(18 * m.scale);
-    return Opacity(
-      opacity: enabled ? 1 : 0.45,
-      child: PressScale(
-        enabled: enabled,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            boxShadow: [
-              BoxShadow(color: LL.brassDark, offset: Offset(0, 4 * m.scale)),
-              const BoxShadow(color: Color(0x55000000), blurRadius: 10, offset: Offset(0, 6)),
-            ],
-          ),
-          child: SizedBox(
-            width: width,
-            height: m.sendHeight,
-            child: FilledButton(
-              onPressed: enabled ? onPressed : null,
-              style: FilledButton.styleFrom(
-                backgroundColor: LL.brass,
-                disabledBackgroundColor: LL.brass,
-                foregroundColor: LL.ink,
-                disabledForegroundColor: LL.ink,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(borderRadius: radius),
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.notifications_rounded, size: 24 * m.scale),
-                    SizedBox(width: 6 * m.scale),
-                    Text(
-                      'Send',
-                      style: TextStyle(
-                        fontFamily: LL.displayFont,
-                        fontSize: m.font(22),
-                        fontWeight: FontWeight.w800,
-                        height: 1,
-                      ),
-                    ),
-                  ],
-                ),
+    final surface = enabled ? SurfaceStyle.mint : SurfaceStyle.off;
+    return GlossyButton(
+      key: buttonKey,
+      style: SurfaceStyle.mint,
+      onPressed: enabled ? onPressed : null,
+      width: width,
+      height: m.sendHeight,
+      radius: m.buttonRadius,
+      semanticsLabel: 'Send',
+      padding: EdgeInsets.symmetric(horizontal: m.gap / 2),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomPaint(
+              size: m.sendGlyph,
+              painter: SendGlyphPainter(outline: surface.edge, fill: enabled ? LL.creamHi : LL.lilac),
+            ),
+            SizedBox(width: m.gap / 2),
+            Text(
+              'Send',
+              style: TextStyle(
+                fontFamily: LL.displayFont,
+                fontSize: m.font(22),
+                fontWeight: FontWeight.w800,
+                height: 1,
+                color: surface.ink,
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

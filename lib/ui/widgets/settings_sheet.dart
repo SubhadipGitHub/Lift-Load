@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../game/engine.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
+import '../layout.dart';
 import '../theme.dart';
+import 'art_icon.dart';
+import 'glossy.dart';
 
 /// Sound, music, vibration and left-handed switches, saved in the profile.
 /// On the play screen ([inLevel]) it also holds Restart, which gives up the
@@ -28,7 +32,7 @@ Future<void> showSettingsSheet(BuildContext context, GameController c, {bool inL
                 children: [
                   Text('Settings',
                       textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 26, color: LL.ink)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Metrics.sheetRowGap),
                   _Toggle(
                     icon: Icons.volume_up_rounded,
                     label: 'Sound effects',
@@ -63,6 +67,25 @@ Future<void> showSettingsSheet(BuildContext context, GameController c, {bool inL
       ),
     );
 
+/// One settings row on a cream glossy tile.
+class _Tile extends StatelessWidget {
+  const _Tile({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: Metrics.sheetRowGap),
+        child: Glossy(
+          style: SurfaceStyle.cream,
+          depth: SurfaceDepth.chip,
+          inset: false,
+          radius: Metrics.sheetButtonRadius,
+          child: Material(type: MaterialType.transparency, child: child),
+        ),
+      );
+}
+
 class _Toggle extends StatelessWidget {
   const _Toggle({required this.icon, required this.label, required this.value, required this.onChanged, this.subtitle});
 
@@ -73,13 +96,15 @@ class _Toggle extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
-  Widget build(BuildContext context) => SwitchListTile(
-        secondary: Icon(icon, color: LL.ink),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, color: LL.ink)),
-        subtitle: subtitle == null ? null : Text(subtitle!, style: const TextStyle(color: LL.inkSoft)),
-        value: value,
-        activeThumbColor: LL.mintDark,
-        onChanged: onChanged,
+  Widget build(BuildContext context) => _Tile(
+        child: SwitchListTile(
+          secondary: Icon(icon, color: LL.ink, size: Metrics.settingsIcon),
+          title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, color: LL.ink)),
+          subtitle: subtitle == null ? null : Text(subtitle!, style: const TextStyle(color: LL.inkSoft)),
+          value: value,
+          activeThumbColor: LL.mintDark,
+          onChanged: onChanged,
+        ),
       );
 }
 
@@ -117,12 +142,17 @@ class _RestartRow extends StatelessWidget {
         : can
             ? 'Costs 1 life, because you have made moves'
             : 'Needs a spare life';
-    return ListTile(
-      leading: const Icon(Icons.restart_alt_rounded, color: LL.ink),
-      title: const Text('Restart level', style: TextStyle(fontWeight: FontWeight.w800, color: LL.ink)),
-      subtitle: Text(subtitle, style: const TextStyle(color: LL.inkSoft)),
-      enabled: can,
-      onTap: can ? () => _restart(context) : null,
+    return Opacity(
+      opacity: can ? 1 : Metrics.disabledRow,
+      child: _Tile(
+        child: ListTile(
+          leading: ArtIcon(GameIcon.restart, size: Metrics.settingsIcon),
+          title: const Text('Restart level', style: TextStyle(fontWeight: FontWeight.w800, color: LL.ink)),
+          subtitle: Text(subtitle, style: const TextStyle(color: LL.inkSoft)),
+          enabled: can,
+          onTap: can ? () => _restart(context) : null,
+        ),
+      ),
     );
   }
 }

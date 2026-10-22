@@ -6,12 +6,15 @@ import '../../game/cast.dart';
 import '../../game/engine.dart';
 import '../../game/formulas.dart';
 import '../../game/powers.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
 import '../painters/resident_painter.dart';
 import '../theme.dart';
+import '../widgets/art_icon.dart';
 import '../widgets/effects.dart';
+import '../widgets/glossy.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
 import '../widgets/play_bar.dart';
@@ -386,10 +389,13 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
               child: Container(
                 key: ValueKey(c.message),
                 padding: EdgeInsets.symmetric(horizontal: 12 * m.scale, vertical: 3 * m.scale),
-                decoration: BoxDecoration(
-                  color: c.message.isEmpty ? null : const Color(0x401E1B3A),
-                  borderRadius: BorderRadius.circular(999),
-                ),
+                decoration: c.message.isEmpty
+                    ? null
+                    : BoxDecoration(
+                        color: LL.messagePill,
+                        borderRadius: BorderRadius.circular(m.messageHeight),
+                        border: Border.all(color: LL.messageRim, width: Metrics.messageRim),
+                      ),
                 child: Text(
                   c.message,
                   textAlign: TextAlign.center,
@@ -609,46 +615,62 @@ class _Hud extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = c.game;
     final m = Metrics.of(context);
+    final chipGap = SizedBox(width: m.hudChipGap * 2);
     return SizedBox(
       height: m.hudHeight,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8 * m.scale),
+        padding: EdgeInsets.symmetric(horizontal: m.hudChipGap * 2),
         child: Row(
           children: [
-            IconButton(
-              tooltip: 'Back to the tower',
+            GlossyButton(
+              style: SurfaceStyle.plum,
               onPressed: onBack,
-              iconSize: 24 * m.textScale,
-              visualDensity: m.form == FormFactor.compactPhone ? VisualDensity.compact : null,
-              icon: const Icon(Icons.arrow_back_rounded, color: LL.cream),
+              tooltip: 'Back to the tower',
+              semanticsLabel: 'Back to the tower',
+              width: m.hudRound,
+              height: m.hudRound,
+              inset: false,
+              touch: true,
+              child: Icon(Icons.arrow_back_rounded, size: m.hudRoundIcon, color: LL.cream),
             ),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12 * m.scale, vertical: 1),
-                  decoration: BoxDecoration(color: LL.brass, borderRadius: BorderRadius.circular(999)),
-                  child: Text('Lv ${g.level.number}', style: LL.display.copyWith(fontSize: m.font(19), color: LL.ink)),
+            // Level and trips, then lives and coins: each group shrinks before
+            // it overflows on the narrowest phones.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Glossy(
+                        style: SurfaceStyle.brass,
+                        inset: false,
+                        padding: EdgeInsets.symmetric(horizontal: m.gap, vertical: m.hudChipGap),
+                        child: Text('Lv ${g.level.number}',
+                            style: LL.display.copyWith(fontSize: m.font(19), color: LL.ink)),
+                      ),
+                      chipGap,
+                      Semantics(
+                        label: 'Trips left ${g.tripsLeft}',
+                        child: ExcludeSemantics(child: _Chip(icon: GameIcon.trip, text: '${g.tripsLeft}')),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            SizedBox(width: 8 * m.scale),
-            Expanded(
-              child: Text(
-                'Trips left ${g.tripsLeft}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.lilac),
-              ),
-            ),
-            IconButton(
-              tooltip: 'Settings',
+            GlossyButton(
+              style: SurfaceStyle.plum,
               onPressed: () => showSettingsSheet(context, c, inLevel: true),
-              iconSize: 22 * m.textScale,
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.settings_rounded, color: LL.lilac),
+              tooltip: 'Settings',
+              semanticsLabel: 'Settings',
+              width: m.hudRound,
+              height: m.hudRound,
+              inset: false,
+              touch: true,
+              child: Icon(Icons.settings_rounded, size: m.hudRoundIcon, color: LL.cream),
             ),
-            // Lives and coins shrink before they overflow on the narrowest phones.
             Flexible(
               child: FittedBox(
                 alignment: Alignment.centerRight,
@@ -656,13 +678,16 @@ class _Hud extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _Chip(icon: Icons.favorite_rounded, color: LL.alarm, text: '${c.profile.lives}'),
-                    SizedBox(width: 6 * m.scale),
-                    _Chip(
-                      key: coinKey,
-                      icon: Icons.monetization_on_rounded,
-                      color: LL.brass,
-                      text: '${c.profile.coins}',
+                    Semantics(
+                      label: 'Lives ${c.profile.lives}',
+                      child: ExcludeSemantics(child: _Chip(icon: GameIcon.heart, text: '${c.profile.lives}')),
+                    ),
+                    chipGap,
+                    Semantics(
+                      label: 'Coins ${c.profile.coins}',
+                      child: ExcludeSemantics(
+                        child: _Chip(key: coinKey, icon: GameIcon.coin, text: '${c.profile.coins}'),
+                      ),
                     ),
                   ],
                 ),
@@ -675,25 +700,28 @@ class _Hud extends StatelessWidget {
   }
 }
 
+/// A dark HUD pill: an approved icon and a number.
 class _Chip extends StatelessWidget {
-  const _Chip({super.key, required this.icon, required this.color, required this.text});
+  const _Chip({super.key, required this.icon, required this.text});
 
-  final IconData icon;
-  final Color color;
+  final GameIcon icon;
   final String text;
 
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
-    return Container(
-      padding: EdgeInsets.fromLTRB(7 * m.scale, 4 * m.scale, 10 * m.scale, 4 * m.scale),
-      decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(999)),
+    return Glossy(
+      style: SurfaceStyle.chip,
+      depth: SurfaceDepth.chip,
+      inset: false,
+      padding: EdgeInsets.fromLTRB(m.hudChipGap, m.hudChipGap, m.hudChipGap * 3, m.hudChipGap),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16 * m.textScale, color: color),
-          SizedBox(width: 5 * m.scale),
-          Text(text, style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800)),
+          // An ink fallback would vanish on the dark pill.
+          ArtIcon(icon, size: m.hudChipIcon, color: ArtIcon.onDark(icon)),
+          SizedBox(width: m.hudChipGap),
+          Text(text, style: LL.display.copyWith(fontSize: m.font(15), color: LL.cream)),
         ],
       ),
     );

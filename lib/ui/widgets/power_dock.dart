@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../../game/engine.dart';
 import '../../game/formulas.dart';
 import '../../game/powers.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
-import '../motion.dart';
 import '../theme.dart';
-import 'pressable.dart';
+import 'art_icon.dart';
+import 'glossy.dart';
 import 'power_sheets.dart';
+import 'pressable.dart';
 
 /// Player-facing words for each power. Nothing here mentions a weight.
 extension PowerCopy on Power {
@@ -37,10 +39,11 @@ extension PowerCopy on Power {
       };
 }
 
-/// SPRITE SLOT. The one place a power's picture is chosen. Material icons are
-/// placeholders until the Swap and Express art exists; replace the body of
-/// this widget (for example with an `Image.asset` per power) and nothing else
-/// in the dock or the sheet needs to change.
+/// SPRITE SLOT. The one place a power's picture is chosen. +2 seats and +1
+/// trip use the approved seat and trip icons ([ArtIcon], which falls back to
+/// Material when sprite art is off); Swap and Express keep Material
+/// placeholders until their art exists. [color] tints placeholders and
+/// fallbacks only.
 class PowerIcon extends StatelessWidget {
   const PowerIcon(this.power, {super.key, required this.size, required this.color});
 
@@ -49,16 +52,12 @@ class PowerIcon extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Icon(
-        switch (power) {
-          Power.swap => Icons.swap_horiz_rounded,
-          Power.seats => Icons.event_seat_rounded,
-          Power.trip => Icons.elevator_rounded,
-          Power.express => Icons.bolt_rounded,
-        },
-        size: size,
-        color: color,
-      );
+  Widget build(BuildContext context) => switch (power) {
+        Power.seats => ArtIcon(GameIcon.seat, size: size, color: color),
+        Power.trip => ArtIcon(GameIcon.trip, size: size, color: color),
+        Power.swap => Icon(Icons.swap_horiz_rounded, size: size, color: color),
+        Power.express => Icon(Icons.bolt_rounded, size: size, color: color),
+      };
 }
 
 /// One round button per unlocked power: icon, short label and a stock badge
@@ -147,15 +146,32 @@ class _PowerButton extends StatelessWidget {
     if (offerRefill) showGetMoreSheet(context, c, power);
   }
 
+  /// A power that cannot act right now is faded; an empty one only a little,
+  /// since a tap still offers more.
+  static const double dimOpacity = 0.55;
+  static const double emptyOpacity = 0.88;
+
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
     final state = _state;
     final d = m.dockButton;
     final armed = state == _State.armed;
-    final dim = state == _State.empty || state == _State.capped || state == _State.blocked;
+    final opacity = switch (state) {
+      _State.empty => emptyOpacity,
+      _State.capped || _State.blocked => dimOpacity,
+      _State.ready || _State.armed => 1.0,
+    };
     final stock = c.powerStock(power);
     final empty = stock <= 0;
+    final badgeText = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        '$stock',
+        style: LL.display.copyWith(fontSize: m.font(12), color: empty ? LL.lilac : LL.ink),
+      ),
+    );
+    final badgeBox = BoxConstraints(minWidth: m.dockBadge, minHeight: m.dockBadge);
     return Semantics(
       key: ValueKey('power-${power.name}'),
       button: true,
@@ -167,9 +183,9 @@ class _PowerButton extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => _tap(context),
-          child: PressScale(
+          child: Pressable(
             enabled: _playing,
-            child: SizedBox(
+            builder: (context, down) => SizedBox(
               width: d,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -180,43 +196,57 @@ class _PowerButton extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        AnimatedContainer(
-                          duration: motionMs(context, 120),
-                          width: d,
-                          height: d,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: armed ? LL.brass : LL.cream.withValues(alpha: dim ? 0.6 : 1),
-                            border: Border.all(color: armed ? LL.cream : LL.brassDark, width: armed ? 3 : 2),
-                            boxShadow: [BoxShadow(color: LL.rule, offset: Offset(0, 3 * m.scale))],
+                        Opacity(
+                          opacity: opacity,
+                          child: Glossy(
+                            style: armed ? SurfaceStyle.brass : SurfaceStyle.cream,
+                            // Outset keeps the face round; its edge paints into the label gap.
+                            inset: false,
+                            pressed: down,
+                            glow: armed ? LL.pickGlow : null,
+                            width: d,
+                            height: d,
+                            child: Center(child: PowerIcon(power, size: d * Metrics.dockIconShare, color: LL.ink)),
                           ),
-                          child: Center(child: PowerIcon(power, size: d * 0.52, color: LL.ink)),
                         ),
                         Positioned(
-                          right: -4 * m.scale,
-                          top: -5 * m.scale,
-                          child: Container(
-                            constraints: BoxConstraints(minWidth: 22 * m.scale, minHeight: 22 * m.scale),
-                            padding: EdgeInsets.symmetric(horizontal: 4 * m.scale),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: empty ? LL.deep : LL.brass,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: empty ? LL.lilac : LL.brassDark, width: 2),
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                '$stock',
-                                style: LL.display.copyWith(fontSize: m.font(12), color: empty ? LL.lilac : LL.ink),
-                              ),
-                            ),
-                          ),
+                          right: -m.dockBadgeOffset,
+                          top: -m.dockBadgeOffset,
+                          child: empty
+                              ? Container(
+                                  constraints: badgeBox,
+                                  padding: EdgeInsets.symmetric(horizontal: m.dockBadgePad),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: LL.deep,
+                                    borderRadius: BorderRadius.circular(m.dockBadge),
+                                    border: Border.all(color: LL.lilac, width: Metrics.gaugePlateRim),
+                                  ),
+                                  child: badgeText,
+                                )
+                              : Glossy(
+                                  style: SurfaceStyle.brass,
+                                  depth: SurfaceDepth.tag,
+                                  inset: false,
+                                  child: Container(
+                                    constraints: badgeBox,
+                                    padding: EdgeInsets.symmetric(horizontal: m.dockBadgePad),
+                                    alignment: Alignment.center,
+                                    child: badgeText,
+                                  ),
+                                ),
                         ),
+                        // Used up on this level: a lock, whatever stock is left.
+                        if (state == _State.capped)
+                          Positioned(
+                            left: -m.dockBadgeOffset,
+                            bottom: -m.dockBadgeOffset,
+                            child: ArtIcon(GameIcon.lock, size: m.dockLock),
+                          ),
                       ],
                     ),
                   ),
-                  if (m.dockLabels) SizedBox(height: 4 * m.scale),
+                  if (m.dockLabels) SizedBox(height: m.dockLabelGap),
                   if (m.dockLabels)
                     FittedBox(
                       fit: BoxFit.scaleDown,

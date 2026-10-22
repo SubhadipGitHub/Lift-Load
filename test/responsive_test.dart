@@ -13,7 +13,9 @@ import 'package:lift_load/ui/painters/cabin_painter.dart';
 import 'package:lift_load/ui/painters/sprite_painter.dart';
 import 'package:lift_load/ui/screens/home_screen.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
+import 'package:lift_load/ui/widgets/glossy.dart';
 import 'package:lift_load/ui/widgets/lobby.dart';
+import 'package:lift_load/ui/widgets/play_bar.dart';
 import 'package:lift_load/ui/widgets/power_dock.dart';
 import 'package:lift_load/ui/widgets/resident_figure.dart';
 
@@ -84,6 +86,18 @@ void expectTouchTarget(WidgetTester tester, Finder f, String what) {
   expect(rect.height, greaterThanOrEqualTo(Metrics.minTouch - 0.5), reason: '$what height');
 }
 
+/// Every glossy button on screen keeps a full touch target.
+void expectGlossyTargets(WidgetTester tester, String what) {
+  final buttons = find.byType(GlossyButton);
+  expect(buttons, findsWidgets, reason: what);
+  for (final e in buttons.evaluate()) {
+    final size = tester.getSize(find.byWidget(e.widget));
+    final label = (e.widget as GlossyButton).semanticsLabel ?? e.widget.runtimeType.toString();
+    expect(size.width, greaterThanOrEqualTo(Metrics.minTouch - 0.5), reason: '$what: $label width');
+    expect(size.height, greaterThanOrEqualTo(Metrics.minTouch - 0.5), reason: '$what: $label height');
+  }
+}
+
 /// Known figures drawn in [of], and the height each is drawn at on screen
 /// (after any FittedBox shrink).
 List<double> drawnHeights(WidgetTester tester, Type of) => [
@@ -141,6 +155,7 @@ void main() {
       await tester.pumpWidget(app(HomeScreen(controller: c), textScale: 1.3));
       await tester.pump();
       expect(tester.takeException(), isNull);
+      expectGlossyTargets(tester, 'home');
     });
 
     testWidgets('play fits at $name', (tester) async {
@@ -170,7 +185,7 @@ void main() {
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp(r'^Empty bench seat$')), 'bench seat');
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp('Tap to board the selected resident')), 'cabin');
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp(r'^(?!Bench).* going to \dF')), 'lane front');
-      expect(tester.getSize(find.widgetWithText(FilledButton, 'Send')).height, greaterThanOrEqualTo(Metrics.minTouch));
+      expect(tester.getSize(find.byKey(SendButton.buttonKey)).height, greaterThanOrEqualTo(Metrics.minTouch));
       handle.dispose();
     });
 
@@ -202,8 +217,11 @@ void main() {
             expectTouchTarget(tester, find.bySemanticsLabel(RegExp('^${RegExp.escape(p.dockLabel)}: ')), p.name);
           }
           expectTouchTarget(tester, find.bySemanticsLabel(RegExp('^Scale: ')), 'scale');
+          expectTouchTarget(tester, find.bySemanticsLabel('Back to the tower'), 'back');
+          expectTouchTarget(tester, find.bySemanticsLabel('Settings'), 'settings');
           expect(
-              tester.getSize(find.widgetWithText(FilledButton, 'Send')).height, greaterThanOrEqualTo(Metrics.minTouch));
+              tester.getSize(find.byKey(SendButton.buttonKey)).height, greaterThanOrEqualTo(Metrics.minTouch));
+          expectGlossyTargets(tester, 'play, $reason');
           // Swap armed with its first lane picked, then the unknown people stepping up.
           await tester.tap(find.byKey(const ValueKey('power-swap')));
           await tester.pump();
@@ -232,6 +250,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.textContaining('Spend'), findsOneWidget, reason: reason);
           expect(tester.takeException(), isNull, reason: 'sheet, $reason');
+          expectGlossyTargets(tester, 'get-more sheet, $reason');
           await tester.tap(find.text('Not now'));
           await tester.pumpAndSettle();
           await tester.tap(find.byTooltip('Settings'));
@@ -260,6 +279,7 @@ void main() {
       await tester.pump();
       expect(find.text('Overloaded!'), findsWidgets);
       expect(tester.takeException(), isNull, reason: 'fail sheet');
+      expectGlossyTargets(tester, 'fail sheet');
 
       final win = controller(DebugAnalytics(), levelFor: (_) => winLevel());
       win.startLevel();
@@ -271,6 +291,7 @@ void main() {
       await tester.pump();
       expect(find.textContaining('complete!'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'win sheet');
+      expectGlossyTargets(tester, 'win sheet');
     });
   }
 
