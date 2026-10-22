@@ -1,7 +1,7 @@
 # Art pack: polished 3D-animated look with Gemini
 
 This replaces the flat parametric art with a stylized 3D animated-feature look: soft rounded shapes, subsurface
-skin and cinematic lighting. It covers the cast, cargo props, the four lift kinds, the five venues, the home skyline,
+skin and cinematic lighting. It covers the cast, cargo props, the four lift kinds (interiors from Gemini, doors rendered in code), the five venues, the home skyline,
 the store key art and the app icon.
 
 Prompts live in one place, `tool/art/art_pack.json`. That file holds the style bible and one prompt per asset.
@@ -76,6 +76,25 @@ can line new art up against them with `review --dir` and `sheet`. It sits under 
 assets, so none of it ships. Add each new approved sprite there when you approve it. The integration PR moves the
 chosen files into `assets/`.
 
+## The Gemini corner sparkle
+
+The Gemini app puts a translucent white four-point sparkle 120 px in from the bottom-right corner of every image, and
+on a sheet it can land on the artwork (a star's rim, an armchair, a stopwatch). It is a white overlay of fixed shape and
+opacity, so `process` undoes it exactly for scenes and icon sheets: `tool/art/sparkle_alpha.png` holds its opacity
+(measured on a flat magenta backdrop) and the original is recovered as `(observed - a * 255) / (1 - a)`. Characters and
+props still rely on the speck dropper, since their sparkle always falls on the backdrop.
+
+## Icon sheets
+
+The UI icon set (coin, heart, booster, restart, trip, star; the six floor badges; results and states; lift kinds and
+lobby scenarios) is made as four 3:2 sheets of six icons, not one image per icon: `icons_hud`, `icons_floors`,
+`icons_results`, `icons_lifts` in `art_pack.json`. Attach the schoolkid for style, save each as `art/raw/<id>.png`, run
+`process`. It keys the backdrop (the floor sheet is magenta, because one badge is green; a keyer built for that is
+`_key_out_magenta`), cuts each separate icon in reading order, and writes `art/processed/icon_<name>.webp`, 256 px square,
+plus `_icons.png`, a contact sheet on the lobby floor and the night panel. It warns when it finds the wrong number of
+icons: regenerate with wider gaps. The floor sheet's plum badge is hue-shifted to `#A066F5` (`retint` in `art_pack.json`) so it matches the code-drawn floor tags; the matte is eroded 2 px there to lose the pink rim. Buttons themselves are code (outline, bevel, gloss, press), so the icons sit on top
+of them; glyph-only marks (back arrow, gear, send chevron) are drawn in code too.
+
 ## Review checklist (per character, on the line-up)
 
 - **Height order.** Height order and relative size match the game: the kid is clearly smallest, and the gym regular
@@ -107,6 +126,30 @@ This is a separate build, sketched here so the art is made to fit it:
 - **Sprites behind the painter.** A sprite-backed `ResidentFigure` path keeps the parametric painter as the
   fallback. The asset list and `designWidth` stay the source of figure widths. Idle sway, walks and power-cut dimming
   already work on any child widget, and blink becomes an idle/blink frame swap.
+- **Contact shadows, in code.** Scene and sprites are separate images, so grounding comes from a soft dark ellipse
+  painted under each figure: width 0.62 of the sprite's width, height 0.20 of that width, warm near-black at about 41%
+  opacity, blurred by 3.5% of its width, centred on the feet line. `tool/art/compose_check.py` prototypes it (constants
+  at the top) and is the reference for the painter.
+- **Feet line.** In the cabin, put the feet at about 90% of the cabin's height (mid-floor), not at the floor front. The
+  cabin is drawn 196 x 214 units, so cover-crop the scene to that aspect; a square scene loses only its sides.
+- **Doors, in two leaves.** Gemini cannot draw two independent leaves with a matching seam, so the doors are rendered
+  by `tool/art/make_doors.py` (deterministic, colours sampled from each approved interior): `cabin_<kind>_door_left` and
+  `_right`, each 432 x 944 px, half the cabin (98 x 214 units); the right leaf is the mirror of the left. Draw the
+  cabin interior, the riders, then the two leaves on top, clipped to the cabin rect. Open, the leaves sit fully outside
+  the rect; closed, they meet at the centre. Motion: close in about 420 ms with ease-in-out, a 2 px settle at the end,
+  a thin dark gradient on each leaf's seam edge that fades as it opens, and the interior dimmed by about 12% while
+  closed. Sequence for Send: doors close, then the lift moves; on arrival the lift stops, the doors open, riders leave.
+  The express leaves carry the blue LED on the seam edge. Nothing on a leaf may suggest load, so no plates or numbers.
+- **Venue backgrounds, in code (Sunrise Towers).** `tool/art/make_venues.py` draws them to the game's constraints
+  instead of Gemini. Shaft walls: `society_wall_<band>.webp`, 732 x 524 (the 366 x 262 unit panel at 2x), one per
+  storey band of the building: ground (levels 1-4), low (5-8), mid (9-12), high (13-16), top (17-20), so the wall climbs
+  from a lamp-lit wainscot to windows onto a dusk skyline and finally a night sky as the player advances. Choose the
+  band with `((level - 1) % 20) ~/ 4`. Draw with cover fit behind the rails, cabin and NEXT strip; detail sits in the
+  right-hand band only, because the cabin and the NEXT chips cover the rest, and the wall stays near `LL.facade` so
+  brass chips and the cabin read on top. Lobby floors: `society_floor_<tile|marble|wood>.webp`, 408 px square and
+  tileable (tile joints at 34 units, 3x), light and low-contrast; 95% of pixels clear 4.3:1 against the lane ink
+  (the same as the game's own grid lines), so "+3 waiting" stays legible. Tile is the default (it matches `LL.tile`
+  and the old grid); marble and wood are alternates. The script prints the contrast check on every run.
 - **Raster cabins.** Raster cabin interiors and doors (the doors slide as two halves of one image), venue lobby
   floors and shaft walls, and the home skyline, all drawn under the existing UI.
 - **Size budget.** About 2 MB of WebP for the cast and props and 3–5 MB for scenes, within the 25 MB APK budget.

@@ -4,7 +4,8 @@
   "style": {
     "resident": "Stylized 3D animated-feature character rendering: soft rounded appealing shapes, slightly exaggerated cartoon proportions (head about one fifth of body height), large expressive eyes, subsurface-scattered skin, soft global illumination with a warm key light from the upper left and a cool rim light, gentle ambient occlusion, matte fabric with fine visible weave, clean readable silhouette. Friendly, relaxed expression. Full body including both feet, standing upright, front view with a very slight three-quarter turn. Centered on a perfectly flat, uniform pure green background (#00FF00) with no floor, no cast shadow, no gradient. Exactly one character. No text, no letters, no numbers, no logos, no brand marks, no watermark.",
     "prop": "Stylized 3D animated-feature prop rendering matching the reference style: soft rounded shapes, warm key light from the upper left, cool rim light, gentle ambient occlusion. Centered on a perfectly flat uniform pure green background (#00FF00), no floor, no shadow. No text, no logos, no numbers, no watermark.",
-    "scene": "Stylized 3D animated-feature environment rendering: soft rounded shapes, warm cinematic lighting, gentle depth of field, rich but soft colour, clean uncluttered composition that stays readable behind small game characters. No people. No text, no signage lettering, no logos, no brand marks, no watermark."
+    "scene": "Stylized 3D animated-feature environment rendering: soft rounded shapes, warm cinematic lighting, gentle depth of field, rich but soft colour, clean uncluttered composition that stays readable behind small game characters. No people. No text, no signage lettering, no logos, no brand marks, no watermark.",
+    "icon_sheet": "Stylized 3D animated-feature game icon rendering: chunky toy-like rounded shapes, soft glossy highlights, thick soft bevels, rich saturated colour, a warm key light from the upper left and a cool rim light, gentle ambient occlusion, a clean readable silhouette at small sizes. Each icon is one single centred object seen from the front. The sheet is a grid of {cols} columns by {rows} rows with every icon the same size and wide empty gaps between them, so no two icons touch or overlap. Perfectly flat uniform pure {bg} background ({hex}) with no floor, no shadow on the background, no gradient. No text, no letters, no numbers, no logos, no brand marks, no watermark."
   },
   "chroma": "#00FF00",
   "assets": [
@@ -390,70 +391,28 @@
       "kind": "scene",
       "name": "Standard lift interior",
       "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No buttons with numbers, no signs."
-    },
-    {
-      "id": "cabin_normal_doors",
-      "kind": "scene",
-      "name": "Standard lift doors",
-      "aspect": "4:5",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No call buttons, no floor numbers, no signs."
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_old_interior",
       "kind": "scene",
       "name": "Old lift interior",
-      "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No buttons with numbers, no signs."
-    },
-    {
-      "id": "cabin_old_doors",
-      "kind": "scene",
-      "name": "Old lift doors",
-      "aspect": "4:5",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No call buttons, no floor numbers, no signs."
+      "aspect": "1:1",
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_service_interior",
       "kind": "scene",
       "name": "Service lift interior",
-      "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No buttons with numbers, no signs."
-    },
-    {
-      "id": "cabin_service_doors",
-      "kind": "scene",
-      "name": "Service lift doors",
-      "aspect": "4:5",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No call buttons, no floor numbers, no signs."
+      "aspect": "1:1",
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_express_interior",
       "kind": "scene",
       "name": "Express lift interior",
-      "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: sleek glass and chrome, a soft blue LED light strip, a polished dark floor. No buttons with numbers, no signs."
-    },
-    {
-      "id": "cabin_express_doors",
-      "kind": "scene",
-      "name": "Express lift doors",
-      "aspect": "4:5",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: sleek glass and chrome, a soft blue LED light strip, a polished dark floor. No call buttons, no floor numbers, no signs."
-    },
-    {
-      "id": "venue_society_lobby",
-      "kind": "scene",
-      "name": "Sunrise Towers (apartment society) lobby floor",
-      "aspect": "9:16",
-      "prompt": "A top-down three-quarter view of the floor area of a warm Indian apartment-society lobby: cream walls, potted plants, a terracotta tiled floor, evening light through a window. The floor fills most of the frame with plenty of empty space for characters to stand in four columns; walls only at the top edge."
-    },
-    {
-      "id": "venue_society_shaft",
-      "kind": "scene",
-      "name": "Sunrise Towers (apartment society) lift shaft wall",
-      "aspect": "4:5",
-      "prompt": "The wall around a lift shaft inside a warm Indian apartment-society lobby: cream walls, potted plants, a terracotta tiled floor, evening light through a window, seen straight on, with the empty dark lift opening in the centre third left plain for the cabin to be drawn over it."
+      "aspect": "1:1",
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: sleek polished chrome with frosted glass panels, a solid opaque frosted-glass back wall with no view through it and no second room, corridor or reflection of depth behind it, a soft blue LED light strip along the ceiling edges, a polished dark floor. No buttons with numbers, no signs."
     },
     {
       "id": "venue_office_lobby",
@@ -540,6 +499,134 @@
       "name": "App icon",
       "aspect": "1:1",
       "prompt": "An app icon: a single cheerful brass lift cabin with its doors half open, a small glowing green arrow above it, on a deep night-blue background (#1C1A3F), bold simple shapes that read at 48 pixels, centred with generous margins, no characters."
+    },
+    {
+      "id": "icons_hud",
+      "kind": "icon_sheet",
+      "name": "Icons: HUD and booster",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "green",
+      "icons": [
+        "coin",
+        "heart",
+        "scale",
+        "restart",
+        "trip",
+        "star"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a round gold coin with a raised rim and an embossed upward chevron in the middle, no letters or numbers. 2) a plump glossy red heart. 3) a chunky brass two-pan balance scale on a small stand. 4) a chunky cream-white circular arrow, about three quarters of a ring with a rounded arrowhead and a brass edge. 5) a small cute lift car: a rounded gold box with two sliding doors and a seam down the middle, and a small upward arrow above it. 6) a puffy five-point gold star with rounded tips.",
+      "weight_read": "six separate objects, no overlap, none green; the coin and star must not carry a number."
+    },
+    {
+      "id": "icons_floors",
+      "kind": "icon_sheet",
+      "name": "Icons: floor badges",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "magenta",
+      "icons": [
+        "floor_coral",
+        "floor_sun",
+        "floor_teal",
+        "floor_blue",
+        "floor_plum",
+        "floor_leaf"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a glossy glass-candy badge shaped as a circle, coral red (#FF6B5B). 2) a glossy glass-candy badge shaped as a triangle with rounded corners, sunny yellow (#FFC233). 3) a glossy glass-candy badge shaped as a rounded square, teal (#14B8A6). 4) a glossy glass-candy badge shaped as a diamond, blue (#4C7DFF). 5) a glossy glass-candy badge shaped as a hexagon, plum purple (#A066F5). 6) a glossy glass-candy badge shaped as a plus sign with rounded arms, leaf green (#7BD148).",
+      "weight_read": "six badges, the shape is the meaning: circle, triangle, square, diamond, hexagon, plus; no numbers or letters.",
+      "retint": {
+        "floor_plum": "#A066F5"
+      }
+    },
+    {
+      "id": "icons_results",
+      "kind": "icon_sheet",
+      "name": "Icons: results and states",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "green",
+      "icons": [
+        "trophy",
+        "cable_snap",
+        "hourglass",
+        "lock",
+        "play",
+        "seat"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a chunky gold trophy cup with two handles and a small star on it. 2) two thick steel hoist cable ends snapping apart with a small orange spark between them. 3) a wooden-framed hourglass with golden sand, most of it in the lower bulb. 4) a chunky closed brass padlock. 5) a round blue-violet button with a white play triangle in the middle. 6) a cosy cream armchair seen from the front.",
+      "weight_read": "six objects, none green; the snapped cable must read as a break, not a rope."
+    },
+    {
+      "id": "icons_lifts",
+      "kind": "icon_sheet",
+      "name": "Icons: lift kinds and lobby scenarios",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "green",
+      "icons": [
+        "kind_old",
+        "kind_service",
+        "kind_express",
+        "scene_maintenance",
+        "scene_powercut",
+        "scene_rush"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a worn brass pocket watch with a scuffed case, no numbers on the face. 2) an orange and grey toolbox with a wrench lying on top. 3) a bright blue lightning bolt on a rounded chrome badge. 4) an orange and white traffic cone with a small wrench leaning on it. 5) a clear glass light bulb, dark and unlit, with a tiny spark at its cracked filament. 6) a silver stopwatch with a red button, with motion lines streaking behind it, no numbers on the face.",
+      "weight_read": "six objects, none green; old, service and express must be told apart at a glance (they are the NEXT-strip lift kinds)."
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_shaft_ground",
+      "name": "Sunrise Towers shaft wall: ground (levels 1-4)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a warm Indian apartment-society lobby, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: cream wainscot panelling on the lower half of the walls under dark indigo paint, a brass wall lamp glowing on each side, a potted plant standing at each edge. Palette: deep indigo and plum with warm brass accents and a soft warm lamp glow, dark to mid-tone and low in contrast, so bright buttons, chips and a gauge sit clearly on top. No people, no lift doors, no signs, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; dark, low contrast"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_shaft_mid",
+      "name": "Sunrise Towers shaft wall: middle floors (levels 5-12)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in an apartment-building landing between floors, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a tall window on each side with a brass frame showing a dusk sky and distant city lights, a small warm wall sconce beside each window, subtle plaster texture on the indigo walls. Palette: deep indigo and plum with warm brass accents and a soft warm lamp glow, dark to mid-tone and low in contrast, so bright buttons, chips and a gauge sit clearly on top. No people, no lift doors, no signs, no text, no numbers.",
+      "weight_read": "centre third empty and calm; windows only at the sides; dark, low contrast"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_shaft_high",
+      "name": "Sunrise Towers shaft wall: top floors (levels 13-20)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a top-floor penthouse landing, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a tall arched window on each side with gold trim showing a starry night sky and a glittering city skyline, deep plum and indigo walls with fine gold moulding. Palette: deep indigo and plum with warm brass accents and a soft warm lamp glow, dark to mid-tone and low in contrast, so bright buttons, chips and a gauge sit clearly on top. No people, no lift doors, no signs, no text, no numbers.",
+      "weight_read": "centre third empty and calm; windows only at the sides; dark, low contrast"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_lobby",
+      "name": "Sunrise Towers lobby floor",
+      "aspect": "4:3",
+      "ink": "#6B5C44",
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a warm apartment-society lobby: large square floor tiles all in the same very pale cream, close to #F4E3C3, separated by thin, slightly darker warm-beige grout, with only a faint soft variation in tone from tile to tile. No coloured or terracotta tiles, no checkerboard, no pattern. A soft pool of warm light in the middle and gently darker corners. The floor fills the frame edge to edge, with only a very thin strip of cream wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no text, no numbers.",
+      "weight_read": "floor one pale cream colour, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
+    },
+    {
+      "id": "unknown_ghost",
+      "kind": "prop",
+      "name": "Unknown resident (ghost silhouette)",
+      "aspect": "2:3",
+      "design_height": 96,
+      "reference": "resident_kid",
+      "prompt": "A cool ghost silhouette standing for an unknown person in a queue: a smooth, translucent, glass-like human figure, front view, standing upright with arms relaxed at its sides, a plain generic average build and height with no clothes, no hair, no face and no features at all, so every unknown person looks exactly the same. The body glows softly from within in electric violet and cold blue with a bright glossy rim light, tiny drifting sparkles around it, and the legs fade into a wispy, flowing ghost tail instead of feet. Exactly one figure, centred, with space around it.",
+      "weight_read": "one smooth featureless figure of average build; nothing that hints at weight or height variety; glows violet and blue; no face, no text, no symbols",
+      "key": "distance",
+      "despill_green": 0.82
     }
   ]
 }

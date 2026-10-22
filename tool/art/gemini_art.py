@@ -43,7 +43,10 @@ PROP_HEIGHT_PX = 300
 RIM_PX = 4  # width of the edge band that gets despilled, in source pixels
 NEUTRAL_RB_GAP = 25  # a green-tinted grey has red and blue this close (0-255)
 NEUTRAL_LEAN = 40  # ...and green above both by less than this
-SCENE_SIZE = {"9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
+SCENE_SIZE = {"3:2": (1200, 800), "4:3": (1200, 900), "9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
+
+ICON_BG = {"green": ("green", "#00FF00"), "magenta": ("magenta", "#FF00FF")}
+ICON_PX = 256  # every processed icon sits centred on a square canvas this size
 
 REFERENCE_NOTE = ("Use the attached reference image only for rendering style, lighting, materials and level of "
                   "detail; do not copy its character, pose or outfit.")
@@ -57,18 +60,21 @@ def full_prompt(pack: dict, a: dict) -> str:
     if a["kind"] == "resident_blink":
         return a["prompt"]
     style = pack["style"]["resident" if a["kind"] == "resident" else a["kind"]]
+    if a["kind"] == "icon_sheet":
+        bg = ICON_BG[a.get("chroma", "green")]
+        style = style.format(cols=a["cols"], rows=a["rows"], bg=bg[0], hex=bg[1])
     # Skin tones come from ResidentLook (lib/ui/painters/resident_painter.dart), the owner's cast. Left unsaid,
     # Gemini picks its own: the first gym regular came back pale where the design is the deepest brown.
     skin = a.get("skin")
     body = a["prompt"] + (f" Skin tone: {skin['name']}, close to {skin['hex']}." if skin else "")
     parts = [body, style]
     if a.get("reference"):
-        parts.append(REFERENCE_NOTE)
+        parts.append(a.get("reference_note", REFERENCE_NOTE))
     return "\n\n".join(parts)
 
 
 # The Gemini app has no aspect-ratio setting, so app prompts say it in words.
-SHAPE = {"2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
+SHAPE = {"4:3": "Landscape image, 4:3 aspect ratio.", "3:2": "Landscape image, 3:2 aspect ratio.", "2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
          "9:16": "Tall portrait image, 9:16 aspect ratio.", "4:5": "Portrait image, 4:5 aspect ratio.",
          "16:9": "Wide landscape image, 16:9 aspect ratio.", "1:1": "Square image, 1:1 aspect ratio."}
 
@@ -226,7 +232,7 @@ def _key_out(img):
     return Image.fromarray(rgba, "RGBA")
 
 
-def _drop_specks(img):
+def _drop_specks(img, frac=0.05, thresh=8):
     """Clear small islands left after keying (a corner watermark from the Gemini app, a stray fleck), keeping
     every part at least 5% the size of the largest one (so a pram or trolley beside its owner survives)."""
     import numpy as np
@@ -234,7 +240,7 @@ def _drop_specks(img):
 
     step = 4
     alpha = img.getchannel("A")
-    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > 8
+    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > thresh
     h, w = small.shape
     labels = np.zeros((h, w), dtype=np.int32)
     sizes = [0]
@@ -256,7 +262,7 @@ def _drop_specks(img):
     if len(sizes) <= 2:
         return img
     biggest = max(sizes)
-    keep = np.isin(labels, [i for i, c in enumerate(sizes) if i and c >= 0.05 * biggest])
+    keep = np.isin(labels, [i for i, c in enumerate(sizes) if i and c >= frac * biggest])
     # Grow the kept mask by one coarse cell so soft edges are not shaved off.
     grown = keep.copy()
     grown[1:, :] |= keep[:-1, :]
@@ -273,17 +279,252 @@ def _trim_box(img):
     return img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
 
 
+SPARKLE = ROOT / "tool" / "art" / "sparkle_alpha.png"
+SPARKLE_OFFSET = 120  # px from the right and bottom edges to the sparkle's centre, at every size seen so far
+
+
+def _remove_sparkle(img):
+    """Undo Gemini's translucent corner sparkle exactly. It is a white overlay of known shape and opacity
+    (tool/art/sparkle_alpha.png, measured on a flat magenta backdrop), so observed = (1 - a) * original + a * white
+    inverts to original = (observed - a * 255) / (1 - a), even where it lies on the artwork."""
+    import numpy as np
+    from PIL import Image
+
+    if not SPARKLE.exists():
+        return img
+    alpha = np.asarray(Image.open(SPARKLE).convert("L")).astype(np.float32)[..., None] / 255.0
+    rgb = np.asarray(img.convert("RGB")).astype(np.float32)
+    h, w = alpha.shape[:2]
+    cx, cy = img.width - SPARKLE_OFFSET, img.height - SPARKLE_OFFSET
+    x0, y0 = cx - w // 2, cy - h // 2
+    if x0 < 0 or y0 < 0 or x0 + w > img.width or y0 + h > img.height:
+        return img
+    region = rgb[y0:y0 + h, x0:x0 + w]
+    # The overlay's strength reads a little differently on dark and light artwork, so try a few strengths and keep
+    # the one that leaves the smoothest patch (an under-correction leaves a ghost, an over-correction a dark diamond).
+    best = None
+    for k in np.linspace(0.5, 1.15, 14):
+        a = alpha * k
+        fixed = np.clip((region - a * 255.0) / np.maximum(1 - a, 0.05), 0, 255)
+        grey = fixed.mean(-1)
+        tv = np.abs(np.diff(grey, axis=0)).sum() + np.abs(np.diff(grey, axis=1)).sum()
+        if best is None or tv < best[0]:
+            best = (tv, fixed)
+    rgb[y0:y0 + h, x0:x0 + w] = best[1]
+    return Image.fromarray(rgb.astype(np.uint8))
+
+
+def _key_out_distance(img):
+    """Any flat backdrop to alpha by colour distance from the border, with the backdrop unmixed from soft edges.
+
+    Distance, not hue: a plum badge on magenta is nearly the backdrop's hue and a hue test would eat it, and a
+    translucent ghost on green picks the green up through its body, which the unmixing takes back out.
+    """
+    import numpy as np
+    from PIL import Image
+
+    a = np.asarray(img.convert("RGB")).astype(np.float32)
+    border = np.concatenate([a[:8].reshape(-1, 3), a[-8:].reshape(-1, 3), a[:, :8].reshape(-1, 3),
+                             a[:, -8:].reshape(-1, 3)])
+    bg = np.median(border, axis=0)
+    dist = np.linalg.norm(a - bg, axis=-1)
+    clear, solid = 38.0, 95.0
+    alpha = np.clip((dist - clear) / (solid - clear), 0.0, 1.0)
+    # Soft edge pixels are a mix of the icon and the backdrop: take the backdrop back out of them.
+    inv = np.where(alpha > 0.02, alpha, 1.0)[..., None]
+    rgb = np.where((alpha < 1.0)[..., None], (a - (1 - alpha)[..., None] * bg) / inv, a).clip(0, 255)
+    return Image.fromarray(np.dstack([rgb, alpha * 255.0]).clip(0, 255).astype(np.uint8), "RGBA")
+
+
+def _retint(img, hex_color):
+    """Rotate an icon's hue to a target (saturation and brightness stay), so a badge matches its code colour."""
+    import numpy as np
+    from PIL import Image
+
+    target = tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    th = np.asarray(Image.new("RGB", (1, 1), target).convert("HSV"))[0, 0, 0]
+    hsv = np.asarray(img.convert("RGB").convert("HSV")).astype(np.float32)
+    alpha = np.asarray(img.getchannel("A"))
+    solid = alpha > 200
+    ang = hsv[..., 0] / 255.0 * 2 * np.pi
+    mean = np.arctan2(np.sin(ang[solid]).mean(), np.cos(ang[solid]).mean()) % (2 * np.pi) / (2 * np.pi) * 255.0
+    hsv[..., 0] = (hsv[..., 0] + (th - mean)) % 255.0
+    out = Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB")
+    out.putalpha(img.getchannel("A"))
+    return out
+
+
+def _components(img, min_frac=0.12, thresh=24, merge=0):
+    """Bounding boxes (x0, y0, x1, y1) of the separate objects in a keyed sheet, in reading order."""
+    import numpy as np
+    from PIL import Image
+
+    step = 4
+    alpha = img.getchannel("A")
+    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > thresh
+    for _ in range(merge):  # a small part close to a big one (the arrow above the lift) joins it
+        grown = small.copy()
+        grown[1:, :] |= small[:-1, :]
+        grown[:-1, :] |= small[1:, :]
+        grown[:, 1:] |= small[:, :-1]
+        grown[:, :-1] |= small[:, 1:]
+        small = grown
+    h, w = small.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    boxes, sizes = [None], [0]
+    for y0 in range(h):
+        for x0 in range(w):
+            if not small[y0, x0] or labels[y0, x0]:
+                continue
+            n = len(sizes)
+            labels[y0, x0] = n
+            stack, count = [(y0, x0)], 0
+            bx = [x0, y0, x0, y0]
+            while stack:
+                y, x = stack.pop()
+                count += 1
+                bx = [min(bx[0], x), min(bx[1], y), max(bx[2], x), max(bx[3], y)]
+                for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= yy < h and 0 <= xx < w and small[yy, xx] and not labels[yy, xx]:
+                        labels[yy, xx] = n
+                        stack.append((yy, xx))
+            sizes.append(count)
+            boxes.append(bx)
+    if len(sizes) <= 1:
+        return []
+    biggest = max(sizes)
+    keep = [(boxes[i], sizes[i]) for i in range(1, len(sizes)) if sizes[i] >= min_frac * biggest]
+    pad = 2
+    out = [((b[0] - pad) * step, (b[1] - pad) * step, (b[2] + 1 + pad) * step, (b[3] + 1 + pad) * step) for b, _ in keep]
+    return out
+
+
+def _reading_order(boxes, rows):
+    """Sort boxes into `rows` rows by vertical centre, then left to right inside each row."""
+    boxes = sorted(boxes, key=lambda b: (b[1] + b[3]) / 2)
+    per = max(1, len(boxes) // rows)
+    ordered_boxes = []
+    for r in range(rows):
+        chunk = boxes[r * per:(r + 1) * per] if r < rows - 1 else boxes[r * per:]
+        ordered_boxes += sorted(chunk, key=lambda b: (b[0] + b[2]) / 2)
+    return ordered_boxes
+
+
+def _process_icon_sheet(a, img):
+    """Key out the backdrop, cut each separate icon, and write icon_<name>.webp on a square canvas."""
+    from PIL import Image
+
+    keyed = _key_out_distance(img) if a.get("chroma") == "magenta" else _key_out(img)
+    if a.get("chroma") == "magenta":  # the glossy rims pick up backdrop pink: shave the outermost 2 px of the matte
+        from PIL import ImageFilter
+
+        keyed.putalpha(keyed.getchannel("A").filter(ImageFilter.MinFilter(5)))
+    # Cut on the solid pixels only (a translucent watermark never counts), joining parts within about 12 px.
+    boxes = _components(keyed, thresh=200, merge=3)
+    names = a["icons"]
+    if len(boxes) != len(names):
+        print(f"WARN   {a['id']}: found {len(boxes)} separate icons, expected {len(names)}. Regenerate with wider gaps "
+              f"between icons (no two may touch), or crop the sheet by hand.")
+        if len(boxes) < len(names):
+            return []
+    boxes = _reading_order(boxes, a["rows"])[:len(names)]
+    made = []
+    for name, box in zip(names, boxes):
+        crop = _drop_specks(keyed.crop(box), frac=0.025, thresh=200)  # drops a ghost of the Gemini sparkle, keeps an arrow
+        tb = _trim_box(crop)
+        if tb:
+            crop = crop.crop(tb)
+        if name in a.get("retint", {}):
+            crop = _retint(crop, a["retint"][name])
+        k = (ICON_PX - 8) / max(crop.width, crop.height)
+        crop = crop.resize((max(1, round(crop.width * k)), max(1, round(crop.height * k))), Image.LANCZOS)
+        canvas = Image.new("RGBA", (ICON_PX, ICON_PX), (0, 0, 0, 0))
+        canvas.alpha_composite(crop, ((ICON_PX - crop.width) // 2, (ICON_PX - crop.height) // 2))
+        dest = OUT / f"icon_{name}.webp"
+        canvas.save(dest, "WEBP", quality=92, method=6)
+        made.append(dest)
+        print(f"wrote  {dest.relative_to(ROOT)}  {ICON_PX}x{ICON_PX}  {dest.stat().st_size // 1024} KB")
+    return made
+
+
+def _icon_contact_sheet(files):
+    from PIL import Image
+
+    if not files:
+        return
+    n = len(files)
+    cols = min(6, n)
+    rows = (n + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * 136 * 2, rows * 136), (0, 0, 0))
+    for half, bg in enumerate([(244, 227, 195), (28, 26, 63)]):
+        for i, f in enumerate(files):
+            ic = Image.open(f).convert("RGBA").resize((128, 128), Image.LANCZOS)
+            tile = Image.new("RGBA", (136, 136), bg + (255,))
+            tile.alpha_composite(ic, (4, 4))
+            x = half * cols * 136 + (i % cols) * 136
+            sheet.paste(tile.convert("RGB"), (x, (i // cols) * 136))
+    dest = OUT / "_icons.png"
+    sheet.save(dest)
+    print(f"wrote  {dest.relative_to(ROOT)}  (icons at 128 px on the lobby floor and the night panel)")
+
+
+def _grade_for_ink(a, img):
+    """Dark lane text sits on this floor, so every pixel in the lane area must clear the contrast floor against it. If
+    the painted vignette and grout make the 5th percentile fail, blend the floor toward the pale base colour by the least
+    amount that passes (the tiles and the light pool stay, the dark corners lift)."""
+    import numpy as np
+    from PIL import Image
+
+    base = np.array([244, 227, 195], np.float32)
+    arr = np.asarray(img.convert("RGB")).astype(np.float32)
+
+    def lum_of(x):
+        lin = x / 255.0
+        lin = np.where(lin <= 0.03928, lin / 12.92, ((lin + 0.055) / 1.055) ** 2.4)
+        return lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+
+    ink = lum_of(np.array([[int(a["ink"][i:i + 2], 16) for i in (1, 3, 5)]], np.float32))[0]
+    h, w = arr.shape[:2]
+    y0, y1, x0, x1 = int(h * 0.08), int(h * 0.96), int(w * 0.02), int(w * 0.98)
+
+    # Lift only the pixels that are too dark, toward the pale base: the grid, the light pool and the perspective stay,
+    # the dark corners and the grout lines come up to the contrast floor.
+    floor_lum = (4.6 * (float(ink) + 0.05)) - 0.05
+    lum = lum_of(arr)
+    base_lum = float(lum_of(base[None, :])[0])
+    t = np.clip((floor_lum - lum) / np.maximum(base_lum - lum, 1e-3), 0.0, 1.0)[..., None]
+    out = Image.fromarray((arr * (1 - t) + base * t).clip(0, 255).astype(np.uint8))
+    lifted = float((t > 0.01).mean())
+    final = lum_of(np.asarray(out).astype(np.float32))[y0:y1, x0:x1]
+    print(f"check  {a['id']}: lane ink {a['ink']} contrast p5 {(float(np.percentile(final, 5)) + 0.05) / (float(ink) + 0.05):.1f}:1 "
+          f"after lifting {lifted:.0%} of the pixels toward pale (need >= 4.3)")
+    return out
+
+
 def cmd_process(pack: dict, _: argparse.Namespace) -> None:
     from PIL import Image
 
     OUT.mkdir(parents=True, exist_ok=True)
+    icon_files = []
     for a in pack["assets"]:
         src = RAW / f"{a['id']}.png"
         if not src.exists():
             continue
         img = Image.open(src)
+        if a["kind"] in ("icon_sheet", "scene", "prop"):
+            img = _remove_sparkle(img)
+        if a["kind"] == "icon_sheet":
+            icon_files += _process_icon_sheet(a, img)
+            continue
         if a["kind"] in ("resident", "resident_blink", "prop"):
-            img = _drop_specks(_key_out(img))
+            img = _drop_specks(_key_out_distance(img) if a.get("key") == "distance" else _key_out(img))
+            if a.get("despill_green"):  # a translucent body picks the backdrop up: pull stray green back toward blue
+                import numpy as np
+
+                arr = np.asarray(img).astype(np.float32)
+                cap = a["despill_green"] * np.maximum(arr[..., 0], arr[..., 2])
+                arr[..., 1] = np.minimum(arr[..., 1], cap)
+                img = Image.fromarray(arr.clip(0, 255).astype(np.uint8), "RGBA")
             box = _trim_box(img)
             if a.get("edit_of"):
                 # A blink frame swaps in over its idle frame, so it takes the idle frame's canvas, crop and scale
@@ -308,9 +549,12 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
             img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
             left, top = (img.width - size[0]) // 2, (img.height - size[1]) // 2
             img = img.crop((left, top, left + size[0], top + size[1]))
+        if a.get("ink") and a["kind"] == "scene":
+            img = _grade_for_ink(a, img)
         dest = OUT / f"{a['id']}.webp"
         img.save(dest, "WEBP", quality=90, method=6)
         print(f"wrote  {dest.relative_to(ROOT)}  {img.width}x{img.height}  {dest.stat().st_size // 1024} KB")
+    _icon_contact_sheet(icon_files)
 
 
 # ── sheet ────────────────────────────────────────────────────────────────────
