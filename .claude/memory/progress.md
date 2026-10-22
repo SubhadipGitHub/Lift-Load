@@ -111,6 +111,11 @@ entries; fold older ones into "Earlier".
   Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
   verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).
+- APPROVED 2026-10-22: `unknown_ghost` (violet and blue glass figure, average build, ghost tail; keyed by colour distance with the green
+  pulled back, 218 x 576 px, `docs/art/approved/unknown_ghost.webp`; opacity and glow are added in code) and `bg_society_lobby` (pale
+  cream tile floor, soft light pool; `process` lifts only the too-dark pixels toward pale so lane ink clears 4.3:1; the first
+  checkerboard take was rejected). Sunrise Towers art is complete: three shafts, lobby floor. Next art: the other four venues,
+  `icons_powers` (Swap, Express).
 - Next in the restyle, after the backdrops:  the integration spec for lib/ (figures +60%, contact
   shadows, door leaves, icons in place of Material icons, 3D button recipe, punch). No lib/ work until the owner says go.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,

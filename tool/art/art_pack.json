@@ -624,7 +624,9 @@
       "design_height": 96,
       "reference": "resident_kid",
       "prompt": "A cool ghost silhouette standing for an unknown person in a queue: a smooth, translucent, glass-like human figure, front view, standing upright with arms relaxed at its sides, a plain generic average build and height with no clothes, no hair, no face and no features at all, so every unknown person looks exactly the same. The body glows softly from within in electric violet and cold blue with a bright glossy rim light, tiny drifting sparkles around it, and the legs fade into a wispy, flowing ghost tail instead of feet. Exactly one figure, centred, with space around it.",
-      "weight_read": "one smooth featureless figure of average build; nothing that hints at weight or height variety; glows violet and blue; no face, no text, no symbols"
+      "weight_read": "one smooth featureless figure of average build; nothing that hints at weight or height variety; glows violet and blue; no face, no text, no symbols",
+      "key": "distance",
+      "despill_green": 0.82
     }
   ]
 }

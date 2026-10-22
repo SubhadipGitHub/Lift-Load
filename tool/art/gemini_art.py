@@ -314,10 +314,11 @@ def _remove_sparkle(img):
     return Image.fromarray(rgb.astype(np.uint8))
 
 
-def _key_out_magenta(img):
-    """Magenta background to alpha by colour distance from the border, with the backdrop unmixed from soft edges.
+def _key_out_distance(img):
+    """Any flat backdrop to alpha by colour distance from the border, with the backdrop unmixed from soft edges.
 
-    Distance, not "magentaness": a plum or purple icon is nearly magenta in hue and a hue test would eat it.
+    Distance, not hue: a plum badge on magenta is nearly the backdrop's hue and a hue test would eat it, and a
+    translucent ghost on green picks the green up through its body, which the unmixing takes back out.
     """
     import numpy as np
     from PIL import Image
@@ -413,7 +414,7 @@ def _process_icon_sheet(a, img):
     """Key out the backdrop, cut each separate icon, and write icon_<name>.webp on a square canvas."""
     from PIL import Image
 
-    keyed = _key_out_magenta(img) if a.get("chroma") == "magenta" else _key_out(img)
+    keyed = _key_out_distance(img) if a.get("chroma") == "magenta" else _key_out(img)
     if a.get("chroma") == "magenta":  # the glossy rims pick up backdrop pink: shave the outermost 2 px of the matte
         from PIL import ImageFilter
 
@@ -467,6 +468,39 @@ def _icon_contact_sheet(files):
     print(f"wrote  {dest.relative_to(ROOT)}  (icons at 128 px on the lobby floor and the night panel)")
 
 
+def _grade_for_ink(a, img):
+    """Dark lane text sits on this floor, so every pixel in the lane area must clear the contrast floor against it. If
+    the painted vignette and grout make the 5th percentile fail, blend the floor toward the pale base colour by the least
+    amount that passes (the tiles and the light pool stay, the dark corners lift)."""
+    import numpy as np
+    from PIL import Image
+
+    base = np.array([244, 227, 195], np.float32)
+    arr = np.asarray(img.convert("RGB")).astype(np.float32)
+
+    def lum_of(x):
+        lin = x / 255.0
+        lin = np.where(lin <= 0.03928, lin / 12.92, ((lin + 0.055) / 1.055) ** 2.4)
+        return lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+
+    ink = lum_of(np.array([[int(a["ink"][i:i + 2], 16) for i in (1, 3, 5)]], np.float32))[0]
+    h, w = arr.shape[:2]
+    y0, y1, x0, x1 = int(h * 0.08), int(h * 0.96), int(w * 0.02), int(w * 0.98)
+
+    # Lift only the pixels that are too dark, toward the pale base: the grid, the light pool and the perspective stay,
+    # the dark corners and the grout lines come up to the contrast floor.
+    floor_lum = (4.6 * (float(ink) + 0.05)) - 0.05
+    lum = lum_of(arr)
+    base_lum = float(lum_of(base[None, :])[0])
+    t = np.clip((floor_lum - lum) / np.maximum(base_lum - lum, 1e-3), 0.0, 1.0)[..., None]
+    out = Image.fromarray((arr * (1 - t) + base * t).clip(0, 255).astype(np.uint8))
+    lifted = float((t > 0.01).mean())
+    final = lum_of(np.asarray(out).astype(np.float32))[y0:y1, x0:x1]
+    print(f"check  {a['id']}: lane ink {a['ink']} contrast p5 {(float(np.percentile(final, 5)) + 0.05) / (float(ink) + 0.05):.1f}:1 "
+          f"after lifting {lifted:.0%} of the pixels toward pale (need >= 4.3)")
+    return out
+
+
 def cmd_process(pack: dict, _: argparse.Namespace) -> None:
     from PIL import Image
 
@@ -477,13 +511,20 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
         if not src.exists():
             continue
         img = Image.open(src)
-        if a["kind"] in ("icon_sheet", "scene"):
+        if a["kind"] in ("icon_sheet", "scene", "prop"):
             img = _remove_sparkle(img)
         if a["kind"] == "icon_sheet":
             icon_files += _process_icon_sheet(a, img)
             continue
         if a["kind"] in ("resident", "resident_blink", "prop"):
-            img = _drop_specks(_key_out(img))
+            img = _drop_specks(_key_out_distance(img) if a.get("key") == "distance" else _key_out(img))
+            if a.get("despill_green"):  # a translucent body picks the backdrop up: pull stray green back toward blue
+                import numpy as np
+
+                arr = np.asarray(img).astype(np.float32)
+                cap = a["despill_green"] * np.maximum(arr[..., 0], arr[..., 2])
+                arr[..., 1] = np.minimum(arr[..., 1], cap)
+                img = Image.fromarray(arr.clip(0, 255).astype(np.uint8), "RGBA")
             box = _trim_box(img)
             if a.get("edit_of"):
                 # A blink frame swaps in over its idle frame, so it takes the idle frame's canvas, crop and scale
@@ -509,15 +550,7 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
             left, top = (img.width - size[0]) // 2, (img.height - size[1]) // 2
             img = img.crop((left, top, left + size[0], top + size[1]))
         if a.get("ink") and a["kind"] == "scene":
-            import numpy as np
-
-            lin = np.asarray(img.convert("RGB")).astype(np.float32) / 255.0
-            lin = np.where(lin <= 0.03928, lin / 12.92, ((lin + 0.055) / 1.055) ** 2.4)
-            lum = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
-            ink = np.array([int(a["ink"][i:i + 2], 16) for i in (1, 3, 5)], np.float32) / 255.0
-            ink = np.where(ink <= 0.03928, ink / 12.92, ((ink + 0.055) / 1.055) ** 2.4) @ np.array([0.2126, 0.7152, 0.0722])
-            p5 = (float(np.percentile(lum, 5)) + 0.05) / (float(ink) + 0.05)
-            print(f"check  {a['id']}: lane ink {a['ink']} contrast p5 {p5:.1f}:1 (need >= 4.3)")
+            img = _grade_for_ink(a, img)
         dest = OUT / f"{a['id']}.webp"
         img.save(dest, "WEBP", quality=90, method=6)
         print(f"wrote  {dest.relative_to(ROOT)}  {img.width}x{img.height}  {dest.stat().st_size // 1024} KB")
