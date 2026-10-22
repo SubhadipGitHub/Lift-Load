@@ -41,6 +41,8 @@ API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateC
 RESIDENT_PX_PER_UNIT = 6
 PROP_HEIGHT_PX = 300
 RIM_PX = 4  # width of the edge band that gets despilled, in source pixels
+NEUTRAL_RB_GAP = 25  # a green-tinted grey has red and blue this close (0-255)
+NEUTRAL_LEAN = 40  # ...and green above both by less than this
 SCENE_SIZE = {"9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
 
 REFERENCE_NOTE = ("Use the attached reference image only for rendering style, lighting, materials and level of "
@@ -213,6 +215,13 @@ def _key_out(img):
         rim = grown
     spill = (rim | (alpha < 1.0)) & (greenness > 0)
     g = np.where(spill, np.maximum(r, b), g)
+    # Baked-in green bounce light: glossy greys (the wheelchair's metal) pick up the backdrop's colour well inside the
+    # figure, not just at the rim. A green-tinted grey has red and blue close together with green a little above
+    # both; an olive kurta has blue far below red, skin and navy do not lean green at all, and a teal suitcase is
+    # far more saturated. So only that grey-with-a-green-lean case is neutralised.
+    hi = np.maximum(r, b)
+    neutral = (g > hi) & (np.abs(r - b) < NEUTRAL_RB_GAP) & ((g - hi) < NEUTRAL_LEAN)
+    g = np.where(neutral, np.minimum(g, (r + b) / 2.0), g)
     rgba = np.dstack([r, g, b, alpha * 255.0]).clip(0, 255).astype(np.uint8)
     return Image.fromarray(rgba, "RGBA")
 
