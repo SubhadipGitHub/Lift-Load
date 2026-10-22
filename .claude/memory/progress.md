@@ -84,7 +84,14 @@ entries; fold older ones into "Earlier".
   easy bottom strip; Restart costs a life. Proposal: Send moves to a wide bottom-right button showing the rider count, Scale
   becomes a round booster beside it, Restart moves into the pause menu with a confirm, order stays lift, bench, queue; queue
   front big (+60%) with smaller, dimmer ones behind; bench becomes a bench (rail, taller seats); gauge takes the freed column
-  and gets a rider count. Open: left-handed mirror, drag-to-board. Waiting on the owner's verdict (this widens "reskin only"
+  and gets a rider count. Open: left-handed mirror, drag-to-board. Update: owner said no rider count, and wants power options in place of the Scale: swap queue, +2 waiting slots for
+  the round (every power defaults to 2), +1 lift trip, and "send people by lift" (assumed: Express ride, deliver the selected
+  resident straight to their floor with no seat or trip). Mocked as a four-button power dock plus a wide Send. Pushed back
+  once: the Scale is the only thing that teaches weights (locked rule 9), so it stays but moves onto the gauge plate, where it
+  previews the needle. THESE POWERS REOPEN docs/PRD.md (rule 9, jam and out-of-trips fails, solver and generator, prices and
+  rewarded-ad rewards via ad_policy, monetization-auditor): no engine or lib/ work until the owner signs a PRD change.
+  Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
+  verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).
 - Next in the restyle, after the backdrops:  the integration spec for lib/ (figures +60%, contact
   shadows, door leaves, icons in place of Material icons, 3D button recipe, punch). No lib/ work until the owner says go.
