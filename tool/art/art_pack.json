@@ -390,7 +390,7 @@
       "kind": "scene",
       "name": "Standard lift interior",
       "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No buttons with numbers, no signs."
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_normal_doors",
@@ -404,7 +404,7 @@
       "kind": "scene",
       "name": "Old lift interior",
       "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No buttons with numbers, no signs."
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_old_doors",
@@ -418,7 +418,7 @@
       "kind": "scene",
       "name": "Service lift interior",
       "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No buttons with numbers, no signs."
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_service_doors",
@@ -432,7 +432,7 @@
       "kind": "scene",
       "name": "Express lift interior",
       "aspect": "4:5",
-      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred and filling the frame, symmetrical: sleek glass and chrome, a soft blue LED light strip, a polished dark floor. No buttons with numbers, no signs."
+      "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: sleek glass and chrome, a soft blue LED light strip, a polished dark floor. No buttons with numbers, no signs."
     },
     {
       "id": "cabin_express_doors",

@@ -18,6 +18,16 @@ entries; fold older ones into "Earlier".
   as a small island; green bounce light on glossy greys (the wheelchair's metal came back teal) is neutralised.
 - Every resident prompt now carries a skin tone and hex read from `ResidentLook`.
 
+**Lifts and venues (second session)**
+- Approved: `cabin_normal_interior` (style anchor for the other cabins), committed in `docs/art/approved/`. Steel and brass,
+  no text, numbers or buttons, no weight cue. Gemini's sparkle watermark sat on the right jamb; scenes are not
+  watermark-stripped by `process`, so it was filled by hand in the raw (original with the owner). Caveats: the image
+  keeps an outer door frame and a strip of corridor floor, and two bright brass verticals on the back wall sit behind
+  where residents stand. Crop in about 8% each side and 4% at the bottom at integration. The other three interior
+  prompts now say "no outer door frame, no corridor floor" (this anchor was made before that wording).
+- Next: `cabin_normal_doors` (attach the approved interior as the reference image), then `venue_society_lobby`, then
+  old, service and express cabins, then the other four venues.
+
 **Handoff for a new session**
 - The 17 approved processed sprites are committed in `docs/art/approved/` (about 0.5 MB, not shipped). Raw images stay
   with the owner; `/art/` is still git-ignored.
