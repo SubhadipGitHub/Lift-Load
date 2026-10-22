@@ -38,8 +38,10 @@ entries; fold older ones into "Earlier".
   regular at integration) and `cabin_service_interior` (galvanised steel, quilted pad, side grab rails; wide dented
   metal surround, crop in about 8%). Sparkle watermark removed from all three (mirrored left corner). `compose_check`
   now trims the sides of a square scene instead of the top.
-- Rejected: `cabin_express_interior`. The back wall is clear glass showing a second room and floor, so it reads as a glass
-  corridor, not a lift. Prompt changed to an opaque frosted back wall; regenerate (the doors prompt takes the same fix).
+- Express interior: first take rejected (clear glass showing a second room, read as a corridor). Second take approved with the
+  opaque-frosted-back-wall prompt: chrome, blue LED edge strip, dark floor, distinct from the three warm cabins. Watch
+  the bright back panel: pale clothes (white shirt, light-blue hospital top, blanket) have the least contrast there;
+  dim the panel about 15% at integration if it bites. All four interiors are approved; the doors are next.
 - Next: `cabin_normal_doors` (attach the approved interior as the reference image), then `venue_society_lobby`, then
   old, service and express cabins, then the other four venues.
 
