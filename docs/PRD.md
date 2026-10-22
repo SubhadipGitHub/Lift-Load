@@ -1,8 +1,9 @@
 # Lift Load MVP: PRD
 
-Version 1.4, 2026-10-21. Owner: Subhadip. Living copy of the claude.ai doc "Lift Load MVP — PRD", with the
+Version 1.6, 2026-10-22. Owner: Subhadip. Living copy of the claude.ai doc "Lift Load MVP — PRD", with the
 simulation-driven changes marked v1.1, the variety pass marked v1.2 (see "v1.2 Variety and depth") and the polish
-pass marked v1.3 (see "v1.3 Polish: layout, art, motion, sound") and the Gate A kit marked v1.4.
+pass marked v1.3 (see "v1.3 Polish: layout, art, motion, sound"), the Gate A kit marked v1.4 and the powers, unknown
+residents and lane variety marked v1.6 (see "v1.6 Powers, unknown residents, lane variety").
 
 ## Problem
 
@@ -76,7 +77,7 @@ learning curve (more people, cargo) and adds planning against a visible schedule
 
 - **Debuts.** One new thing per level, on a breather, never on a multiple of 10 or 25, and seen at least three times:
   water can L13, suitcase L21, guard L23, gas cylinder L37, wheelchair L43, puffer teen L45, old lift L61, pram L63,
-  service lift L65, maintenance L67, express L71, power cut L77, bellhop L83, rush hour L87.
+  service lift L65, maintenance L67, express L71, bellhop L83, rush hour L87 (v1.6 removes the L77 power cut).
 - **Venues** (20 levels each): Sunrise Towers (housing society), Skyline Offices, Lakeside Hospital, Bazaar Mall,
   Starlight Hotel. Each has its own lobby look, a prop, and a crowd mix (spawn weights in `lib/game/venue.dart`). The
   hotel runs on past L100.
@@ -86,8 +87,7 @@ learning curve (more people, cargo) and adds planning against a visible schedule
   two non-normal kinds, first lift always normal. Old lift: 0.75 × capacity. Service lift: 1.4 × capacity. Express: this
   floor plus the next in rotation. Shown in the NEXT strip and on the cabin.
 - **Lobby scenarios (L61+).** At most one per level, never on Super Hard or another debut. Maintenance: one lane is
-  coned off for the first 3 trips. Power cut: residents at depth 2 or deeper are shadows (floor tags still shown).
-  Rush hour: two waves of 4 residents join after trips 3 and 6.
+  coned off for the first 3 trips. Rush hour: two waves of 4 residents join after trips 3 and 6.
 - **No soft-locks.** Lifts are routed only to residents the player can reach. If only coned-off or not-yet-arrived
   residents remain, the lane opens early or the wave arrives at once. A jam that only the coned-off lane could
   clear also opens the lane early instead of failing.
@@ -185,6 +185,34 @@ answer. A tester can return their results in under a minute without an account. 
 - If Hard first-attempt wins land far below 45%, the slack of one trip over a weight-aware solver's par is the
   first suspect.
 
+## v1.6 Powers, unknown residents, lane variety (signed off 2026-10-22)
+
+Full spec, tests, analytics and plan: `docs/PRD-v1.6-powers.md`. Why: more agency and more reasons to spend coins or
+watch rewarded ads, and more ways for difficulty to grow with the level, without touching the core of guessing a weight
+from a look. Four powers sit beside the Scale; some people in a queue are unknown until they reach the front; lane
+counts vary; the power cut scenario is removed. The queue is never counted for the player.
+
+- **Powers.** All four start at 0 stock and cost 150 coins or one rewarded ad per use (both configurable in `Formulas`).
+  Swap (L14, 2 per level) swaps two lane fronts. +2 seats (L19, 1 per level) adds two bench seats for the level. +1 trip
+  (L27, 1 per level) adds a trip. Express (L29, 1 per level) delivers the selected resident straight to their floor
+  with no seat, trip or capacity used. A restart resets their effects without refunding stock. The Scale is unchanged
+  and moves onto the gauge plate.
+- **Unknown residents (L11+).** Early levels show every person in a queue. From level 11 a share of the people behind a
+  lane's front is unknown: one identical glowing ghost, no look, no floor tag, not selectable, revealed when it reaches
+  the front. Proposed share: `min(0.15 + 0.01 × (L − 11), 0.6)`, seeded by the level; level 11 guarantees at least
+  three. A lane's first person and bench residents are always known.
+- **No waiting count.** The "+N waiting" text and the number in the rush hour banner are removed. A lane draws at most
+  its visible depth, so nothing promises a length.
+- **Lane variety.** Four lanes up to level 15; from level 16 the count varies by level between 3 and 5 on phones. Lane
+  lengths spread (proposed ±3 around the average) and the puffer teen and gym regular weigh more in the crowd mix as
+  levels rise. Trip slack on normal levels rises by 1 from level 11 until Gate A data says otherwise.
+- **Power cut removed.** World 2 scenarios are maintenance and rush hour.
+- **Left-handed bar.** A settings switch mirrors the bottom bar (Send left, powers right). Restart moves into the pause
+  menu behind the gear, with the existing confirm and life rule.
+- **Gate A runs with the powers on.** Tester ads are a stub; `powersEnabled`, `unknownShare` and `laneCount` are the
+  levers if the data is muddy. Events gain `powers_used`, `lanes` and `unknown_share`.
+- **Rules changed in CLAUDE.md:** 1 (lanes, unknown people, no count), 2 (Express), 9 (powers), 10 (scenarios).
+
 ## Monetization
 
 | Placement | Format | Reward | Cap |
@@ -194,6 +222,7 @@ answer. A tester can return their results in under a minute without an account. 
 | Lobby jam | Rewarded | Bench seats enough to dig out the nearest resident for this lift (usually 1) | 1 per attempt, then 300 coins |
 | Win | Rewarded | Level coins ×3 | 1 per level |
 | Before a Hard level | Rewarded | 2 free Scale uses | 1 per Hard level |
+| Empty power (v1.6) | Rewarded | 1 use of that power (or 150 coins) | 6 per day, inside the total of 12 |
 | 0 lives | Rewarded | +1 life | 3 per day |
 | Daily chest | Rewarded | Chest ×2 | 1 per day |
 | After a win, from L15 | Interstitial | none | ≥ 3 levels and ≥ 180 s apart, max 4 per session, never after a fail, never for payers |

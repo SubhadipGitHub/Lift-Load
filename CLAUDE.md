@@ -18,9 +18,11 @@ Owner: Subhadip. Read this file, then `.claude/memory/progress.md`, at the start
 
 ## Locked game rules (changing one reopens docs/PRD.md)
 
-1. Four lanes of residents. Only lane fronts and bench residents can be selected.
+1. Three to five lanes of residents (four before level 16). Only each lane's front shows who it is and can be selected,
+   and so can bench residents. From level 11 some people behind a front are unknown (one identical ghost, no look, no
+   floor tag) until they reach the front. The number of people waiting is never shown.
 2. A selected resident goes to an empty bench seat or into the waiting lift. A lift refuses anyone not going to one of
-   its floors.
+   its floors. Express (a power) is the one way to deliver someone without boarding.
 3. **Weight is never shown.** Each `ResidentType` and each `Cargo` has one fixed hidden `kg`; a resident weighs type +
    cargo. No number, bar, or icon may reveal either.
 4. The gauge shows only current load, in zones of this lift's capacity: grey < 75%, green ≥ 75%, red > 100%. No
@@ -30,9 +32,10 @@ Owner: Subhadip. Read this file, then `.claude/memory/progress.md`, at the start
 7. The next lift serves the next floor in rotation that still has reachable residents; an express also serves the
    floor after it.
 8. Win when everyone is delivered. Fail on crash, out of trips, or jam (bench full, nothing boardable, lift empty).
-9. No Undo (it would reveal weights). The Scale booster previews one resident as a dashed ghost needle.
+9. No Undo (it would reveal weights). The Scale previews one resident as a dashed ghost needle. The four powers (Swap, +2
+   seats, +1 trip, Express) change the lobby, never reveal a weight. They start at 0 and cost coins or one rewarded ad.
 10. World 2 (L61+) variety is always visible in advance: lift kinds (old, service, express) in the NEXT strip, the one
-    lobby scenario (maintenance, power cut, rush hour) on the lobby floor. Levels 1–60 use neither.
+    lobby scenario (maintenance, rush hour) on the lobby floor. Levels 1–60 use neither.
 
 ## Stack
 
@@ -49,7 +52,7 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 | `tool/art/` | `art_pack.json` (style bible + prompt per asset) and `gemini_art.py` (Gemini generate, key out, size, line-up, review); `docs/art/approved/` holds the approved cast sprites (not shipped); see `docs/art/gemini-art-pack.md` |
 | `tool/gate_a_report.dart` | Gate A metrics from the result files testers send back (`docs/gate-a.md`) |
 | `assets/`, `web/` | Bundled fonts (OFL), synthesized audio, the web shell (icons, manifest, boot splash) |
-| `docs/` | `PRD.md`, `analytics.md`, `concept/` notes |
+| `docs/` | `PRD.md` (v1.6), `PRD-v1.6-powers.md` (full powers spec), `analytics.md`, `art/`, `concept/` notes |
 | `.claude/` | `agents/`, `skills/`, `memory/` |
 
 ## Architecture rules (enforced by tests where possible)
@@ -63,8 +66,11 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 - Interstitials only through `InterstitialPolicy.shouldShowAfterWin`. Never after a fail. Never for payers.
 - No real metro, society or brand names or logos anywhere (app, assets, store listing).
 - Engine changes need engine tests; formula changes need `test/generator_test.dart` green and an updated level table.
-- Every debut (type, cargo, lift kind, scenario) lands on its own level, never a multiple of 10 or 25, and is a
-  breather (`Debut.at`, enforced by `test/generator_test.dart`).
+- Every debut (type, cargo, lift kind, scenario, unknown people, lane variety, power unlock) lands on its own level,
+  never a multiple of 10 or 25, and is a breather (`Debut.at`, enforced by `test/generator_test.dart`).
+- The UI never receives an unknown person's type, cargo or floor, and shows no number of people waiting (widget test).
+- Power numbers (stock, prices, caps, unlock levels, the unknown share, lane count) live in `Formulas`; power refills
+  go through `RewardedPlacement.powerRefill`.
 
 ## Commands
 

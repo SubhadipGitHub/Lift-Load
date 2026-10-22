@@ -104,7 +104,10 @@ entries; fold older ones into "Earlier".
   lane variety L16, Swap L14, +2 seats L19, +1 trip L27, Express L29. Frame v5 shows ghosts, 5 lanes, 150-coin sheet.
   Addendum v3.1: owner said the waiting count must never be shown: "+N waiting" under each lane and the number in the rush hour
   banner are removed; a lane draws at most visibleDepth people (known or ghost), so nothing promises a length; widget test added.
-  Frame v6 drops the counts. Still waiting for an explicit "signed off"; two questions left (lane-count meaning, accept the curves/caps/unlocks). (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
+  Frame v6 drops the counts. SIGNED OFF by the owner 2026-10-22 (lane count varies 3-5; all proposals accepted). Folded into docs/PRD.md (v1.6 section),
+  CLAUDE.md (rules 1, 2, 9, 10 and architecture rules) and .claude/memory/decisions.md. NOTHING BUILT: engine step 2 of the plan
+  (Formulas, LiftGame powers, unknown flags, lane count, Profile v2, ad_policy powerRefill, remove the power cut) is next, but this
+  session's brief fences lib/ and assets/, so it needs the owner's go (or a new session). Old: two questions left (lane-count meaning, accept the curves/caps/unlocks). (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
   Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
   verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).

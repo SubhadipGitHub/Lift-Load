@@ -1,6 +1,7 @@
 # PRD addendum v1.6: Power options, unknown residents, lane variety, left-handed bar
 
-Status: DRAFT v3.1. The owner's comments of 2026-10-22 are folded in, including "no waiting count". It still needs an explicit "signed off" before
+Status: SIGNED OFF 2026-10-22 (v3.1; lane count varies 3 to 5; every proposal accepted). Folded into docs/PRD.md v1.6 and
+CLAUDE.md rules 1, 2, 9 and 10. Nothing is built yet. The owner's comments of 2026-10-22 are folded in, including "no waiting count". It still needs an explicit "signed off" before
 docs/PRD.md and CLAUDE.md are edited and before any build. Date 2026-10-22. Owner: Subhadip.
 This addendum reopens docs/PRD.md and the locked rules in CLAUDE.md: rule 1 (unknown residents and lane count), rule 9
 (powers), rule 10 (the power cut scenario is removed) and, by interaction, rules 2, 6, 7 and 8. Where it differs from
@@ -239,7 +240,7 @@ New events: `power_used` (`power`, `level`, `left`), `power_empty_tapped`, `powe
 5. monetization-auditor and code-reviewer pass on the diff.
 6. Gate A with powers on, then Gate B.
 
-## Open questions
+## Open questions (resolved at sign-off)
 
 - "Unknown number of queue columns": is "the lane count varies per level, from 3 to 5" what you meant?
 - Accept the proposed unknown share curve (starts at level 11 at 15%, up to 60%), the lane spread, the liar weighting

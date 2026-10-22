@@ -61,7 +61,8 @@ Newest first. One line of decision, one line of why. Reopen a decision only with
   learning curve past L20 without breaking "one type, one weight". Props avoid the shapes of type accessories.
 - **Lift kinds as a visible repeating schedule (old 0.75×, service 1.4×, express two floors).** Planning against the
   NEXT strip is the new brain; a fixed pattern per level keeps it fair.
-- **Scenarios: maintenance, power cut, rush hour; one per level at most.** Never on Super Hard or another debut.
+- **Scenarios: maintenance, rush hour; one per level at most.** Never on Super Hard or another debut. (Power cut was
+  removed in v1.6, 2026-10-22.)
 - **Lifts route only to reachable residents.** A locked lane or a pending wave could otherwise soft-lock an empty lift.
 - **The solver plays through the engine.** One implementation of the rules; the bot cannot drift from the game.
 - **Queued, not built: best-play solver, trap Hard levels, stars, cabin spots, pairs, hurry residents.**
@@ -83,3 +84,16 @@ Newest first. One line of decision, one line of why. Reopen a decision only with
   weights until Baloo 2 and Nunito Sans are bundled.
 - **Platform folders (android/, web/) not committed yet.** No Flutter SDK in the authoring workspace; generate with
   `flutter create` (see CLAUDE.md) and commit them on first local run.
+
+## 2026-10-22 (PRD v1.6, owner signed off)
+
+- **Powers: Swap, +2 seats, +1 trip, Express; start at 0; 150 coins or 1 ad per use, configurable.** More agency and a
+  reason to spend or watch ads. The Scale stays (it is the only thing that teaches weights) and moves to the gauge plate.
+- **Unknown residents from L11, not a hidden queue from L1.** Early levels stay fully visible; unknown people are one
+  identical ghost, revealed at the front. The number waiting is never shown.
+- **Lane count varies 3 to 5 from L16; lane spread, liar weight and slack tune difficulty.**
+- **Power cut scenario removed.** "Only the front is lit" stopped being a variant once the queue can hide people.
+- **Gate A runs with powers on.** The owner's call over my recommendation; `powersEnabled` is the lever.
+- **Left-handed mirror of the bottom bar now.** Restart moves into the pause menu.
+- **Restyle, new layout and the art pack come before Gate A.** Art is approved in docs/art/approved/; nothing under lib/ or
+  assets/ changed yet.
