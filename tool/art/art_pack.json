@@ -393,29 +393,11 @@
       "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No buttons with numbers, no signs."
     },
     {
-      "id": "cabin_normal_doors",
-      "kind": "scene",
-      "name": "Standard lift doors",
-      "aspect": "1:1",
-      "reference": "cabin_normal_interior",
-      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No call buttons, no floor numbers, no signs."
-    },
-    {
       "id": "cabin_old_interior",
       "kind": "scene",
       "name": "Old lift interior",
       "aspect": "1:1",
       "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No buttons with numbers, no signs."
-    },
-    {
-      "id": "cabin_old_doors",
-      "kind": "scene",
-      "name": "Old lift doors",
-      "aspect": "1:1",
-      "reference": "cabin_old_interior",
-      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No call buttons, no floor numbers, no signs."
     },
     {
       "id": "cabin_service_interior",
@@ -425,29 +407,11 @@
       "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No buttons with numbers, no signs."
     },
     {
-      "id": "cabin_service_doors",
-      "kind": "scene",
-      "name": "Service lift doors",
-      "aspect": "1:1",
-      "reference": "cabin_service_interior",
-      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No call buttons, no floor numbers, no signs."
-    },
-    {
       "id": "cabin_express_interior",
       "kind": "scene",
       "name": "Express lift interior",
       "aspect": "1:1",
       "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: sleek polished chrome with frosted glass panels, a solid opaque frosted-glass back wall with no view through it and no second room, corridor or reflection of depth behind it, a soft blue LED light strip along the ceiling edges, a polished dark floor. No buttons with numbers, no signs."
-    },
-    {
-      "id": "cabin_express_doors",
-      "kind": "scene",
-      "name": "Express lift doors",
-      "aspect": "1:1",
-      "reference": "cabin_express_interior",
-      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
-      "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: sleek polished chrome with frosted glass panels, a solid opaque frosted-glass back wall with no view through it and no second room, corridor or reflection of depth behind it, a soft blue LED light strip along the ceiling edges, a polished dark floor. No call buttons, no floor numbers, no signs."
     },
     {
       "id": "venue_society_lobby",

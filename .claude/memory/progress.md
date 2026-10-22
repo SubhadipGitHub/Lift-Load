@@ -6,7 +6,7 @@ entries; fold older ones into "Earlier".
 ## 2026-10-22 · Gemini art pack (PRs #6, #7, #8 merged; handoff prep on branch ccr-445849fc-sjvxbg)
 
 **Done**
-- Tooling: `tool/art/art_pack.json` (style bible plus 53 prompts), `gemini_art.py` (generate, prompts, process, sheet),
+- Tooling: `tool/art/art_pack.json` (style bible plus 53 prompts, now 49 after the doors left the pack), `gemini_art.py` (generate, prompts, process, sheet),
   a prompt page with copy buttons and a done-tracker (claude.ai artifact 9H2UEdWaxV8uhzUsKttGGo), and
   `docs/art/gemini-art-pack.md`. The owner has no API key: they make each image by hand in the Gemini app from the
   page and send it here for review.
@@ -42,8 +42,12 @@ entries; fold older ones into "Earlier".
   opaque-frosted-back-wall prompt: chrome, blue LED edge strip, dark floor, distinct from the three warm cabins. Watch
   the bright back panel: pale clothes (white shirt, light-blue hospital top, blanket) have the least contrast there;
   dim the panel about 15% at integration if it bites. All four interiors are approved; the doors are next.
-- Next: `cabin_normal_doors` (attach the approved interior as the reference image), then `venue_society_lobby`, then
-  old, service and express cabins, then the other four venues.
+- Doors: Gemini doors came back unusable (no independent leaves, no matching seam), and the doors must animate, so they
+  are rendered in code by `tool/art/make_doors.py` as a left and right leaf per kind (432 x 944 px each, the right is
+  the mirror), committed in `docs/art/approved/` (8 files, about 150 KB). The four Gemini door prompts were removed from
+  `art_pack.json` and the prompt page. Closing-motion spec is in the art doc, Integration, "Doors". Not final art:
+  this is a procedural look that matches each cabin's palette; the owner reviews it and can ask for a redo.
+- Next: `venue_society_lobby` (9:16), then the other four venues' lobbies and shafts.
 
 **Handoff for a new session**
 - The 17 approved processed sprites are committed in `docs/art/approved/` (about 0.5 MB, not shipped). Raw images stay
@@ -68,7 +72,7 @@ entries; fold older ones into "Earlier".
   Gate A overloads-by-type table.
 - Cargo props approved: water can, suitcase, gas cylinder. They process at the painter's own heights (28.5, 36 and 39.5
   design units, 6 px per unit), so they sit in true proportion beside the residents.
-- Still to make: four lift kinds (interior and doors), five venues (lobby floor and shaft wall), home skylines, store
+- Still to make: four lift kinds (all done: interiors from Gemini, doors in code), five venues (lobby floor and shaft wall), home skylines, store
   art, icon, and blink frames last (optional).
 
 **Open**

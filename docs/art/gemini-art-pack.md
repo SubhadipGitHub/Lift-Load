@@ -1,7 +1,7 @@
 # Art pack: polished 3D-animated look with Gemini
 
 This replaces the flat parametric art with a stylized 3D animated-feature look: soft rounded shapes, subsurface
-skin and cinematic lighting. It covers the cast, cargo props, the four lift kinds, the five venues, the home skyline,
+skin and cinematic lighting. It covers the cast, cargo props, the four lift kinds (interiors from Gemini, doors rendered in code), the five venues, the home skyline,
 the store key art and the app icon.
 
 Prompts live in one place, `tool/art/art_pack.json`. That file holds the style bible and one prompt per asset.
@@ -113,6 +113,14 @@ This is a separate build, sketched here so the art is made to fit it:
   at the top) and is the reference for the painter.
 - **Feet line.** In the cabin, put the feet at about 90% of the cabin's height (mid-floor), not at the floor front. The
   cabin is drawn 196 x 214 units, so cover-crop the scene to that aspect; a square scene loses only its sides.
+- **Doors, in two leaves.** Gemini cannot draw two independent leaves with a matching seam, so the doors are rendered
+  by `tool/art/make_doors.py` (deterministic, colours sampled from each approved interior): `cabin_<kind>_door_left` and
+  `_right`, each 432 x 944 px, half the cabin (98 x 214 units); the right leaf is the mirror of the left. Draw the
+  cabin interior, the riders, then the two leaves on top, clipped to the cabin rect. Open, the leaves sit fully outside
+  the rect; closed, they meet at the centre. Motion: close in about 420 ms with ease-in-out, a 2 px settle at the end,
+  a thin dark gradient on each leaf's seam edge that fades as it opens, and the interior dimmed by about 12% while
+  closed. Sequence for Send: doors close, then the lift moves; on arrival the lift stops, the doors open, riders leave.
+  The express leaves carry the blue LED on the seam edge. Nothing on a leaf may suggest load, so no plates or numbers.
 - **Raster cabins.** Raster cabin interiors and doors (the doors slide as two halves of one image), venue lobby
   floors and shaft walls, and the home skyline, all drawn under the existing UI.
 - **Size budget.** About 2 MB of WebP for the cast and props and 3–5 MB for scenes, within the 25 MB APK budget.
