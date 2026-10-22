@@ -95,7 +95,7 @@ plays), and from then on they are a normal front resident. A lane's first person
 and bench residents are always known.
 
 **How many.** `unknownShare(level)` is the chance that a person behind the front is unknown: 0 below level 11, then
-proposed `min(0.15 + 0.01 × (L − 11), 0.6)`. Which people are unknown is seeded by the level, so a level plays the same
+proposed `min(0.15 + 0.01 × (L − 11), 0.35)` (tuned from 0.6 by the solver study). Which people are unknown is seeded by the level, so a level plays the same
 every time. Level 11 is a breather that guarantees at least three unknown people, so the new thing is seen enough.
 
 **The ghost asset.** A Gemini prompt for it is on the prompt page (`unknown_ghost`, attached to the schoolkid for

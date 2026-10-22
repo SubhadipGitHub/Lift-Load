@@ -135,7 +135,7 @@ void main() {
     }
     expect(Formulas.unknownShare(10), 0);
     expect(Formulas.unknownShare(11), closeTo(0.15, 1e-9));
-    expect(Formulas.unknownShare(100), 0.6);
+    expect(Formulas.unknownShare(100), Formulas.unknownMax);
   });
 
   test('lanes: four before level 16, five on 16, 3 to 5 after, none empty, spread within bounds', () {

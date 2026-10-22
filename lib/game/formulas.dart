@@ -113,7 +113,7 @@ abstract final class Formulas {
 
   static const double unknownBase = 0.15;
   static const double unknownPerLevel = 0.01;
-  static const double unknownMax = 0.6;
+  static const double unknownMax = 0.35;
 
   /// The level that debuts unknown people shows at least this many of them.
   static const int unknownDebutMinimum = 3;
