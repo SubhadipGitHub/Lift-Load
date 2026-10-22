@@ -90,6 +90,8 @@ entries; fold older ones into "Earlier".
   once: the Scale is the only thing that teaches weights (locked rule 9), so it stays but moves onto the gauge plate, where it
   previews the needle. THESE POWERS REOPEN docs/PRD.md (rule 9, jam and out-of-trips fails, solver and generator, prices and
   rewarded-ad rewards via ad_policy, monetization-auditor): no engine or lib/ work until the owner signs a PRD change.
+  PRD change written: `docs/PRD-v1.6-powers.md` (DRAFT, awaiting the owner's sign-off and answers to its open questions; PRD.md and
+  CLAUDE.md are NOT yet edited). Recommends Gate A with powers off behind `powersEnabled`, on for Gate B; Scale stays on the gauge.
   Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
   verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).
