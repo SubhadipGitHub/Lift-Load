@@ -52,6 +52,13 @@ entries; fold older ones into "Earlier".
   in `docs/art/approved/` (8 files, 150 KB). Floors pass a 4.3:1 contrast check against the lane ink; walls keep to the
   facade colour with detail only in the right band. Mock-ups in `art/review/venue_society_*.png`. Society cards removed
   from `art_pack.json` and the prompt page.
+- Restyle (owner: "not looking good, make it Pixar-styled, punchy"; Gate A not started; reskin only; proceed with a style
+  frame): the style frame is claude.ai artifact 6cNa4q66cj9FRUUKPfbA1z (source `docs/art/style-frame/index.html`, images
+  from `docs/art/approved/`). It shows the same layout with glossy outlined 3D buttons, chips, tags, gauge and a Send
+  that closes the doors and bursts coins, plus a toggle for larger figures. Finding: a figure box is 120 design units,
+  so the game's 80 dp cabin figure makes the tallest resident 69 dp (32% of the cabin) and 47 dp in a lane; earlier
+  `compose_check` composites were 1.5x too large (fixed; `--figure`). Recommendation to the owner: figures +60%, which
+  is the one change beyond a reskin. Waiting on the owner's verdict on the frame before any production assets or lib/ work.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
   each with its own palette and storey bands) or stay with Gemini.
 

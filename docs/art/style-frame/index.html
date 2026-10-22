@@ -1,0 +1,345 @@
+<title>Lift Load Style Frame</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito+Sans:wght@600;700;800&display=swap">
+<style>
+/* Layout: a stage with one 390 x 844 phone, scaled to fit, and three short notes beside or below it.
+   Single committed look: the game's own night-lobby world, so there is no light variant. */
+:root {
+  --stage: #0d0c24; --stage-2: #17153a; --text: #fff4e2; --soft: #b9b4e0;
+  --night: #14132e; --facade: #2a2756; --brass: #f5b83d; --brass-hi: #ffe08a; --brass-d: #b57d12;
+  --mint: #3ddc97; --mint-hi: #9dffd0; --mint-d: #1f9a66; --alarm: #e5484d; --ink: #1e1b3a; --cream: #fff4e2;
+  --display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: radial-gradient(120% 80% at 50% 0%, var(--stage-2), var(--stage)); color: var(--text); font: 16px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; min-height: 100vh; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font: 800 clamp(1.9rem, 6vw, 2.6rem)/1.05 var(--display); margin: 0; text-wrap: balance; }
+h1 span { color: var(--brass); }
+.lede { margin: 6px 0 0; color: var(--soft); max-width: 60ch; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 860px) { .row { grid-template-columns: minmax(0, 1fr); } }
+.phonebox { justify-self: center; width: calc(390px * var(--s, 1)); height: calc(844px * var(--s, 1)); }
+.notes { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.notes h2 { font: 800 1.15rem/1.1 var(--display); margin: 0 0 2px; color: var(--brass); }
+.notes p { margin: 0; color: var(--soft); max-width: 52ch; }
+.notes b { color: var(--text); }
+.toggle { display: inline-grid; grid-auto-flow: column; gap: 4px; padding: 4px; border-radius: 999px; background: #0008; border: 1px solid #ffffff22; justify-self: start; }
+.toggle button { font: 800 .85rem var(--body); color: var(--soft); background: transparent; border: 0; border-radius: 999px; padding: 9px 14px; min-height: 40px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--brass); color: var(--ink); }
+.toggle button:focus-visible, .send:focus-visible, .tool:focus-visible { outline: 3px solid var(--brass-hi); outline-offset: 2px; }
+
+/* ---------- the phone: everything below is in design px (390 x 844), scaled as one ---------- */
+.phone { width: 390px; height: 844px; transform: scale(var(--s, 1)); transform-origin: 0 0; position: relative; overflow: hidden; border-radius: 38px;
+  background: radial-gradient(90% 55% at 50% 22%, #3b3585 0%, #24215a 45%, #15132f 100%); box-shadow: 0 0 0 6px #05041a, 0 24px 60px #000a;
+  --boost: 1.6; --lane: calc(54px * var(--boost)); --cab: calc(80px * var(--boost)); --bench: calc(52px * var(--boost)); }
+.phone.asbuilt { --boost: 1; }
+.bokeh { position: absolute; inset: 0; pointer-events: none; background:
+  radial-gradient(40px 40px at 18% 12%, #ffd98a33, transparent 70%), radial-gradient(60px 60px at 86% 20%, #ff8ab833, transparent 70%),
+  radial-gradient(50px 50px at 70% 6%, #8ab4ff33, transparent 70%); }
+
+/* glossy 3D button recipe: dark outline, lit gradient, bottom thickness, top gloss */
+.g3d { position: relative; border: 0; color: var(--ink); background: linear-gradient(180deg, var(--hi) 0%, var(--mid) 48%, var(--lo) 100%);
+  box-shadow: 0 0 0 2.5px var(--edge), 0 4px 0 2.5px var(--edge), 0 7px 0 2.5px var(--drop), inset 0 2px 0 #ffffffb0, inset 0 -5px 0 #0003; }
+.g3d::after { content: ""; position: absolute; left: 7%; right: 7%; top: 5%; height: 38%; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, #ffffff99, #ffffff10); }
+.brass { --hi: #ffe58f; --mid: #f5b83d; --lo: #d88f12; --edge: #5a3a05; --drop: #2a1a02; }
+.mint { --hi: #b6ffdc; --mid: #3ddc97; --lo: #19a56b; --edge: #07402a; --drop: #04200f; }
+.plum { --hi: #8b86d8; --mid: #4a4590; --lo: #2f2b66; --edge: #0b0a24; --drop: #05041a; color: var(--cream); }
+.cream { --hi: #ffffff; --mid: #fff4e2; --lo: #ead7b4; --edge: #4a3a20; --drop: #241a0a; }
+
+/* HUD */
+.hud { position: absolute; left: 0; right: 0; top: 14px; height: 40px; display: flex; align-items: center; gap: 7px; padding: 0 10px; }
+.round { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.lv { font: 800 20px/1 var(--display); padding: 6px 15px 4px; border-radius: 999px; white-space: nowrap; flex: none; }
+.trips { display: flex; align-items: center; gap: 5px; margin-left: 2px; }
+.trips small { font: 800 11px/1 var(--body); color: var(--soft); letter-spacing: .06em; text-transform: uppercase; margin-right: 2px; }
+.pip { width: 17px; height: 22px; display: block; }
+.grow { flex: 1; }
+.chip { display: flex; align-items: center; gap: 3px; padding: 3px 9px 3px 3px; border-radius: 999px; font: 800 15px/1 var(--display); color: var(--cream);
+  background: linear-gradient(180deg, #3a3585, #211e52); box-shadow: 0 0 0 2px #0b0a24, inset 0 2px 0 #ffffff30, 0 3px 0 2px #05041a; }
+.chip svg { width: 24px; height: 24px; }
+.msg { position: absolute; left: 12px; right: 12px; top: 66px; height: 28px; display: grid; place-items: center; }
+.msg span { font: 800 13px/1 var(--body); color: var(--cream); padding: 7px 14px; border-radius: 999px; background: #0007; box-shadow: inset 0 0 0 1.5px #ffffff22; }
+.msg b { color: var(--brass); }
+
+/* shaft panel */
+.shaft { position: absolute; left: 12px; right: 12px; top: 100px; height: 262px; border-radius: 24px; overflow: hidden;
+  background: url(img/society_wall_mid.webp) center / cover; box-shadow: 0 0 0 3px #0a0920, 0 8px 0 3px #05041a, 0 10px 24px #0008; }
+.shaft::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 90% at 38% 55%, #ffd98a2e, transparent 70%), linear-gradient(180deg, #ffffff12, transparent 30%, #0000004d); }
+.next { position: absolute; left: 10px; top: 14px; width: 44px; display: grid; gap: 7px; justify-items: center; }
+.next small { font: 800 10px/1 var(--body); letter-spacing: .14em; color: var(--brass-hi); }
+.nchip { --hi: var(--c1); --mid: var(--c1); --lo: var(--c2); --edge: var(--ce); --drop: #05041a; width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; color: #fff; font: 800 11px/1 var(--display); gap: 0; align-content: center; }
+.nchip svg { width: 15px; height: 15px; }
+.nchip.dim { opacity: .62; transform: scale(.88); }
+.plant { position: absolute; left: 14px; bottom: 8px; width: 34px; height: 48px; filter: drop-shadow(0 3px 2px #0006); }
+.cabwrap { position: absolute; left: 70px; top: 30px; width: 196px; height: 214px; }
+.cable { position: absolute; top: -30px; width: 3px; height: 34px; background: linear-gradient(90deg, #cfcbf5, #6e6a9e); border-radius: 2px; box-shadow: 0 0 0 1px #0a0920; }
+.fdisp { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); display: flex; gap: 5px; align-items: center; padding: 3px 8px; border-radius: 9px;
+  background: #0b0a24; box-shadow: 0 0 0 2px #5a5592, 0 0 12px #3ddc9766; }
+.fdisp svg { width: 10px; height: 10px; } .fdisp i { font: 800 11px/1 var(--display); font-style: normal; color: var(--mint); }
+.cabin { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 3px #4a2f08, 0 0 0 5px #f5b83d, 0 0 0 7px #3a2406, 0 10px 18px #000a;
+  background: url(img/cabin_normal_interior.webp) 50% 56% / auto 118%; }
+.cabin .light { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 0%, #fff6d855, transparent 70%); }
+.leaf { position: absolute; top: 0; bottom: 0; width: 50.5%; transition: transform .42s cubic-bezier(.5, 0, .25, 1);
+  background: linear-gradient(90deg, #8a8478, #cfc7b4 18%, #a29b8b 50%, #cfc7b4 82%, #7a7468); box-shadow: inset 0 0 0 5px #c98f2e, inset 0 0 0 7px #7a4f0c; }
+.leaf::before { content: ""; position: absolute; inset: 20px 18px; border-radius: 6px; box-shadow: inset 0 0 0 2px #00000022, inset 0 8px 14px #ffffff30; }
+.leaf.l { left: 0; transform: translateX(-102%); } .leaf.r { right: 0; transform: translateX(102%); }
+.cabin.closed .leaf.l, .cabin.closed .leaf.r { transform: translateX(0); }
+.rider { position: absolute; bottom: 20px; left: var(--x); transform: translateX(-50%); height: calc(var(--cab) * var(--hd) / 120); width: auto; filter: drop-shadow(0 2px 2px #0005); }
+.shadow { position: absolute; bottom: 13px; left: var(--x); width: calc(var(--w) * var(--boost)); height: 9px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(#150a0acc, #150a0a00 70%); }
+.cabin.bump { animation: bump .5s ease; }
+@keyframes bump { 0% { transform: translateY(0) } 30% { transform: translateY(3px) scale(1.01, .985) } 60% { transform: translateY(-2px) } 100% { transform: translateY(0) } }
+
+/* gauge + send, right column of the shaft */
+.gauge { position: absolute; left: 270px; top: 14px; width: 90px; padding: 10px 4px 7px; border-radius: 16px; background: linear-gradient(180deg, #14132ecc, #0b0a24ee); box-shadow: 0 0 0 2px #05041a, inset 0 0 0 1.5px #ffffff1f; display: grid; justify-items: center; }
+.gauge svg { width: 82px; height: 56px; display: block; overflow: visible; }
+.gauge .lbl { margin-top: 4px; text-align: center; font: 800 12px/1.1 var(--display); color: var(--mint); text-shadow: 0 0 10px #3ddc97aa; }
+.send { position: absolute; left: 272px; top: 156px; width: 86px; height: 70px; border-radius: 22px; cursor: pointer; font: 800 17px/1 var(--display); letter-spacing: .04em; display: grid; place-items: center; align-content: center; gap: 1px;
+  transition: transform .08s, box-shadow .08s; }
+.send svg { width: 26px; height: 22px; }
+.send:active, .send.press { transform: translateY(5px); box-shadow: 0 0 0 2.5px var(--edge), 0 -1px 0 2.5px var(--edge), 0 2px 0 2.5px var(--drop), inset 0 2px 0 #ffffffb0, inset 0 -3px 0 #0003; }
+.send .ring { position: absolute; inset: -9px; border-radius: 28px; border: 3px solid #3ddc97; opacity: 0; animation: ring 1.8s ease-out infinite; pointer-events: none; }
+@keyframes ring { 0% { transform: scale(.92); opacity: .75 } 100% { transform: scale(1.14); opacity: 0 } }
+
+/* lobby */
+.lobby { position: absolute; left: 12px; right: 12px; top: 376px; height: 262px; border-radius: 24px 24px 8px 8px; overflow: hidden;
+  background: url(img/society_floor_tile.webp) 0 0 / 136px 136px; box-shadow: 0 0 0 3px #0a0920, 0 8px 0 3px #05041a; }
+.lobby::before { content: ""; position: absolute; inset: 0; background: radial-gradient(80% 60% at 50% 0%, #fff2cf99, transparent 70%), radial-gradient(120% 100% at 50% 50%, transparent 55%, #6b3f1a40 100%); }
+.lanes { position: absolute; inset: 8px 4px 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.lane { position: relative; display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-start; border-radius: 16px; background: linear-gradient(180deg, #ffffff00, #ffffff40); box-shadow: inset 0 0 0 1.5px #b3874433; }
+.lane .res { height: calc(var(--lane) * var(--hd) / 120); width: auto; display: block; filter: drop-shadow(0 2px 1px #3a1f0a66); }
+.lane .res.back { position: absolute; left: 50%; bottom: calc(var(--lane) * (0.5 + 0.34 * var(--k)) + 14px); transform: translateX(-50%) scale(calc(1 - 0.07 * var(--k))); transform-origin: bottom; filter: brightness(calc(1 - 0.07 * var(--k))) drop-shadow(0 2px 1px #3a1f0a44); z-index: 1; }
+.lane .front { position: relative; z-index: 5; display: grid; justify-items: center; margin-bottom: 8px; }
+.lane .front::after { content: ""; position: absolute; bottom: -4px; left: 50%; width: 70%; height: 10px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(#3a1f0a99, transparent 70%); z-index: -1; }
+.lane .front.sel { animation: hop 1.1s ease-in-out infinite; }
+.lane .front.sel::before { content: ""; position: absolute; inset: 6% -12% -6%; border-radius: 50%; background: radial-gradient(#ffe58f 0%, #f5b83d66 45%, transparent 70%); z-index: -1; }
+@keyframes hop { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+.tag { display: inline-flex; align-items: center; gap: 3px; height: 19px; padding: 0 8px 0 6px; border-radius: 99px; font: 800 11px/1 var(--display); color: var(--ink);
+  background: linear-gradient(180deg, var(--c1), var(--c2)); box-shadow: 0 0 0 1.5px var(--ce), inset 0 1.5px 0 #ffffffa0, 0 2px 0 1.5px var(--ce); margin-bottom: 3px; }
+.tag svg { width: 10px; height: 10px; fill: #fff; filter: drop-shadow(0 1px 0 #0004); }
+.tag.s { height: 15px; font-size: 9px; padding: 0 6px 0 4px; } .tag.s svg { width: 8px; height: 8px; }
+.coral { --c1: #ff9a8c; --c2: #ff6b5b; --ce: #8a2a20; } .sun { --c1: #ffe07a; --c2: #ffc233; --ce: #7a5206; }
+.teal { --c1: #4be0cf; --c2: #14b8a6; --ce: #08524a; } .blue { --c1: #86a6ff; --c2: #4c7dff; --ce: #1c3380; }
+.plumf { --c1: #c49cff; --c2: #a066f5; --ce: #43208a; } .leaf-f { --c1: #a8ef7a; --c2: #7bd148; --ce: #2d5a12; }
+.wait { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font: 800 11px/1 var(--body); color: #6b5c44; }
+.laneinfo { position: absolute; left: 4px; right: 4px; bottom: 6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; font: 800 11px/1 var(--body); color: #6b5c44; }
+
+/* bench */
+.bench { position: absolute; left: 14px; right: 14px; top: 656px; }
+.bench .cap { display: flex; justify-content: space-between; font: 800 11px/1 var(--body); letter-spacing: .14em; color: var(--soft); margin-bottom: 6px; }
+.seats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.seat { position: relative; height: 80px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; overflow: visible; }
+.seat.has { background: linear-gradient(180deg, #fffaf0, #f0dfbd); box-shadow: 0 0 0 2px #4a3a20, 0 4px 0 2px #241a0a, inset 0 2px 0 #fff; }
+.seat.free { background: #0004; box-shadow: inset 0 0 0 2px #5a5592, inset 0 4px 8px #0006; }
+.seat.hint { background: #f5b83d22; box-shadow: inset 0 0 0 2.5px var(--brass), 0 0 14px #f5b83d77; color: var(--brass); font: 800 12px/1 var(--display); align-items: center; justify-content: center; animation: breathe 1.4s ease-in-out infinite; }
+@keyframes breathe { 50% { box-shadow: inset 0 0 0 2.5px var(--brass-hi), 0 0 22px #f5b83dbb; } }
+.seat .res { height: calc(var(--bench) * var(--hd) / 120); width: auto; margin-bottom: 4px; filter: drop-shadow(0 2px 1px #3a1f0a55); }
+.seat .tag { position: absolute; top: -9px; margin: 0; }
+
+/* toolbar */
+.toolbar { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; background: linear-gradient(180deg, #1a1840, #0f0e28); display: flex; gap: 12px; padding: 10px 16px 14px; box-shadow: 0 -2px 0 #ffffff14; }
+.tool { flex: 1; height: 100%; border-radius: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font: 800 15px/1 var(--display); transition: transform .08s; }
+.tool svg { width: 24px; height: 24px; }
+.tool:active { transform: translateY(4px); }
+
+/* coin burst */
+.fly { position: absolute; width: 22px; height: 22px; z-index: 30; pointer-events: none; transition: transform .7s cubic-bezier(.3, .7, .2, 1), opacity .7s; }
+.pop { position: absolute; left: 50%; top: 220px; transform: translate(-50%, 0) scale(.4); z-index: 31; pointer-events: none; opacity: 0; text-align: center; font: 800 38px/1 var(--display); color: var(--brass-hi);
+  -webkit-text-stroke: 7px #4a2d03; paint-order: stroke fill; text-shadow: 0 6px 0 #2a1802, 0 0 28px #f5b83d; transition: transform .35s cubic-bezier(.3, 1.8, .5, 1), opacity .2s; }
+.pop small { display: block; font-size: 17px; color: #fff; -webkit-text-stroke: 5px #0e5a38; letter-spacing: .08em; margin-top: 2px; }
+.pop.on { opacity: 1; transform: translate(-50%, -18px) scale(1); }
+@media (prefers-reduced-motion: reduce) { .send .ring, .lane .front.sel, .seat.hint, .cabin.bump { animation: none; } .leaf, .fly, .pop { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="gCoin" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#fff3b0"/><stop offset=".45" stop-color="#ffc233"/><stop offset="1" stop-color="#c98310"/></radialGradient>
+    <linearGradient id="gHeart" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a8e"/><stop offset="1" stop-color="#d12b3a"/></linearGradient>
+    <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9b4e0"/></linearGradient>
+    <symbol id="s-circle" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.4"/></symbol>
+    <symbol id="s-triangle" viewBox="0 0 12 12"><path d="M6 .8 11.4 11H.6z"/></symbol>
+    <symbol id="s-square" viewBox="0 0 12 12"><rect x=".8" y=".8" width="10.4" height="10.4" rx="1.4"/></symbol>
+    <symbol id="s-diamond" viewBox="0 0 12 12"><path d="M6 .4 11.6 6 6 11.6.4 6z"/></symbol>
+    <symbol id="s-hexagon" viewBox="0 0 12 12"><path d="M3.2.8h5.6L11.6 6 8.8 11.2H3.2L.4 6z"/></symbol>
+    <symbol id="s-plus" viewBox="0 0 12 12"><path d="M4 .5h4V4h3.5v4H8v3.5H4V8H.5V4H4z"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 32 32"><circle cx="16" cy="17" r="13" fill="#7a4a06"/><circle cx="16" cy="15" r="13" fill="url(#gCoin)" stroke="#5a3a05" stroke-width="2"/><circle cx="16" cy="15" r="8.6" fill="none" stroke="#b97d10" stroke-width="2"/><path d="M16 9.5v11M12.5 13.2 16 9.5l3.5 3.7" fill="none" stroke="#fff3b0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="11" cy="8.5" rx="5" ry="2.6" fill="#fff" opacity=".55" transform="rotate(-28 11 8.5)"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 32 32"><path d="M16 29C5 21 2 15 2 10.5A7 7 0 0 1 16 8a7 7 0 0 1 14 2.5C30 15 27 21 16 29z" fill="#6b0f1c" transform="translate(0 2)"/><path d="M16 27C5 19 2 13 2 8.5A7 7 0 0 1 16 6a7 7 0 0 1 14 2.5C30 13 27 19 16 27z" fill="url(#gHeart)" stroke="#6b0f1c" stroke-width="2"/><ellipse cx="9.5" cy="9" rx="3.4" ry="2" fill="#fff" opacity=".6" transform="rotate(-35 9.5 9)"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 32 32"><path d="M14 2h4l1 4 3 1.4 3.6-2 2.8 2.8-2 3.6L27 14l4 1v4l-4 1-1.4 3 2 3.6-2.8 2.8-3.6-2L19 28l-1 4h-4l-1-4-3-1.4-3.6 2-2.8-2.8 2-3.6L5 20l-4-1v-4l4-1 1.4-3-2-3.6 2.8-2.8 3.6 2L13 6z" fill="url(#gMetal)" stroke="#2f2b66" stroke-width="2" stroke-linejoin="round" transform="scale(.92) translate(1.4 .6)"/><circle cx="16" cy="16" r="4.6" fill="#2f2b66"/></symbol>
+    <symbol id="i-back" viewBox="0 0 32 32"><path d="M20 6 10 16l10 10" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 32 32"><path d="M16 4v22M7 26h18" stroke="#2f2b66" stroke-width="3.4" stroke-linecap="round"/><path d="M5 9h22" stroke="#2f2b66" stroke-width="3.4" stroke-linecap="round"/><path d="M5 9 1.5 17a4.4 4.4 0 0 0 7 0zM27 9l-3.5 8a4.4 4.4 0 0 0 7 0z" fill="#ffc233" stroke="#2f2b66" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="6" r="2.8" fill="#ffc233" stroke="#2f2b66" stroke-width="2"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 32 32"><path d="M26 16a10 10 0 1 1-3.2-7.3" fill="none" stroke="#2f2b66" stroke-width="5" stroke-linecap="round"/><path d="M27 3.5v8.2h-8.2z" fill="#2f2b66"/></symbol>
+    <symbol id="i-up" viewBox="0 0 32 24"><path d="M3 21 16 8l13 13" fill="none" stroke="#07402a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 21 16 8l13 13" fill="none" stroke="#ffffff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pip" viewBox="0 0 20 26"><rect x="1.5" y="1.5" width="17" height="23" rx="5" fill="var(--pip, #ffc233)" stroke="#5a3a05" stroke-width="2.4"/><path d="M10 6.5 5.5 12h3v6.5h3V12h3z" fill="#fff" opacity=".9"/><rect x="4" y="3.5" width="6" height="3" rx="1.5" fill="#fff" opacity=".55"/></symbol>
+    <symbol id="i-plant" viewBox="0 0 40 56"><path d="M10 34h20l-3 20H13z" fill="#c0703a" stroke="#6b3a14" stroke-width="2"/><path d="M12 38h16" stroke="#e39a62" stroke-width="3" stroke-linecap="round"/><g stroke="#1f5a34" stroke-width="2" fill="#3fc27a"><circle cx="20" cy="17" r="9"/><circle cx="11" cy="25" r="7"/><circle cx="29" cy="25" r="7"/><circle cx="20" cy="27" r="7.5"/></g><ellipse cx="16" cy="13" rx="3.4" ry="2" fill="#fff" opacity=".45"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <h1>Lift Load <span>style frame</span></h1>
+    <p class="lede">One play screen in the proposed look: warm light, thick outlines, glossy 3D buttons and icons, and a punch on every send. It uses the approved cast, cabin and Sunrise Towers art. Tap Send to see the doors, the pop and the coin burst.</p>
+  </header>
+
+  <div class="row">
+    <div class="phonebox" id="phonebox">
+      <div class="phone" id="phone" role="img" aria-label="Lift Load play screen in the proposed style: a lift cabin with two riders, a load gauge in the green, four lanes of residents, a bench, and glossy Send, Scale and Restart buttons.">
+        <div class="bokeh"></div>
+
+        <div class="hud">
+          <div class="round g3d plum" aria-hidden="true"><svg width="22" height="22"><use href="#i-back"/></svg></div>
+          <div class="lv g3d brass">Lv 7</div>
+          <div class="trips" aria-label="Trips left: 3 of 4">            <svg class="pip" style="--pip:#ffc233"><use href="#i-pip"/></svg><svg class="pip" style="--pip:#ffc233"><use href="#i-pip"/></svg><svg class="pip" style="--pip:#ffc233"><use href="#i-pip"/></svg><svg class="pip" style="--pip:#5a5592"><use href="#i-pip"/></svg></div>
+          <div class="grow"></div>
+          <div class="round g3d plum" aria-hidden="true" style="width:32px;height:32px"><svg width="20" height="20"><use href="#i-gear"/></svg></div>
+          <div class="chip"><svg><use href="#i-heart"/></svg>5</div>
+          <div class="chip" id="coinchip"><svg><use href="#i-coin"/></svg><span id="coins">120</span></div>
+        </div>
+        <div class="msg"><span id="msg">Uncle is ready. Tap the <b>lift</b> or a <b>seat</b></span></div>
+
+        <div class="shaft">
+          <div class="next"><small>NEXT</small>
+            <div class="nchip g3d coral"><svg fill="#fff"><use href="#s-circle"/></svg>2F</div>
+            <div class="nchip g3d teal dim"><svg fill="#fff"><use href="#s-square"/></svg>5F</div>
+            <div class="nchip g3d sun dim"><svg fill="#fff"><use href="#s-triangle"/></svg>3F</div>
+          </div>
+          <svg class="plant"><use href="#i-plant"/></svg>
+
+          <div class="cabwrap">
+            <i class="cable" style="left:84px"></i><i class="cable" style="left:106px"></i>
+            <div class="fdisp"><svg fill="#3ddc97"><use href="#s-circle"/></svg><i>2F</i><svg fill="#3ddc97"><use href="#s-square"/></svg><i>5F</i></div>
+            <div class="cabin" id="cabin">
+              <div class="light"></div>
+              <i class="shadow" style="--x:34%; --w:40px"></i><i class="shadow" style="--x:66%; --w:46px"></i>
+              <img class="rider" style="--x:34%; --hd:96" src="img/resident_officeW.webp" alt="Office worker">
+              <img class="rider" style="--x:66%; --hd:66" src="img/resident_kid.webp" alt="Schoolkid">
+              <div class="leaf l"></div><div class="leaf r"></div>
+            </div>
+          </div>
+
+          <div class="gauge" aria-label="Load gauge: in the green">
+            <svg viewBox="0 0 82 56">
+              <defs><filter id="glow"><feGaussianBlur stdDeviation="3"/></filter></defs>
+              <path d="M6 50A35 35 0 0 1 76 50" fill="none" stroke="#05041a" stroke-width="15" stroke-linecap="round"/>
+              <path d="M6 50A35 35 0 0 1 76 50" fill="none" stroke="#8f8ac4" stroke-width="11" stroke-linecap="round" pathLength="100" stroke-dasharray="75 100"/>
+              <path d="M6 50A35 35 0 0 1 76 50" fill="none" stroke="#3ddc97" stroke-width="11" pathLength="100" stroke-dasharray="0 75 25 100"/>
+              <path d="M6 50A35 35 0 0 1 76 50" fill="none" stroke="#3ddc97" stroke-width="11" pathLength="100" stroke-dasharray="0 75 25 100" filter="url(#glow)" opacity=".7"/>
+              <path d="M6 50A35 35 0 0 1 76 50" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round" transform="translate(0 -3)" pathLength="100" stroke-dasharray="100"/>
+              <g transform="rotate(52 41 50)"><path d="M41 50 40 18h2z" fill="#fff" stroke="#05041a" stroke-width="2.4" stroke-linejoin="round"/><path d="M41 50 40 18h2z" fill="#fff"/></g>
+              <circle cx="41" cy="50" r="6" fill="#ffc233" stroke="#05041a" stroke-width="2.4"/><circle cx="39.5" cy="48.4" r="1.8" fill="#fff"/>
+            </svg>
+            <div class="lbl">Nearly full</div>
+          </div>
+          <button class="send g3d mint" id="send" type="button" aria-label="Send the lift"><i class="ring"></i><svg><use href="#i-up"/></svg>SEND</button>
+        </div>
+
+        <div class="lobby">
+          <div class="lanes">
+            <div class="lane">
+              <div class="front"><span class="tag coral"><svg><use href="#s-circle"/></svg>2F</span><img class="res" style="--hd:104" src="img/resident_gym.webp" alt="Gym regular"></div>
+              <img class="res back" style="--hd:66; --k:1" src="img/resident_kid.webp" alt="Schoolkid">
+            </div>
+            <div class="lane">
+              <div class="front sel"><span class="tag sun"><svg><use href="#s-triangle"/></svg>3F</span><img class="res" style="--hd:100" src="img/resident_uncle.webp" alt="Uncle, selected"></div>
+              <img class="res back" style="--hd:92; --k:1" src="img/resident_student.webp" alt="Student">
+              <img class="res back" style="--hd:92; --k:2" src="img/resident_aunty.webp" alt="Aunty">
+            </div>
+            <div class="lane">
+              <div class="front"><span class="tag blue"><svg><use href="#s-diamond"/></svg>6F</span><img class="res" style="--hd:96" src="img/resident_puffer.webp" alt="Teen in a puffer jacket"></div>
+            </div>
+            <div class="lane">
+              <div class="front"><span class="tag plumf"><svg><use href="#s-hexagon"/></svg>8F</span><img class="res" style="--hd:94" src="img/resident_grandpa.webp" alt="Grandpa"></div>
+              <img class="res back" style="--hd:96; --k:1" src="img/resident_officeW.webp" alt="Office worker">
+            </div>
+          </div>
+          <div class="laneinfo"><span>+1 waiting</span><span>+2 waiting</span><span>Clear</span><span>+1 waiting</span></div>
+        </div>
+
+        <div class="bench">
+          <div class="cap"><span>LOBBY BENCH</span><span>2/5</span></div>
+          <div class="seats">
+            <div class="seat has"><span class="tag teal s"><svg><use href="#s-square"/></svg>5F</span><img class="res" style="--hd:92" src="img/resident_student.webp" alt="Student on the bench"></div>
+            <div class="seat has"><span class="tag leaf-f s"><svg><use href="#s-plus"/></svg>9F</span><img class="res" style="--hd:96" src="img/resident_officeW.webp" alt="Office worker on the bench"></div>
+            <div class="seat hint">Seat</div>
+            <div class="seat free"></div>
+            <div class="seat free"></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="tool g3d cream" type="button"><svg><use href="#i-scale"/></svg>Scale · 2</button>
+          <button class="tool g3d cream" type="button"><svg><use href="#i-restart"/></svg>Restart</button>
+        </div>
+        <div class="pop" id="pop">+15<small>PERFECT</small></div>
+      </div>
+    </div>
+
+    <aside class="notes">
+      <div class="toggle" role="group" aria-label="Figure size">
+        <button type="button" id="bBig" aria-pressed="true">Larger figures</button>
+        <button type="button" id="bAs" aria-pressed="false">As built</button>
+      </div>
+      <div><h2>Same layout, new surfaces</h2><p>Every region sits where it does today. What changes is how it is lit and built: dark outlines, a lit gradient, a thick bottom edge and a gloss on every button, chip and tag. The load gauge keeps its three zones and gets a glow. No number or icon shows a weight.</p></div>
+      <div><h2>The figures are too small today</h2><p>The game draws a figure box of 80 px in the cabin and 54 px in the lanes, so the tallest resident is <b>69 px in the cabin and 47 px in a lane</b>. That wastes the 3D detail. Larger figures (+60%) read far better. Flip the toggle to compare. It is the one change beyond a reskin, so it needs your say.</p></div>
+      <div><h2>Punch</h2><p>Send closes the doors in 0.42 s, the cabin bumps, the score slams in, and coins fly to the counter. A free seat breathes, and the selected resident hops on a warm glow. All of it respects reduce-motion.</p></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var phone = document.getElementById('phone'), box = document.getElementById('phonebox');
+  function fit() {
+    var avail = Math.min(window.innerWidth - 32, 390);
+    var s = Math.min(1, avail / 390);
+    document.documentElement.style.setProperty('--s', s);
+  }
+  fit(); window.addEventListener('resize', fit);
+
+  var bBig = document.getElementById('bBig'), bAs = document.getElementById('bAs');
+  function size(big) { phone.classList.toggle('asbuilt', !big); bBig.setAttribute('aria-pressed', big); bAs.setAttribute('aria-pressed', !big); }
+  bBig.onclick = function () { size(true); }; bAs.onclick = function () { size(false); };
+
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var send = document.getElementById('send'), cabin = document.getElementById('cabin'), pop = document.getElementById('pop');
+  var coins = document.getElementById('coins'), chip = document.getElementById('coinchip'), msg = document.getElementById('msg');
+  var busy = false;
+  function rel(el) { var a = el.getBoundingClientRect(), b = phone.getBoundingClientRect(), s = b.width / 390; return { x: (a.left - b.left) / s, y: (a.top - b.top) / s, w: a.width / s, h: a.height / s }; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, reduce ? 0 : ms); }); }
+  send.onclick = async function () {
+    if (busy) return; busy = true;
+    send.classList.add('press'); setTimeout(function () { send.classList.remove('press'); }, 120);
+    msg.innerHTML = 'Doors closing…';
+    cabin.classList.add('closed'); await sleep(450);
+    cabin.classList.add('bump'); await sleep(500); cabin.classList.remove('bump');
+    msg.innerHTML = '<b>Perfect load!</b> 2 riders delivered';
+    pop.classList.add('on');
+    var from = rel(cabin), to = rel(chip), n = 12, flies = [];
+    for (var i = 0; i < n; i++) {
+      var c = document.createElement('div'); c.className = 'fly';
+      c.innerHTML = '<svg width="22" height="22"><use href="#i-coin"/></svg>';
+      c.style.left = (from.x + from.w / 2 - 11) + 'px'; c.style.top = (from.y + from.h / 2 - 11) + 'px';
+      phone.appendChild(c); flies.push(c);
+    }
+    await sleep(30);
+    flies.forEach(function (c, i) {
+      var dx = to.x + 12 - (parseFloat(c.style.left)), dy = to.y + 12 - parseFloat(c.style.top);
+      var sx = (Math.random() - .5) * 90, sy = -30 - Math.random() * 40;
+      c.style.transitionDelay = (i * 40) + 'ms';
+      c.style.transform = 'translate(' + (dx + sx * 0) + 'px,' + dy + 'px) scale(.7)'; c.style.opacity = '.0';
+    });
+    var total = +coins.textContent;
+    for (var k = 1; k <= 15; k++) { coins.textContent = total + k; await sleep(45); }
+    await sleep(500);
+    flies.forEach(function (c) { c.remove(); });
+    pop.classList.remove('on'); await sleep(900);
+    cabin.classList.remove('closed'); msg.innerHTML = 'Uncle is ready. Tap the <b>lift</b> or a <b>seat</b>';
+    busy = false;
+  };
+})();
+</script>

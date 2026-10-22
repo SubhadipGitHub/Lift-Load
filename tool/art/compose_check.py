@@ -42,6 +42,7 @@ def main():
     ap.add_argument("--approved", default="docs/art/approved")
     ap.add_argument("--top", type=int, default=90, help="px cut from the top before the aspect crop")
     ap.add_argument("--feet", type=float, default=0.90, help="feet line as a fraction of the cropped height")
+    ap.add_argument("--figure", type=float, default=80, help="figure box in dp (game: 80 in the cabin)")
     ap.add_argument("--no-shadow", action="store_true", help="skip the contact shadows (to compare)")
     ap.add_argument("--out", default="art/review/compose.png")
     a = ap.parse_args()
@@ -56,7 +57,9 @@ def main():
         h = round(scene.width / target)
         scene = scene.crop((0, a.top, scene.width, min(a.top + h, scene.height)))
     w = scene.width
-    k = w / (CABIN_UNITS[0] * PX_PER_UNIT)
+    # The painter draws a figure box of `figure` dp as 120 design units (scale = height / 120), and the game's cabin
+    # figure box is 80 dp (Metrics.cabinFigure), so a sprite is figure/120 dp per unit, not 1 dp per unit.
+    k = (w / CABIN_UNITS[0]) * (a.figure / 120.0) / PX_PER_UNIT
     feet = int(scene.height * a.feet)
     sheets = []
     for names, xs in SETS:
