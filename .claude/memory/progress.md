@@ -47,7 +47,13 @@ entries; fold older ones into "Earlier".
   the mirror), committed in `docs/art/approved/` (8 files, about 150 KB). The four Gemini door prompts were removed from
   `art_pack.json` and the prompt page. Closing-motion spec is in the art doc, Integration, "Doors". Not final art:
   this is a procedural look that matches each cabin's palette; the owner reviews it and can ask for a redo.
-- Next: `venue_society_lobby` (9:16), then the other four venues' lobbies and shafts.
+- Sunrise Towers (society) is drawn in code, not Gemini (owner's call): `tool/art/make_venues.py` makes five shaft walls
+  (storey bands: levels 1-4, 5-8, 9-12, 13-16, 17-20) and three tileable lobby floors (tile, marble, wood), committed
+  in `docs/art/approved/` (8 files, 150 KB). Floors pass a 4.3:1 contrast check against the lane ink; walls keep to the
+  facade colour with detail only in the right band. Mock-ups in `art/review/venue_society_*.png`. Society cards removed
+  from `art_pack.json` and the prompt page.
+- Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
+  each with its own palette and storey bands) or stay with Gemini.
 
 **Handoff for a new session**
 - The 17 approved processed sprites are committed in `docs/art/approved/` (about 0.5 MB, not shipped). Raw images stay
@@ -72,7 +78,7 @@ entries; fold older ones into "Earlier".
   Gate A overloads-by-type table.
 - Cargo props approved: water can, suitcase, gas cylinder. They process at the painter's own heights (28.5, 36 and 39.5
   design units, 6 px per unit), so they sit in true proportion beside the residents.
-- Still to make: four lift kinds (all done: interiors from Gemini, doors in code), five venues (lobby floor and shaft wall), home skylines, store
+- Still to make: four lift kinds (all done: interiors from Gemini, doors in code), four more venues (lobby floor and shaft wall; society is done in code), home skylines, store
   art, icon, and blink frames last (optional).
 
 **Open**

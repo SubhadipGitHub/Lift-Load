@@ -414,20 +414,6 @@
       "prompt": "The empty interior of a small passenger lift cabin seen straight on from the open doorway, back wall centred, the cabin's inner walls, ceiling and floor filling the whole frame edge to edge with no outer door frame, no corridor floor and no wall around the opening, symmetrical: sleek polished chrome with frosted glass panels, a solid opaque frosted-glass back wall with no view through it and no second room, corridor or reflection of depth behind it, a soft blue LED light strip along the ceiling edges, a polished dark floor. No buttons with numbers, no signs."
     },
     {
-      "id": "venue_society_lobby",
-      "kind": "scene",
-      "name": "Sunrise Towers (apartment society) lobby floor",
-      "aspect": "9:16",
-      "prompt": "A top-down three-quarter view of the floor area of a warm Indian apartment-society lobby: cream walls, potted plants, a terracotta tiled floor, evening light through a window. The floor fills most of the frame with plenty of empty space for characters to stand in four columns; walls only at the top edge."
-    },
-    {
-      "id": "venue_society_shaft",
-      "kind": "scene",
-      "name": "Sunrise Towers (apartment society) lift shaft wall",
-      "aspect": "4:5",
-      "prompt": "The wall around a lift shaft inside a warm Indian apartment-society lobby: cream walls, potted plants, a terracotta tiled floor, evening light through a window, seen straight on, with the empty dark lift opening in the centre third left plain for the cabin to be drawn over it."
-    },
-    {
       "id": "venue_office_lobby",
       "kind": "scene",
       "name": "Skyline Offices lobby floor",

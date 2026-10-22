@@ -121,6 +121,16 @@ This is a separate build, sketched here so the art is made to fit it:
   a thin dark gradient on each leaf's seam edge that fades as it opens, and the interior dimmed by about 12% while
   closed. Sequence for Send: doors close, then the lift moves; on arrival the lift stops, the doors open, riders leave.
   The express leaves carry the blue LED on the seam edge. Nothing on a leaf may suggest load, so no plates or numbers.
+- **Venue backgrounds, in code (Sunrise Towers).** `tool/art/make_venues.py` draws them to the game's constraints
+  instead of Gemini. Shaft walls: `society_wall_<band>.webp`, 732 x 524 (the 366 x 262 unit panel at 2x), one per
+  storey band of the building: ground (levels 1-4), low (5-8), mid (9-12), high (13-16), top (17-20), so the wall climbs
+  from a lamp-lit wainscot to windows onto a dusk skyline and finally a night sky as the player advances. Choose the
+  band with `((level - 1) % 20) ~/ 4`. Draw with cover fit behind the rails, cabin and NEXT strip; detail sits in the
+  right-hand band only, because the cabin and the NEXT chips cover the rest, and the wall stays near `LL.facade` so
+  brass chips and the cabin read on top. Lobby floors: `society_floor_<tile|marble|wood>.webp`, 408 px square and
+  tileable (tile joints at 34 units, 3x), light and low-contrast; 95% of pixels clear 4.3:1 against the lane ink
+  (the same as the game's own grid lines), so "+3 waiting" stays legible. Tile is the default (it matches `LL.tile`
+  and the old grid); marble and wood are alternates. The script prints the contrast check on every run.
 - **Raster cabins.** Raster cabin interiors and doors (the doors slide as two halves of one image), venue lobby
   floors and shaft walls, and the home skyline, all drawn under the existing UI.
 - **Size budget.** About 2 MB of WebP for the cast and props and 3–5 MB for scenes, within the 25 MB APK budget.
