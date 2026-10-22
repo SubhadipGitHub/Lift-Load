@@ -76,6 +76,14 @@ can line new art up against them with `review --dir` and `sheet`. It sits under 
 assets, so none of it ships. Add each new approved sprite there when you approve it. The integration PR moves the
 chosen files into `assets/`.
 
+## The Gemini corner sparkle
+
+The Gemini app puts a translucent white four-point sparkle 120 px in from the bottom-right corner of every image, and
+on a sheet it can land on the artwork (a star's rim, an armchair, a stopwatch). It is a white overlay of fixed shape and
+opacity, so `process` undoes it exactly for scenes and icon sheets: `tool/art/sparkle_alpha.png` holds its opacity
+(measured on a flat magenta backdrop) and the original is recovered as `(observed - a * 255) / (1 - a)`. Characters and
+props still rely on the speck dropper, since their sparkle always falls on the backdrop.
+
 ## Icon sheets
 
 The UI icon set (coin, heart, booster, restart, trip, star; the six floor badges; results and states; lift kinds and
@@ -84,7 +92,7 @@ lobby scenarios) is made as four 3:2 sheets of six icons, not one image per icon
 `process`. It keys the backdrop (the floor sheet is magenta, because one badge is green; a keyer built for that is
 `_key_out_magenta`), cuts each separate icon in reading order, and writes `art/processed/icon_<name>.webp`, 256 px square,
 plus `_icons.png`, a contact sheet on the lobby floor and the night panel. It warns when it finds the wrong number of
-icons: regenerate with wider gaps. Buttons themselves are code (outline, bevel, gloss, press), so the icons sit on top
+icons: regenerate with wider gaps. The floor sheet's plum badge is hue-shifted to `#A066F5` (`retint` in `art_pack.json`) so it matches the code-drawn floor tags; the matte is eroded 2 px there to lose the pink rim. Buttons themselves are code (outline, bevel, gloss, press), so the icons sit on top
 of them; glyph-only marks (back arrow, gear, send chevron) are drawn in code too.
 
 ## Review checklist (per character, on the line-up)

@@ -538,7 +538,10 @@
       ],
       "reference": "resident_kid",
       "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a glossy glass-candy badge shaped as a circle, coral red (#FF6B5B). 2) a glossy glass-candy badge shaped as a triangle with rounded corners, sunny yellow (#FFC233). 3) a glossy glass-candy badge shaped as a rounded square, teal (#14B8A6). 4) a glossy glass-candy badge shaped as a diamond, blue (#4C7DFF). 5) a glossy glass-candy badge shaped as a hexagon, plum purple (#A066F5). 6) a glossy glass-candy badge shaped as a plus sign with rounded arms, leaf green (#7BD148).",
-      "weight_read": "six badges, the shape is the meaning: circle, triangle, square, diamond, hexagon, plus; no numbers or letters."
+      "weight_read": "six badges, the shape is the meaning: circle, triangle, square, diamond, hexagon, plus; no numbers or letters.",
+      "retint": {
+        "floor_plum": "#A066F5"
+      }
     },
     {
       "id": "icons_results",

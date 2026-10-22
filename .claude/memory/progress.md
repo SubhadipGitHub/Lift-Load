@@ -59,11 +59,14 @@ entries; fold older ones into "Earlier".
   so the game's 80 dp cabin figure makes the tallest resident 69 dp (32% of the cabin) and 47 dp in a lane; earlier
   `compose_check` composites were 1.5x too large (fixed; `--figure`). Recommendation to the owner: figures +60%, which
   is the one change beyond a reskin. Owner approved the direction and figures +60% (Gate A not started, reskin only). Production has started: icon set.
-- Icon set: four 3:2 sheets of six (`icons_hud`, `icons_floors`, `icons_results`, `icons_lifts`) in `art_pack.json`, a sheet
-  splitter and a magenta keyer in `gemini_art.py` (tested on synthetic sheets). Prompts are at the top of the prompt page
-  (version 10). Approved: `icons_hud` (coin, heart, scale, restart, trip, star; six 256 px icons in `docs/art/approved/`). The Gemini sparkle sat on
-  the star's rim, so it was patched in the raw by mirroring the star's other side; the splitter now cuts on solid pixels only,
-  joins parts within about 12 px (the trip icon's arrow) and drops translucent ghosts. Waiting on `icons_floors`, `icons_results`, `icons_lifts`. After the icons: Gemini backdrops, then the integration spec for lib/.
+- Icon set DONE: four 3:2 sheets of six (`icons_hud`, `icons_floors`, `icons_results`, `icons_lifts`), all approved; 24 icons at
+  256 px in `docs/art/approved/icon_*.webp`. `gemini_art.py` gained a sheet splitter (cuts on solid pixels, joins parts within
+  about 12 px, drops ghosts), a colour-distance magenta keyer for the floor sheet (a hue test ate the plum badge), a `retint`
+  (plum to #A066F5), and an exact Gemini-sparkle remover (`tool/art/sparkle_alpha.png`; the sparkle sits 120 px in from the
+  bottom-right corner at every size, so the earlier hand patches on cabins and the star are no longer needed). Lift kinds read
+  apart at a glance (pocket watch, toolbox, blue bolt on chrome).
+- Next in the restyle: painted Gemini backdrops (lobby and shaft), then the integration spec for lib/ (figures +60%, contact
+  shadows, door leaves, icons in place of Material icons, 3D button recipe, punch). No lib/ work until the owner says go.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
   each with its own palette and storey bands) or stay with Gemini.
 

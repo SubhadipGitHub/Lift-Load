@@ -279,31 +279,68 @@ def _trim_box(img):
     return img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
 
 
+SPARKLE = ROOT / "tool" / "art" / "sparkle_alpha.png"
+SPARKLE_OFFSET = 120  # px from the right and bottom edges to the sparkle's centre, at every size seen so far
+
+
+def _remove_sparkle(img):
+    """Undo Gemini's translucent corner sparkle exactly. It is a white overlay of known shape and opacity
+    (tool/art/sparkle_alpha.png, measured on a flat magenta backdrop), so observed = (1 - a) * original + a * white
+    inverts to original = (observed - a * 255) / (1 - a), even where it lies on the artwork."""
+    import numpy as np
+    from PIL import Image
+
+    if not SPARKLE.exists():
+        return img
+    alpha = np.asarray(Image.open(SPARKLE).convert("L")).astype(np.float32)[..., None] / 255.0
+    rgb = np.asarray(img.convert("RGB")).astype(np.float32)
+    h, w = alpha.shape[:2]
+    cx, cy = img.width - SPARKLE_OFFSET, img.height - SPARKLE_OFFSET
+    x0, y0 = cx - w // 2, cy - h // 2
+    if x0 < 0 or y0 < 0 or x0 + w > img.width or y0 + h > img.height:
+        return img
+    region = rgb[y0:y0 + h, x0:x0 + w]
+    rgb[y0:y0 + h, x0:x0 + w] = np.clip((region - alpha * 255.0) / np.maximum(1 - alpha, 0.05), 0, 255)
+    return Image.fromarray(rgb.astype(np.uint8))
+
+
 def _key_out_magenta(img):
-    """Magenta background to alpha (for icons that are themselves green). Thresholds come from the border."""
+    """Magenta background to alpha by colour distance from the border, with the backdrop unmixed from soft edges.
+
+    Distance, not "magentaness": a plum or purple icon is nearly magenta in hue and a hue test would eat it.
+    """
     import numpy as np
     from PIL import Image
 
     a = np.asarray(img.convert("RGB")).astype(np.float32)
-    r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    mag = np.minimum(r, b) - g
-    border = np.concatenate([mag[:8].ravel(), mag[-8:].ravel(), mag[:, :8].ravel(), mag[:, -8:].ravel()])
-    bg = max(80.0, float(np.median(border)))
-    clear, solid = 0.75 * bg, max(40.0, 0.35 * bg)
-    alpha = np.clip((clear - mag) / (clear - solid), 0.0, 1.0)
-    rim = alpha < 0.5
-    for _ in range(RIM_PX):
-        grown = rim.copy()
-        grown[1:, :] |= rim[:-1, :]
-        grown[:-1, :] |= rim[1:, :]
-        grown[:, 1:] |= rim[:, :-1]
-        grown[:, :-1] |= rim[:, 1:]
-        rim = grown
-    spill = (rim | (alpha < 1.0)) & (mag > 0)
-    lim = np.maximum(g, 0) + 0.25 * np.maximum(mag, 0)
-    r = np.where(spill, np.minimum(r, lim), r)
-    b = np.where(spill, np.minimum(b, lim), b)
-    return Image.fromarray(np.dstack([r, g, b, alpha * 255.0]).clip(0, 255).astype(np.uint8), "RGBA")
+    border = np.concatenate([a[:8].reshape(-1, 3), a[-8:].reshape(-1, 3), a[:, :8].reshape(-1, 3),
+                             a[:, -8:].reshape(-1, 3)])
+    bg = np.median(border, axis=0)
+    dist = np.linalg.norm(a - bg, axis=-1)
+    clear, solid = 38.0, 95.0
+    alpha = np.clip((dist - clear) / (solid - clear), 0.0, 1.0)
+    # Soft edge pixels are a mix of the icon and the backdrop: take the backdrop back out of them.
+    inv = np.where(alpha > 0.02, alpha, 1.0)[..., None]
+    rgb = np.where((alpha < 1.0)[..., None], (a - (1 - alpha)[..., None] * bg) / inv, a).clip(0, 255)
+    return Image.fromarray(np.dstack([rgb, alpha * 255.0]).clip(0, 255).astype(np.uint8), "RGBA")
+
+
+def _retint(img, hex_color):
+    """Rotate an icon's hue to a target (saturation and brightness stay), so a badge matches its code colour."""
+    import numpy as np
+    from PIL import Image
+
+    target = tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    th = np.asarray(Image.new("RGB", (1, 1), target).convert("HSV"))[0, 0, 0]
+    hsv = np.asarray(img.convert("RGB").convert("HSV")).astype(np.float32)
+    alpha = np.asarray(img.getchannel("A"))
+    solid = alpha > 200
+    ang = hsv[..., 0] / 255.0 * 2 * np.pi
+    mean = np.arctan2(np.sin(ang[solid]).mean(), np.cos(ang[solid]).mean()) % (2 * np.pi) / (2 * np.pi) * 255.0
+    hsv[..., 0] = (hsv[..., 0] + (th - mean)) % 255.0
+    out = Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB")
+    out.putalpha(img.getchannel("A"))
+    return out
 
 
 def _components(img, min_frac=0.12, thresh=24, merge=0):
@@ -367,6 +404,10 @@ def _process_icon_sheet(a, img):
     from PIL import Image
 
     keyed = _key_out_magenta(img) if a.get("chroma") == "magenta" else _key_out(img)
+    if a.get("chroma") == "magenta":  # the glossy rims pick up backdrop pink: shave the outermost 2 px of the matte
+        from PIL import ImageFilter
+
+        keyed.putalpha(keyed.getchannel("A").filter(ImageFilter.MinFilter(5)))
     # Cut on the solid pixels only (a translucent watermark never counts), joining parts within about 12 px.
     boxes = _components(keyed, thresh=200, merge=3)
     names = a["icons"]
@@ -382,6 +423,8 @@ def _process_icon_sheet(a, img):
         tb = _trim_box(crop)
         if tb:
             crop = crop.crop(tb)
+        if name in a.get("retint", {}):
+            crop = _retint(crop, a["retint"][name])
         k = (ICON_PX - 8) / max(crop.width, crop.height)
         crop = crop.resize((max(1, round(crop.width * k)), max(1, round(crop.height * k))), Image.LANCZOS)
         canvas = Image.new("RGBA", (ICON_PX, ICON_PX), (0, 0, 0, 0))
@@ -424,6 +467,8 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
         if not src.exists():
             continue
         img = Image.open(src)
+        if a["kind"] in ("icon_sheet", "scene"):
+            img = _remove_sparkle(img)
         if a["kind"] == "icon_sheet":
             icon_files += _process_icon_sheet(a, img)
             continue
