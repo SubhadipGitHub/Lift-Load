@@ -5,18 +5,22 @@ with this file. Logged through `AnalyticsService` (`DebugAnalytics` in M1, Fireb
 
 | Event | Params | Fired when | Feeds |
 | --- | --- | --- | --- |
-| `level_start` | level, difficulty, trips, venue, scenario (if any), attempt | A level is created | Funnel, Gate A clear rate |
-| `level_win` | level, venue, trips_used, trips_total, perfects, coins, attempt, continues | Everyone delivered | Win rate per level, Hard 45–55% target |
-| `level_fail` | level, venue, scenario (if any), kind (crash / outOfTrips / jam), trips_used, attempt | A fail screen appears | Fail mix, unfair-crash review |
+| `level_start` | level, difficulty, trips, venue, scenario (if any), attempt, lanes, unknown_share (% of residents) | A level is created | Funnel, Gate A clear rate |
+| `level_win` | level, venue, trips_used, trips_total, perfects, coins, attempt, continues, powers_used | Everyone delivered | Win rate per level, Hard 45–55% target |
+| `level_fail` | level, venue, scenario (if any), kind (crash / outOfTrips / jam), trips_used, attempt, powers_used | A fail screen appears | Fail mix, unfair-crash review |
 | `overload` | level, type, cargo, lift_kind, scenario (if any), riders | The cable snaps | Which types, props and lift kinds players misjudge |
 | `trip_sent` | level, rating, fill_pct, riders, lift_kind | Send pressed | Fill distribution, push-your-luck behaviour |
-| `level_abandon` | level, via (restart / quit), trips_used, attempt | A started level is restarted or left (costs a life) | Rage-quit rate per level, lives sink |
+| `level_abandon` | level, via (restart / quit), trips_used, attempt, powers_used | A started level is restarted or left (costs a life) | Rage-quit rate per level, lives sink |
 | `scale_used` | level, left | Scale booster used | IAP intent |
+| `power_used` | power (swap / seats / trip / express), level, left, trips_used | A power is spent | Which powers carry difficulty; uses per level |
+| `power_empty_tapped` | power, level | A power is tapped with none in stock | Demand for refills, the best moment to offer one |
+| `power_refill_ad` | power, level | Rewarded ad earned a power use | Rewarded views per DAU, refill opt-in |
+| `power_bought` | power, price, level | Coins spent on a power | Coin sink; price sensitivity |
 | `coin_continue` | level, kind | 300-coin continue | Economy sink |
 | `rewarded_offer_accepted` | placement, level | Player taps a rewarded button | Opt-in rate |
 | `rewarded_complete` | placement | SDK reports reward earned | Rewarded views per DAU (≥ 2.5) |
 | `interstitial_shown` | level | Interstitial displayed | Ad load vs retention |
-| `setting_changed` | setting (sound / music / haptics), on | A settings toggle is flipped | How many mute, and whether muters churn faster |
+| `setting_changed` | setting (sound / music / haptics / left_handed), on | A settings toggle is flipped | How many mute, and whether muters churn faster |
 | `crash_fairness` | level, attempt, fair | Tester build: the tester taps Fair or Unfair on a crash sheet | Gate A "crashes called unfair" |
 | `exit_heavy_types` | level, answer (free text), skipped | Tester build: once, on the first win from level 15 | Gate A "names the heavy types" |
 | `test_complete` | level | Tester build: level 60 won | Gate A completion |
