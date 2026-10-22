@@ -68,7 +68,14 @@ entries; fold older ones into "Earlier".
 - Backdrops (owner: backdrops first, then the spec): four Gemini prompts for Sunrise Towers, `bg_society_shaft_{ground,mid,high}`
   (3:2, centre third empty, detail in the side fifths, dark and calm) and `bg_society_lobby` (4:3, pale floor; `process` prints its
   lane-ink contrast). Review each on the real layout with `python3 tool/art/compose_screen.py --shaft .. --lobby ..`. Prompt
-  page version 11. Waiting on the owner's four images; the other venues follow once Sunrise looks right.
+  page version 11. Result: the three shafts (ground, mid, high) are APPROVED and in `docs/art/approved/bg_society_shaft_*.webp`: calm empty
+  recess behind the cabin, sconces/windows/plants at the sides, dark and low contrast, sparkle removed. On the real layout the
+  NEXT chips (3-14% of the width) and the gauge and Send column (74-98%) cover most of the side bands, so the visible detail
+  is the gap beside the cabin and the right band between the gauge plate and Send (y 29-60%); fine, it reads as atmosphere.
+  The lobby floor was REJECTED: terracotta checkerboard (median luminance 0.42, lane-ink contrast 1.1:1), a plant in the corner
+  under lane 4's text, strong perspective. Prompt rewritten (near top-down, one pale cream, nothing on it). `_remove_sparkle`
+  now tries several strengths and keeps the smoothest patch (a dark ghost appeared on the dark shaft). Waiting on the new
+  lobby image; the other venues follow once Sunrise looks right.
 - Next in the restyle, after the backdrops:  the integration spec for lib/ (figures +60%, contact
   shadows, door leaves, icons in place of Material icons, 3D button recipe, punch). No lib/ work until the owner says go.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,

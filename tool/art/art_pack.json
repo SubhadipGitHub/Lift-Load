@@ -613,8 +613,8 @@
       "name": "Sunrise Towers lobby floor",
       "aspect": "4:3",
       "ink": "#6B5C44",
-      "prompt": "A top-down three-quarter view of the floor of a warm apartment-society lobby: pale cream and soft terracotta square floor tiles with thin light grout, a gentle pool of warm light in the middle, the floor filling the frame edge to edge, with only a narrow strip of cream wall and a skirting board along the very top edge and the corner of a potted plant at one side edge. The floor is light and low in contrast, pale cream overall, so dark text and cartoon characters stand out on top. The middle of the floor is empty. No people, no furniture in the middle, no text, no numbers.",
-      "weight_read": "floor pale and low contrast (dark text sits on it); middle empty; strip of wall only at the top"
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a warm apartment-society lobby: large square floor tiles all in the same very pale cream, close to #F4E3C3, separated by thin, slightly darker warm-beige grout, with only a faint soft variation in tone from tile to tile. No coloured or terracotta tiles, no checkerboard, no pattern. A soft pool of warm light in the middle and gently darker corners. The floor fills the frame edge to edge, with only a very thin strip of cream wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no text, no numbers.",
+      "weight_read": "floor one pale cream colour, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
     }
   ]
 }

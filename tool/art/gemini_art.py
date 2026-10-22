@@ -300,7 +300,17 @@ def _remove_sparkle(img):
     if x0 < 0 or y0 < 0 or x0 + w > img.width or y0 + h > img.height:
         return img
     region = rgb[y0:y0 + h, x0:x0 + w]
-    rgb[y0:y0 + h, x0:x0 + w] = np.clip((region - alpha * 255.0) / np.maximum(1 - alpha, 0.05), 0, 255)
+    # The overlay's strength reads a little differently on dark and light artwork, so try a few strengths and keep
+    # the one that leaves the smoothest patch (an under-correction leaves a ghost, an over-correction a dark diamond).
+    best = None
+    for k in np.linspace(0.5, 1.15, 14):
+        a = alpha * k
+        fixed = np.clip((region - a * 255.0) / np.maximum(1 - a, 0.05), 0, 255)
+        grey = fixed.mean(-1)
+        tv = np.abs(np.diff(grey, axis=0)).sum() + np.abs(np.diff(grey, axis=1)).sum()
+        if best is None or tv < best[0]:
+            best = (tv, fixed)
+    rgb[y0:y0 + h, x0:x0 + w] = best[1]
     return Image.fromarray(rgb.astype(np.uint8))
 
 
