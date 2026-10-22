@@ -107,6 +107,12 @@ This is a separate build, sketched here so the art is made to fit it:
 - **Sprites behind the painter.** A sprite-backed `ResidentFigure` path keeps the parametric painter as the
   fallback. The asset list and `designWidth` stay the source of figure widths. Idle sway, walks and power-cut dimming
   already work on any child widget, and blink becomes an idle/blink frame swap.
+- **Contact shadows, in code.** Scene and sprites are separate images, so grounding comes from a soft dark ellipse
+  painted under each figure: width 0.62 of the sprite's width, height 0.20 of that width, warm near-black at about 41%
+  opacity, blurred by 3.5% of its width, centred on the feet line. `tool/art/compose_check.py` prototypes it (constants
+  at the top) and is the reference for the painter.
+- **Feet line.** In the cabin, put the feet at about 90% of the cabin's height (mid-floor), not at the floor front. The
+  cabin is drawn 196 x 214 units, so cover-crop the scene to that aspect; a square scene loses only its sides.
 - **Raster cabins.** Raster cabin interiors and doors (the doors slide as two halves of one image), venue lobby
   floors and shaft walls, and the home skyline, all drawn under the existing UI.
 - **Size budget.** About 2 MB of WebP for the cast and props and 3–5 MB for scenes, within the 25 MB APK budget.

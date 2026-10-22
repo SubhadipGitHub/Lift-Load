@@ -27,8 +27,9 @@ entries; fold older ones into "Earlier".
   prompts now say "no outer door frame, no corridor floor" (this anchor was made before that wording).
 - Integration gate: `python3 tool/art/compose_check.py <scene>` stands approved residents and cargo on a scene at game
   scale (cabin 196 x 214 units, so a 4:5 scene loses about 12% vertically). Run it before approving every cabin and
-  venue. First run on the anchor: style, scale and colour hold; needs contact shadows (code, at integration) and the feet
-  line sits about 15% above the floor front.
+  venue. First run on the anchor: style, scale and colour hold. Fixed since: watermark replaced by the mirrored left corner (the
+  scene is symmetric), feet line moved to 90% of the cabin height, and a contact-shadow spec prototyped in the script and
+  written into the Integration section of the art doc (the painter itself is integration work, after Gate A).
 - Decision: the seven remaining cabin assets are now 1:1 in `art_pack.json` (the anchor stays 4:5). The game cabin is
   196 x 214 units, so a square crops only the sides, which also trims any frame. The prompt page artifact (version 6) is updated to
   match. Each cabin's doors now attach their own interior as the reference (`reference` plus a doors-specific
