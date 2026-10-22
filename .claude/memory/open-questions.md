@@ -7,5 +7,6 @@ Owner decisions still needed. Strike through when answered and move the answer t
 - Soft-launch markets: India + one Tier-1 (default Canada)?
 - "Lift Load" name: Play Store and trademark search before the listing.
 - Who are the 10–15 prototype testers; casual or gamer skew?
-- Art: keep the parametric cast through soft launch, or budget an illustrator pass after Gate A?
+- ~~Art: keep the parametric cast through soft launch, or budget an illustrator pass after Gate A?~~ Answered in part: a
+  Gemini-made cast (docs/art/gemini-art-pack.md) ships after Gate A; an illustrator pass only if that cast fails review.
 - Application ID: `com.liftload.lift_load` is a placeholder until the Play Console account is decided.

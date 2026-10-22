@@ -3,6 +3,37 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · Gemini art pack (PRs #6, #7, #8, merged)
+
+**Done**
+- Tooling: `tool/art/art_pack.json` (style bible plus 53 prompts), `gemini_art.py` (generate, prompts, process, sheet),
+  a prompt page with copy buttons and a done-tracker (claude.ai artifact 9H2UEdWaxV8uhzUsKttGGo), and
+  `docs/art/gemini-art-pack.md`. The owner has no API key: they make each image by hand in the Gemini app from the
+  page and send it here for review.
+- Review loop per image: key out the green, measure the face colour against the `ResidentLook` skin hex (tolerance
+  about 25 per channel), compare torso and leg widths with the design weight order, and check the cut-out at 2x on the
+  lobby and night colours.
+- Keyer fixes found on real images: Gemini's backdrop is about (35, 183, 27), not #00FF00, so thresholds now come from
+  the image border; a 4 px rim despill removes the green outline on pale clothes; the app's corner watermark is dropped
+  as a small island.
+- Every resident prompt now carries a skin tone and hex read from `ResidentLook`.
+
+**Cast status** (originals live with the owner; `/art/` is git-ignored)
+- Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard.
+- Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult), rider (sturdier).
+- Not yet sent: student, wheelchair patient, parent with the pram, bellhop. After them: 3 cargo props, blink frames,
+  four lift kinds, five venues, home art, store art, icon.
+
+**Open**
+- Art ships after Gate A only: the heavy-types metric measures the current silhouettes. Integration needs PRD v1.5.
+- The guard's navy shirt and peaked cap read a little like a police officer; no insignia or text, so left alone.
+
+**Next**
+1. Owner redoes the grandpa, office man and rider, and sends the student and the three vehicle residents.
+2. When all 14 are approved: props, blink frames, scenes, then PRD v1.5 (sprite-backed figures with the painter as
+   fallback, raster cabins, flag, size budget) after the Gate A decision.
+3. Gate A dry run and invites (see the v1.4 entry below).
+
 ## 2026-10-21 · v1.4 Gate A kit (branch ccr-445849fc-sjvxbg)
 
 **Done**
@@ -19,7 +50,7 @@ entries; fold older ones into "Earlier".
 - Pacing from L32 on (72 residents, 24–33 trips) means most testers stop around L15–25; Hard data mostly L10/20/25.
 
 **Next**
-1. Merge the Gate A kit PR so Pages carries the tester build.
+1. Done: the Gate A kit merged as PR #5, so Pages now carries the tester build.
 2. Owner plays L1–5 on a phone and sends a results file as a dry run.
 3. Send invites; collect files into an uncommitted `results/`; run the report; record the decision.
 

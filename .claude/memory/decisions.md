@@ -2,6 +2,18 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-22 · Gemini art pack
+
+- **Describe the look; never name a studio.** CLAUDE.md bans brand names, and Gemini waters down "in the style of".
+- **Skin tone and build are in every prompt.** Left unsaid Gemini picks a pale skin and draws adult men lean and
+  youthful, which breaks the weight cues. Tones are read from `ResidentLook`; heavier types say how wide they are next
+  to a neighbour.
+- **A type must read in the same weight order as its design.** A mixed cue costs a redo (grandpa belly, slim office
+  man, slim rider); a deliberate liar (gym regular, puffer teen) must mislead only the way the design says.
+- **One image per character, never a sprite sheet.** A sheet of 14 leaves each figure a tenth of the resolution.
+- **The keyer reads the backdrop from the image border.** Gemini's green is not #00FF00.
+- **Art lands after Gate A.** The metric being measured is how well testers learn today's silhouettes.
+
 ## 2026-10-21 · v1.4 Gate A kit
 
 - **Results return on-device, no backend.** Testers download a file or copy a code; Firebase stays in M3. No
