@@ -20,9 +20,12 @@ entries; fold older ones into "Earlier".
 
 **Cast status** (originals live with the owner; `/art/` is git-ignored)
 - Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard,
-  wheelchair patient, bellhop, parent with the pram, student (11 of 14 residents).
-- Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult), rider (sturdier).
-- All 14 residents have been sent once. Still to make: the 3 redos, then 3 cargo props, four lift kinds (interior and
+  wheelchair patient, bellhop, parent with the pram, student, rider (second take; 12 of 14 residents).
+- Rider note: the second take reads about as heavy as the guard (wide jacket and legs, less belly) where the design has
+  him a rank lighter. Accepted: Gate A tests the parametric cast, not this art. Re-check at integration against the
+  Gate A overloads-by-type table.
+- Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult).
+- All 14 residents have been sent once. Still to make: the 2 redos, then 3 cargo props, four lift kinds (interior and
   doors), five venues (lobby floor and shaft wall), home skylines, store art, icon, and blink frames last (optional).
 
 **Open**
