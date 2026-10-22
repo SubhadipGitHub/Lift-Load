@@ -26,15 +26,17 @@ entries; fold older ones into "Earlier".
 - Rider note: the second take reads about as heavy as the guard (wide jacket and legs, less belly) where the design has
   him a rank lighter. Accepted: Gate A tests the parametric cast, not this art. Re-check at integration against the
   Gate A overloads-by-type table.
-- Still to make: 3 cargo props (water can, suitcase, gas cylinder), four lift kinds (interior and doors), five
-  venues (lobby floor and shaft wall), home skylines, store art, icon, and blink frames last (optional).
+- Cargo props approved: water can, suitcase, gas cylinder. They process at the painter's own heights (28.5, 36 and 39.5
+  design units, 6 px per unit), so they sit in true proportion beside the residents.
+- Still to make: four lift kinds (interior and doors), five venues (lobby floor and shaft wall), home skylines, store
+  art, icon, and blink frames last (optional).
 
 **Open**
 - Art ships after Gate A only: the heavy-types metric measures the current silhouettes. Integration needs PRD v1.5.
 - The guard's navy shirt and peaked cap read a little like a police officer; no insignia or text, so left alone.
 
 **Next**
-1. Owner makes and sends the props, lifts, venues and home art (props first).
+1. Owner makes and sends the lifts, venues and home art.
 2. When everything is approved: blink frames, then PRD v1.5 (sprite-backed figures with the painter as
    fallback, raster cabins, flag, size budget) after the Gate A decision.
 3. Gate A dry run and invites (see the v1.4 entry below).

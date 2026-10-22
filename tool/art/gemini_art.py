@@ -297,7 +297,7 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
                 box = _trim_box(idle)
             if box:
                 img = img.crop(box)
-            h = a["design_height"] * RESIDENT_PX_PER_UNIT if a.get("design_height") else PROP_HEIGHT_PX
+            h = round(a["design_height"] * RESIDENT_PX_PER_UNIT) if a.get("design_height") else PROP_HEIGHT_PX
             w = max(1, round(img.width * h / img.height))
             img = img.resize((w, h), Image.LANCZOS)
         else:
