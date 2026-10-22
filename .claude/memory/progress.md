@@ -19,22 +19,23 @@ entries; fold older ones into "Earlier".
 - Every resident prompt now carries a skin tone and hex read from `ResidentLook`.
 
 **Cast status** (originals live with the owner; `/art/` is git-ignored)
-- Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard,
-  wheelchair patient, bellhop, parent with the pram, student, rider (second take; 12 of 14 residents).
+- All 14 residents approved: schoolkid (style anchor), puffer teen, student, office woman, grandpa (second take),
+  office man (second take), aunty, pram parent, rider (second take), gym regular (second take), guard, uncle,
+  wheelchair patient, bellhop. In design weight order they read left to right as intended; the two deliberate liars
+  mislead only as designed.
 - Rider note: the second take reads about as heavy as the guard (wide jacket and legs, less belly) where the design has
   him a rank lighter. Accepted: Gate A tests the parametric cast, not this art. Re-check at integration against the
   Gate A overloads-by-type table.
-- Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult).
-- All 14 residents have been sent once. Still to make: the 2 redos, then 3 cargo props, four lift kinds (interior and
-  doors), five venues (lobby floor and shaft wall), home skylines, store art, icon, and blink frames last (optional).
+- Still to make: 3 cargo props (water can, suitcase, gas cylinder), four lift kinds (interior and doors), five
+  venues (lobby floor and shaft wall), home skylines, store art, icon, and blink frames last (optional).
 
 **Open**
 - Art ships after Gate A only: the heavy-types metric measures the current silhouettes. Integration needs PRD v1.5.
 - The guard's navy shirt and peaked cap read a little like a police officer; no insignia or text, so left alone.
 
 **Next**
-1. Owner redoes the grandpa, office man and rider, and sends the student and the three vehicle residents.
-2. When all 14 are approved: props, blink frames, scenes, then PRD v1.5 (sprite-backed figures with the painter as
+1. Owner makes and sends the props, lifts, venues and home art (props first).
+2. When everything is approved: blink frames, then PRD v1.5 (sprite-backed figures with the painter as
    fallback, raster cabins, flag, size budget) after the Gate A decision.
 3. Gate A dry run and invites (see the v1.4 entry below).
 
