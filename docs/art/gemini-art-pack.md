@@ -41,7 +41,10 @@ python3 tool/art/gemini_art.py process && python3 tool/art/gemini_art.py sheet
    order. Use `--only id,id --force` to redo single assets. The default model is `gemini-3-pro-image-preview` for
    final quality; `--model gemini-3.1-flash-image` is cheaper for drafts. Model ids change, so check AI Studio.
 3. **Process.** `process` does three things:
-   - It keys out the green backdrop and trims each sprite.
+   - It keys out the green backdrop (read from the image's own border, since Gemini's green is not #00FF00), drops a
+     corner watermark, and trims each sprite.
+   - It removes green spill: at the figure's rim, and the green bounce light that glossy greys pick up (the
+     wheelchair's metal came back teal). Saturated colours such as skin or an olive kurta are never touched.
    - It sizes residents at 6 px per design unit, so the tallest lands at 624 px.
    - It cover-crops each scene to its frame and writes WebP to `art/processed/`.
 

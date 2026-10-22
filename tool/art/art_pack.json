@@ -350,7 +350,8 @@
       "name": "Water can",
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a large translucent blue 20-litre drinking-water jug with a moulded handle on top, standing upright, no label."
+      "prompt": "a large translucent blue 20-litre drinking-water jug with a moulded handle on top, standing upright, no label.",
+      "design_height": 28.5
     },
     {
       "id": "cargo_suitcase",
@@ -358,7 +359,8 @@
       "name": "Suitcase",
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a teal hard-shell rolling suitcase standing upright with its handle retracted."
+      "prompt": "a teal hard-shell rolling suitcase standing upright with its handle retracted.",
+      "design_height": 36
     },
     {
       "id": "cargo_cylinder",
@@ -366,7 +368,8 @@
       "name": "Gas cylinder",
       "aspect": "2:3",
       "reference": "resident_kid",
-      "prompt": "a red domestic cooking-gas cylinder with a steel collar and valve on top, no text or markings."
+      "prompt": "a red domestic cooking-gas cylinder with a steel collar and valve on top, no text or markings.",
+      "design_height": 39.5
     },
     {
       "id": "cabin_normal_interior",
