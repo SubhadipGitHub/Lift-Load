@@ -129,7 +129,11 @@ class Metrics {
   // seats shrink a figure only as far as their width forces, never below the
   // v1.6 size ([_laneFigureFloor], [_benchFigureFloor]).
   double get laneFigure => 86 * scale;
-  double get benchFigure => 83 * scale;
+
+  /// The bench is capped at this share of the lane figure, so its taller seats
+  /// do not push the lanes off the screen (owner, 2026-10-22).
+  static const double benchToLane = 0.7;
+  double get benchFigure => laneFigure * benchToLane;
   double get _laneFigureFloor => 54 * scale;
   double get _benchFigureFloor => 52 * scale;
 

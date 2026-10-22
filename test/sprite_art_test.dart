@@ -206,6 +206,6 @@ void main() {
     expect(m.cabinFigure, 128);
     expect(m.laneFigureFor(4), 86);
     expect(m.laneFigureFor(3), 86);
-    expect(m.benchFigureFor(4), 83);
+    expect(m.benchFigureFor(4), closeTo(86 * Metrics.benchToLane, 0.01));
   });
 }

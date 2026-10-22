@@ -34,7 +34,7 @@ game match them.
 
 1. A side-by-side of the play screen next to the style frame reads as the same game. That covers the cast sprites,
    glossy 3D buttons and chips, a mint Send, the approved icons, the Sunrise backdrops, the cabin art and the ghost.
-2. Figures are 60% larger: about 128 dp in the cabin, 86 in a lane and 83 on the bench at 390 wide. They step down only
+2. Figures are 60% larger: about 128 dp in the cabin, 86 in a lane and 60 on the bench (capped at 70% of the lane figure, owner 2026-10-22) at 390 wide. They step down only
    where the screen width forces it.
 3. Send plays the punch from the style frame:
    - the doors close in 420 ms;

@@ -125,7 +125,7 @@ void main() {
     // At the design size, four lanes and a four-seat bench get the full +60%.
     final design = Metrics.from(const Size(390, 844));
     expect(design.laneFigureFor(4), 86);
-    expect(design.benchFigureFor(4), 83);
+    expect(design.benchFigureFor(4), closeTo(86 * Metrics.benchToLane, 0.01));
     // Five lanes on the narrowest phone shrink, but stay above v1.6.
     final narrow = Metrics.from(const Size(320, 700));
     expect(narrow.laneFigureFor(5), lessThan(narrow.laneFigure));
