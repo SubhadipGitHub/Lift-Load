@@ -109,6 +109,27 @@ abstract final class LL {
   static const gaugeGloss = Color(0x59FFFFFF);
   static const gaugeHub = Color(0xFFFFC233);
 
+  /// The warm glow under the selected resident: brass-hi at the core, brass
+  /// at about 40% half way out, then nothing (style frame, `.front.sel`).
+  static const hopGlowCore = brassHi;
+  static const hopGlowMid = Color(0x66F5B83D);
+  static const hopGlowEdge = Color(0x00F5B83D);
+
+  /// The score slam: brass-hi coins with a dark brown outline, a drop and a
+  /// brass glow; the rating line in white outlined in deep mint, or lilac
+  /// outlined in plum for a half-empty trip (no coins).
+  static const slamStroke = Color(0xFF4A2D03);
+  static const slamGlow = Color(0xCCF5B83D);
+  static const slamSubStroke = Color(0xFF0E5A38);
+
+  /// Text on a painted lobby floor ("Clear"): at least 5:1 on every pixel
+  /// of the Sunrise Towers floor (the venue's own lane ink gets 4.3:1 there).
+  static const lobbyArtInk = Color(0xFF5E503A);
+
+  /// Over a painted shaft wall, either side of the doorway: deep at about
+  /// 40%, so the faded NEXT chips and Scale read over lamps and city lights.
+  static const shaftScrim = Color(0x6614132E);
+
   /// The cones' orange on a closed lane (the painted fallback icon).
   static const cone = Color(0xFFFF8A3D);
 

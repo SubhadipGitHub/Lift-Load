@@ -1,13 +1,26 @@
-/// The shaft panel's back wall: a venue-tinted gradient, a faint venue motif,
-/// and the guide rails either side of the cabin's column.
+/// The shaft panel's back wall and the guide rails either side of the
+/// cabin's column. The wall is the venue's painted backdrop for its storey
+/// band when there is one (Sunrise Towers), with the cabin standing in the
+/// backdrop's doorway; otherwise a venue-tinted gradient with a faint motif.
 library;
+
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../art_assets.dart';
 import '../theme.dart';
 
 class ShaftPainter extends CustomPainter {
-  const ShaftPainter({required this.style, required this.railLeft, required this.railRight});
+  const ShaftPainter({
+    required this.style,
+    required this.railLeft,
+    required this.railRight,
+    this.art,
+    this.floorY = 0,
+    this.channel = 6,
+  });
 
   final VenueStyle style;
 
@@ -15,25 +28,69 @@ class ShaftPainter extends CustomPainter {
   final double railLeft;
   final double railRight;
 
+  /// The painted backdrop, or null for the painted wall.
+  final ui.Image? art;
+
+  /// Where the cabin's bottom sits: the backdrop's doorway meets the floor here.
+  final double floorY;
+
+  /// The channel either side of the cabin, where the rails run.
+  final double channel;
+
+  /// Where [image] is drawn on a panel of [size]: scaled so its doorway
+  /// ([ArtAssets.shaftDoorway]) spans the cabin column and its channels and
+  /// stands on [floorY], centred on the column, then grown and slid as
+  /// little as needed to cover the whole panel.
+  static Rect placement(Size image, Size size,
+      {required double railLeft, required double railRight, required double floorY, required double channel}) {
+    const door = ArtAssets.shaftDoorway;
+    final fitDoor = (railRight - railLeft + 2 * channel) / (door.width * image.width);
+    final cover = math.max(size.width / image.width, size.height / image.height);
+    final k = math.max(fitDoor, cover);
+    final w = image.width * k, h = image.height * k;
+    final left = ((railLeft + railRight) / 2 - door.center.dx * w).clamp(size.width - w, 0.0).toDouble();
+    final top = (floorY - door.bottom * h).clamp(size.height - h, 0.0).toDouble();
+    return Rect.fromLTWH(left, top, w, h);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
     final rect = Offset.zero & size;
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [style.wallTop, style.wall, style.wallBottom],
-          stops: const [0, 0.45, 1],
-        ).createShader(rect),
-    );
-    _motif(canvas, size);
+    final image = art;
+    if (image != null) {
+      final src = Size(image.width.toDouble(), image.height.toDouble());
+      canvas.drawImageRect(
+        image,
+        Offset.zero & src,
+        placement(src, size, railLeft: railLeft, railRight: railRight, floorY: floorY, channel: channel),
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+      // The walls either side of the doorway sit a little in shadow, so the
+      // NEXT chips (the later ones faded) and the Scale button read over
+      // lamps and city lights.
+      final scrim = Paint()..color = LL.shaftScrim;
+      canvas
+        ..drawRect(Rect.fromLTRB(0, 0, railLeft - channel, h), scrim)
+        ..drawRect(Rect.fromLTRB(railRight + channel, 0, w, h), scrim);
+    } else {
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [style.wallTop, style.wall, style.wallBottom],
+            stops: const [0, 0.45, 1],
+          ).createShader(rect),
+      );
+      _motif(canvas, size);
 
-    // The shaft itself: a darker channel behind the cabin.
-    final shaft = Rect.fromLTRB(railLeft - 6, 0, railRight + 6, h);
-    canvas.drawRect(shaft, Paint()..color = const Color(0x33000000));
+      // The shaft itself: a darker channel behind the cabin (the backdrop
+      // has its own doorway).
+      final shaft = Rect.fromLTRB(railLeft - channel, 0, railRight + channel, h);
+      canvas.drawRect(shaft, Paint()..color = const Color(0x33000000));
+    }
     final rail = Paint()
       ..color = const Color(0xFF8F8AC4).withValues(alpha: 0.55)
       ..strokeWidth = 3;
@@ -131,5 +188,11 @@ class ShaftPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(ShaftPainter old) => old.style != style || old.railLeft != railLeft || old.railRight != railRight;
+  bool shouldRepaint(ShaftPainter old) =>
+      old.style != style ||
+      old.railLeft != railLeft ||
+      old.railRight != railRight ||
+      old.art != art ||
+      old.floorY != floorY ||
+      old.channel != channel;
 }

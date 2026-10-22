@@ -18,6 +18,7 @@ import '../widgets/glossy.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
 import '../widgets/play_bar.dart';
+import '../widgets/punch.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 import '../widgets/settings_sheet.dart';
@@ -38,6 +39,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   late final AnimationController _anim = AnimationController(vsync: this);
   late final AnimationController _doors = AnimationController(vsync: this, value: 1);
   late final AnimationController _shake = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
+  late final AnimationController _bump = AnimationController(vsync: this, duration: PunchMotion.bump);
+  late final AnimationController _slam = AnimationController(vsync: this, duration: PunchMotion.slam);
   Animation<double> _dy = const AlwaysStoppedAnimation(0);
   Animation<double> _tilt = const AlwaysStoppedAnimation(0);
   Phase? _lastPhase;
@@ -50,11 +53,21 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   /// Bumped on every phase change, controller swap and dispose; see [_live].
   int _seq = 0;
 
+  /// The trip just sent (its rating and coins), held until the doors shut;
+  /// then the score on screen, and the coin pill's pulse count.
+  TripRating? _sentRating;
+  int _sentCoins = 0;
+  TripRating? _slamRating;
+  int _slamCoins = 0;
+  Rect? _slamRect;
+  int _coinPulse = 0;
+
   /// Where things are on screen, for walks and effects.
   final GlobalKey _stackKey = GlobalKey();
   final List<GlobalKey> _laneKeys = [];
   final List<GlobalKey> _seatKeys = [];
   final GlobalKey _cabinKey = GlobalKey();
+  final GlobalKey _shaftKey = GlobalKey();
   final GlobalKey _coinKey = GlobalKey();
   final GlobalKey<EffectsLayerState> _effects = GlobalKey();
 
@@ -89,6 +102,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _seenReveal = c.revealSerial;
       _revealedId = null;
       _snapHome();
+      _slam
+        ..stop()
+        ..value = 0;
+      _sentRating = null;
+      _slamRating = null;
       _flights.clear();
       _hidden.clear();
       c.addListener(_onChange);
@@ -102,6 +120,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _anim.dispose();
     _doors.dispose();
     _shake.dispose();
+    _bump.dispose();
+    _slam.dispose();
     super.dispose();
   }
 
@@ -143,7 +163,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final seq = ++_seq;
     switch (phase) {
       case Phase.departing:
-        if (reward > 0) _coinBurst(reward);
+        _sentRating = c.sentRating;
+        _sentCoins = reward;
         _depart(seq);
       case Phase.falling:
         _fall(seq);
@@ -169,16 +190,36 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   /// stale sequence stops before touching the controllers or the engine.
   bool _live(int seq) => mounted && seq == _seq;
 
-  /// Doors close (after a rider still walking in lands), the cabin rises, and
-  /// the engine moves on to the next lift. [GameController.finishSend] runs
-  /// once, only after both.
+  /// Doors close (after a rider still walking in lands), the score slams in
+  /// and the coins fly as the cabin bumps, the cabin rises, and the engine
+  /// moves on to the next lift. [GameController.finishSend] runs once, only
+  /// after all of that; the slam and the coins play on over the arrival.
   Future<void> _depart(int seq) async {
     if (_flights.isNotEmpty) await Future<void>.delayed(const Duration(milliseconds: flightMs));
     if (!_live(seq)) return;
     await _closeDoors();
     if (!_live(seq)) return;
+    _punch();
+    if (!_still) await _bump.forward(from: 0).orCancel.catchError((Object _) {});
+    if (!_live(seq)) return;
     await _run(from: 0, to: -CabinMotion.riseDistance, duration: CabinMotion.rise, curve: Curves.easeInCubic);
     if (_live(seq)) c.finishSend();
+  }
+
+  /// The score slam over the shaft, and coins flying to the coin pill on a
+  /// good or perfect trip. Neither plays under reduced motion (the message
+  /// line gives the rating on arrival either way).
+  void _punch() {
+    final rating = _sentRating;
+    _sentRating = null;
+    if (rating == null || _still) return;
+    setState(() {
+      _slamRating = rating;
+      _slamCoins = _sentCoins;
+      _slamRect = _rectOf(_shaftKey);
+    });
+    _slam.forward(from: 0);
+    if (_sentCoins > 0) _coinBurst(_sentCoins);
   }
 
   /// Let the last rider land, then the cable goes. Still (reduced motion) it
@@ -215,6 +256,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _snapHome() {
     _anim.stop();
+    _bump
+      ..stop()
+      ..value = 0;
     _dy = const AlwaysStoppedAnimation(0);
     _tilt = const AlwaysStoppedAnimation(0);
     _doors.value = 1;
@@ -297,6 +341,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     ));
   }
 
+  /// Coin icons fly from the cabin to the coin pill, which pulses as they
+  /// land. The slam shows how many coins; the burst only carries them.
   void _coinBurst(int coins) {
     if (_still) return;
     final cabin = _rectOf(_cabinKey);
@@ -306,8 +352,12 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       kind: BurstKind.coins,
       origin: cabin.center,
       target: chip?.center,
-      count: coins >= Formulas.perfectTripCoins ? 14 : 8,
-      label: '+$coins',
+      count: coins >= Formulas.perfectTripCoins ? PunchMotion.coinsPerfect : PunchMotion.coinsGood,
+      sprite: SpriteArtScope.of(context) ? SpriteCache.instance.icon(GameIcon.coin) : null,
+      spriteSize: Metrics.of(context).coinFly,
+      onDone: () {
+        if (mounted) setState(() => _coinPulse++);
+      },
     ));
   }
 
@@ -352,13 +402,17 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final g = c.game;
     final m = Metrics.of(context);
+    final slamRating = _slamRating;
+    final slamRect = _slamRect;
     final shaft = AnimatedBuilder(
-      animation: Listenable.merge([_anim, _doors]),
+      key: _shaftKey,
+      animation: Listenable.merge([_anim, _doors, _bump]),
       builder: (context, _) => LiftShaft(
         game: g,
         cabinDy: _dy.value * m.scale,
         cabinTilt: _tilt.value,
         doorOpen: _doors.value,
+        cabinBump: _bump.value,
         cabinKey: _cabinKey,
         hiddenIds: _hidden,
         onTapLift: c.tapLift,
@@ -409,7 +463,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         ),
       ),
     );
-    final hud = _Hud(c: c, onBack: _leave, coinKey: _coinKey);
+    final hud = _Hud(c: c, onBack: _leave, coinKey: _coinKey, coinPulse: _coinPulse);
     final refused = c.refusedSpot;
     final bench = BenchRow(
       game: g,
@@ -419,23 +473,27 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       shakeSerial: refused?.fromBench == true ? c.refuseSerial : 0,
       shakeSeat: refused?.fromBench == true ? refused!.index : null,
     );
-    final lanes = QueueLanes(
-      game: g,
-      onTapLane: c.tapQueue,
-      laneKeys: [for (var i = 0; i < g.laneCount; i++) _laneKey(i)],
-      shakeSerial: refused?.fromBench == false ? c.refuseSerial : 0,
-      shakeLane: refused?.fromBench == false ? refused!.index : null,
-      coneSerial: c.coneSerial,
-      coneLane: c.coneLane,
-      swapping: c.armedPower == Power.swap,
-      swapFirst: c.swapFirstLane,
-      revealedId: _revealedId,
-    );
+    Widget lanes(bool paintFloor) => QueueLanes(
+          game: g,
+          paintFloor: paintFloor,
+          onTapLane: c.tapQueue,
+          laneKeys: [for (var i = 0; i < g.laneCount; i++) _laneKey(i)],
+          shakeSerial: refused?.fromBench == false ? c.refuseSerial : 0,
+          shakeLane: refused?.fromBench == false ? refused!.index : null,
+          coneSerial: c.coneSerial,
+          coneLane: c.coneLane,
+          swapping: c.armedPower == Power.swap,
+          swapFirst: c.swapFirstLane,
+          revealedId: _revealedId,
+        );
     // The lobby floor always reaches the bottom of its area, and scrolls when
-    // the queues are longer than the screen.
-    final lanesArea = LayoutBuilder(
-      builder: (context, box) => SingleChildScrollView(
-        child: ConstrainedBox(constraints: BoxConstraints(minHeight: box.maxHeight), child: lanes),
+    // the queues are longer than the screen; a painted floor stays put under them.
+    final lanesArea = LobbyFloor(
+      venue: g.level.venue,
+      builder: (context, paintFloor) => LayoutBuilder(
+        builder: (context, box) => SingleChildScrollView(
+          child: ConstrainedBox(constraints: BoxConstraints(minHeight: box.maxHeight), child: lanes(paintFloor)),
+        ),
       ),
     );
     final bottomBar = PlayBottomBar(c: c);
@@ -539,6 +597,18 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     },
                   ),
                 Positioned.fill(child: EffectsLayer(key: _effects)),
+                // The trip's score over the shaft, above the coins flying out
+                // of it (style frame), until a result sheet comes up.
+                if (slamRating != null && slamRect != null && g.phase != Phase.won && g.phase != Phase.failed)
+                  Positioned.fromRect(
+                    rect: slamRect,
+                    child: AnimatedBuilder(
+                      animation: _slam,
+                      builder: (context, _) => _slam.isAnimating
+                          ? ScoreSlam(rating: slamRating, coins: _slamCoins, progress: _slam.value)
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -603,13 +673,15 @@ class _FlightViewState extends State<_FlightView> with SingleTickerProviderState
 }
 
 class _Hud extends StatelessWidget {
-  const _Hud({required this.c, required this.onBack, required this.coinKey});
+  const _Hud({required this.c, required this.onBack, required this.coinKey, required this.coinPulse});
 
   final GameController c;
   final VoidCallback onBack;
 
-  /// The coin chip, where coin bursts fly to.
+  /// The coin chip, where coin bursts fly to, and how many times it has
+  /// pulsed as they landed.
   final GlobalKey coinKey;
+  final int coinPulse;
 
   @override
   Widget build(BuildContext context) {
@@ -686,7 +758,10 @@ class _Hud extends StatelessWidget {
                     Semantics(
                       label: 'Coins ${c.profile.coins}',
                       child: ExcludeSemantics(
-                        child: _Chip(key: coinKey, icon: GameIcon.coin, text: '${c.profile.coins}'),
+                        child: Pulse(
+                          serial: coinPulse,
+                          child: _Chip(key: coinKey, icon: GameIcon.coin, text: '${c.profile.coins}'),
+                        ),
                       ),
                     ),
                   ],

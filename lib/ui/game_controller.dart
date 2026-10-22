@@ -741,6 +741,11 @@ class GameController extends ChangeNotifier {
     return out;
   }
 
+  /// The rating of the trip just sent, from the send until the next lift
+  /// arrives (null otherwise): the play screen's score slam. It says only
+  /// what the message line says on arrival, never anything about a weight.
+  TripRating? get sentRating => _lastRating;
+
   /// Coins the last send earned (0 for a grey trip), once.
   int takeReward() {
     final c = _pendingRewardCoins;

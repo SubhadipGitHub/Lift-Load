@@ -3,6 +3,35 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · PRD v1.7 restyle slice 4: Sunrise backdrops and punch (branch restyle-slice4)
+
+**Done**
+- Backdrops (Sunrise Towers only): `bg_society_shaft_{ground,mid,high}` and `bg_society_lobby` in `assets/art`, through
+  `ArtAssets.shaftBackdrop` / `lobbyFloor` and `SpriteCache` (preloaded with the rest). `ShaftBand` picks the wall by
+  storey in the 20-level building (`ShaftBand.firstStorey` = 1, 8, 15: 1-7 ground, 8-14 mid, 15-20 high; repeats past
+  100 too). `ShaftPainter.placement` fits the wall so its doorway (`ArtAssets.shaftDoorway`) spans the cabin and its
+  rail channels and meets the cabin's floor, then grows only as needed to cover the panel; a 40% deep side scrim
+  (`LL.shaftScrim`) keeps the faded NEXT chips and Scale readable over lamps and city lights. Lobby floor: cover-fit and
+  fixed in the lane area while the queues scroll over it (`LobbyFloor`); "Clear" uses `LL.lobbyArtInk` there (5.2:1 on
+  every pixel; the venue ink only reaches 4.29:1). Painted walls and floors stay for other venues, switch off, or a
+  failed image. The procedural `society_wall_*` / `society_floor_*` alternates are not shipped.
+- Punch (`widgets/punch.dart`, timings in `PunchMotion`): cabin bump 140 ms after the doors shut (the only addition to
+  the send, so +140 ms), score slam (`ScoreSlam`: "+15 / PERFECT LOAD!", "+8 / GOOD TRIP", "HALF-EMPTY TRIP") above the
+  coin fly, coins from the cabin to the coin pill as the approved coin icon, and the pill pulses when they land
+  (`Burst.onDone`); free seats breathe (`Breathe`) only while a lane resident is selected; the selected front or bench
+  resident hops on a warm glow (`SelectedHop`, `HopGlow`). Rating via `GameController.sentRating`, coins via
+  `takeReward`. Reduced motion: no bump, slam, coins or hop; the glows hold still.
+- Tests: `backdrop_test` (bands, venues, placement, fixed floor, fallbacks, alternates not shipped), `punch_test`
+  (slam text and coins per rating, none on a crash, coin fly only on good/perfect, bump order, finishSend once, breathe
+  and hop only when selected, reduced motion), a punch sweep in `responsive_test` (14 sizes, 3/4/5 lanes, both hands,
+  1.3x), an architecture guard on `punch.dart`. 308 green.
+
+**Open**
+- Web build 46.15 MB before, 46.29 MB after (+0.14 MB).
+- Coin pill pulses but its number does not change until the level is won (trip coins bank on win, as before).
+- The selected card's lift (3 units) now scales with the screen (`Metrics.selectedLift`) so lift plus hop fits
+  `Metrics.laneTop` at 320 wide.
+
 ## 2026-10-22 · PRD v1.7 restyle slice 3: surfaces and icons (branch restyle-slice3)
 
 **Done**

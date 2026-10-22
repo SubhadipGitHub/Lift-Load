@@ -1,10 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../../game/engine.dart';
 import '../../game/scenario.dart';
+import '../../game/venue.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
@@ -12,6 +12,7 @@ import '../painters/lobby_painter.dart';
 import '../theme.dart';
 import 'art_icon.dart';
 import 'glossy.dart';
+import 'punch.dart';
 import 'resident_figure.dart';
 
 /// Bench seats: tap a seated resident to select them, tap an empty seat to
@@ -124,10 +125,10 @@ class _Seat extends StatelessWidget {
     final m = Metrics.of(context);
     final radius = m.seatRadius;
     final height = m.seatHeightFor(figure);
-    final clock = seatHint ? IdleClock.of(context) : null;
     Widget seat(double breath) {
       if (r != null) {
-        // Occupied: a cream glossy seat; picked, its rim turns brass and glows.
+        // Occupied: a cream glossy seat; picked, its rim turns brass and glows,
+        // and the resident hops on a warm glow.
         return Glossy(
           style: selected ? SurfaceStyle.seatPicked : SurfaceStyle.seat,
           depth: SurfaceDepth.seat,
@@ -144,9 +145,15 @@ class _Seat extends StatelessWidget {
                   opacity: hidden ? 0 : 1,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: IdleSway(
-                      seed: r.id,
-                      builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
+                    child: SelectedHop(
+                      active: selected,
+                      child: HopGlow(
+                        active: selected,
+                        child: IdleSway(
+                          seed: r.id,
+                          builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -158,7 +165,7 @@ class _Seat extends StatelessWidget {
       // Free: a dark well. One that can take the selection glows brass and
       // breathes ([breath] 0 to 1).
       return AnimatedContainer(
-        duration: clock == null ? motionMs(context, 150) : Duration.zero,
+        duration: seatHint ? Duration.zero : motionMs(context, 150),
         height: height,
         decoration: BoxDecoration(
           color: seatHint ? LL.brass.withValues(alpha: 0.13) : null,
@@ -175,7 +182,12 @@ class _Seat extends StatelessWidget {
             width: Metrics.seatBorder,
           ),
           boxShadow: seatHint
-              ? [BoxShadow(color: LL.pickGlow.withValues(alpha: LL.pickGlow.a * (0.6 + 0.4 * breath)), blurRadius: m.seatGlow)]
+              ? [
+                  BoxShadow(
+                    color: LL.pickGlow.withValues(alpha: LL.pickGlow.a * (0.6 + 0.4 * breath)),
+                    blurRadius: m.seatGlow + (m.seatGlowBreath - m.seatGlow) * breath,
+                  ),
+                ]
               : null,
         ),
         child: seatHint
@@ -195,13 +207,9 @@ class _Seat extends StatelessWidget {
       selected: selected,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
-        // A free seat that can take the selection breathes its border.
-        child: clock == null
-            ? seat(1)
-            : ValueListenableBuilder<double>(
-                valueListenable: clock,
-                builder: (context, t, _) => seat(0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.1)),
-              ),
+        // A free seat that can take the selection breathes; still, it holds
+        // at full glow.
+        child: Breathe(active: seatHint, builder: (context, breath) => seat(breath)),
       ),
     );
   }
@@ -224,10 +232,20 @@ class QueueLanes extends StatelessWidget {
     this.swapping = false,
     this.swapFirst,
     this.revealedId,
+    this.paintFloor = true,
   });
 
   final LiftGame game;
   final ValueChanged<int> onTapLane;
+
+  /// Paint the venue's floor colour and pattern; off when a [LobbyFloor]
+  /// below already shows the venue's painted floor.
+  final bool paintFloor;
+
+  /// The lobby floor's corners: rounded on top where it runs under the
+  /// bottom bar, all round in the two-pane layout.
+  static BorderRadius floorRadius(Metrics m) =>
+      m.twoPane ? BorderRadius.circular(m.radius) : BorderRadius.vertical(top: Radius.circular(m.radius));
 
   /// One key per lane column, so walks can find where a lane is on screen.
   final List<Key> laneKeys;
@@ -254,20 +272,22 @@ class QueueLanes extends StatelessWidget {
     final m = Metrics.of(context);
     final visible = m.visibleDepth;
     final figure = m.laneFigureFor(lanes.length);
-    final ink = TextStyle(fontSize: m.font(11), fontWeight: FontWeight.w800, color: style.laneInk);
+    // On a painted floor the ink is a shade darker: the art keeps 4.3:1 for
+    // the old ink, this clears 4.5:1 on every pixel of it.
+    final ink = TextStyle(
+        fontSize: m.font(11), fontWeight: FontWeight.w800, color: paintFloor ? style.laneInk : LL.lobbyArtInk);
     final pending = game.pendingArrivals;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: m.gap),
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: style.floor,
-        borderRadius:
-            m.twoPane ? BorderRadius.circular(m.radius) : BorderRadius.vertical(top: Radius.circular(m.radius)),
+        color: paintFloor ? style.floor : null,
+        borderRadius: floorRadius(m),
       ),
       child: CustomPaint(
-        painter: FloorPatternPainter(style),
+        painter: paintFloor ? FloorPatternPainter(style) : null,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(m.lanePadding, 8 * m.scale, m.lanePadding, 4 * m.scale),
+          padding: EdgeInsets.fromLTRB(m.lanePadding, m.laneTop, m.lanePadding, 4 * m.scale),
           child: Column(
             children: [
               if (pending.isNotEmpty)
@@ -347,6 +367,47 @@ class QueueLanes extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The lobby floor under the lanes. With sprite art on and the venue's
+/// painted floor loaded, the floor stays fixed in the lane area while the
+/// queues scroll over it (a perspective floor that slid with the lanes would
+/// read as the room moving); [builder] is told to leave the lanes'
+/// own floor off. Otherwise the lanes paint the venue's floor and pattern,
+/// as before.
+class LobbyFloor extends StatelessWidget {
+  const LobbyFloor({super.key, required this.venue, required this.builder});
+
+  final Venue venue;
+
+  /// Builds the lanes; `paintFloor` is false while the painted floor shows.
+  final Widget Function(BuildContext context, bool paintFloor) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!SpriteArtScope.of(context)) return builder(context, true);
+    return ListenableBuilder(
+      listenable: SpriteCache.instance,
+      builder: (context, _) {
+        final image = SpriteCache.instance.lobbyFloor(venue);
+        if (image == null) return builder(context, true);
+        final m = Metrics.of(context);
+        return Stack(
+          children: [
+            Positioned.fill(
+              left: m.gap,
+              right: m.gap,
+              child: ClipRRect(
+                borderRadius: QueueLanes.floorRadius(m),
+                child: CustomPaint(painter: LobbyFloorPainter(image)),
+              ),
+            ),
+            builder(context, false),
+          ],
+        );
+      },
     );
   }
 }
@@ -454,50 +515,57 @@ class _QueueSlot extends StatelessWidget {
       label: '$who${front ? '' : ', waiting in queue'}${picked ? ', picked for swap' : ''}',
       child: GestureDetector(
         onTap: front ? onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: EdgeInsets.only(bottom: 2 * m.scale),
-          constraints: const BoxConstraints(minWidth: Metrics.minTouch, minHeight: Metrics.minTouch),
-          padding: EdgeInsets.fromLTRB(m.slotPadding, 3 * m.scale, m.slotPadding, 1 * m.scale),
-          transform: Matrix4.translationValues(0, selected ? -3 : 0, 0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: selected || picked
-                ? LL.cream
-                : front
-                    ? Colors.white.withValues(alpha: 0.7)
-                    : Colors.transparent,
-            // Swap targeting: a mint frame says "pick me", a thick brass one "picked".
-            border: Border.all(
+        // Selected: the front hops, and stands on a warm glow.
+        child: SelectedHop(
+          active: selected,
+          child: AnimatedContainer(
+            duration: motionMs(context, 150),
+            margin: EdgeInsets.only(bottom: 2 * m.scale),
+            constraints: const BoxConstraints(minWidth: Metrics.minTouch, minHeight: Metrics.minTouch),
+            padding: EdgeInsets.fromLTRB(m.slotPadding, 3 * m.scale, m.slotPadding, 1 * m.scale),
+            transform: Matrix4.translationValues(0, selected ? -m.selectedLift : 0, 0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
               color: selected || picked
-                  ? LL.brass
-                  : pickable
-                      ? LL.mintDark
-                      : front
-                          ? const Color(0xFFD9C29A)
-                          : Colors.transparent,
-              width: selected || picked || pickable ? Metrics.slotBorder : Metrics.slotBorderThin,
-            ),
-            boxShadow: [
-              if (picked) BoxShadow(color: LL.brass.withValues(alpha: 0.55), blurRadius: 10, spreadRadius: 1),
-              if (pickable && !picked) BoxShadow(color: LL.mint.withValues(alpha: 0.35), blurRadius: 8),
-            ],
-          ),
-          child: Opacity(
-            opacity: opacity,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloorTag(floor: resident.floor, compact: true, scale: m.scale),
-                SizedBox(height: 1 * m.scale),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: IdleSway(
-                    seed: resident.id,
-                    builder: (context, blink) => ResidentFigure.of(resident, height: figure, blink: blink),
-                  ),
-                ),
+                  ? LL.cream
+                  : front
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : Colors.transparent,
+              // Swap targeting: a mint frame says "pick me", a thick brass one "picked".
+              border: Border.all(
+                color: selected || picked
+                    ? LL.brass
+                    : pickable
+                        ? LL.mintDark
+                        : front
+                            ? const Color(0xFFD9C29A)
+                            : Colors.transparent,
+                width: selected || picked || pickable ? Metrics.slotBorder : Metrics.slotBorderThin,
+              ),
+              boxShadow: [
+                if (picked) BoxShadow(color: LL.brass.withValues(alpha: 0.55), blurRadius: 10, spreadRadius: 1),
+                if (pickable && !picked) BoxShadow(color: LL.mint.withValues(alpha: 0.35), blurRadius: 8),
               ],
+            ),
+            child: Opacity(
+              opacity: opacity,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FloorTag(floor: resident.floor, compact: true, scale: m.scale),
+                  SizedBox(height: 1 * m.scale),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: HopGlow(
+                      active: selected,
+                      child: IdleSway(
+                        seed: resident.id,
+                        builder: (context, blink) => ResidentFigure.of(resident, height: figure, blink: blink),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -14,6 +14,10 @@
 /// The icons are 256 px squares: one per [GameIcon], one badge per lift kind
 /// (the normal lift has none) and one per lobby scenario. None of them says
 /// anything about a weight.
+///
+/// Sunrise Towers (the society venue) has painted backdrops: a shaft wall per
+/// storey band ([ShaftBand]) and one lobby floor. The other venues have none
+/// yet and keep their painted backgrounds.
 library;
 
 import 'dart:async';
@@ -23,7 +27,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../game/cast.dart';
+import '../game/level.dart';
 import '../game/scenario.dart';
+import '../game/venue.dart';
 
 /// The approved icons that stand for a thing in the game (not a lift kind or
 /// scenario, which have their own lookups). Each has a Material or painted
@@ -46,6 +52,35 @@ enum GameIcon {
 
   /// The name in `icon_<file>.webp`.
   final String file;
+}
+
+/// Where in its 20-level building a level sits, which picks the shaft wall:
+/// the wainscot and lamps at the bottom, windows onto the city in the middle,
+/// arched windows and a night sky at the top.
+enum ShaftBand {
+  ground,
+  mid,
+  high;
+
+  /// The first storey (1 to [Venue.levelsPerVenue]) of each band, in order:
+  /// storeys 1-7 ground, 8-14 mid, 15-20 high.
+  static const List<int> firstStorey = [1, 8, 15];
+
+  /// The storey of [level] in its building, 1 to [Venue.levelsPerVenue]; a
+  /// level past the last building's twenty (the hotel runs on) repeats them.
+  static int storeyOf(Level level) {
+    final n = Venue.levelsPerVenue;
+    return ((level.number - level.venue.firstLevel) % n + n) % n + 1;
+  }
+
+  static ShaftBand of(Level level) {
+    final storey = storeyOf(level);
+    var band = ShaftBand.ground;
+    for (final b in values) {
+      if (storey >= firstStorey[b.index]) band = b;
+    }
+    return band;
+  }
 }
 
 abstract final class ArtAssets {
@@ -85,6 +120,31 @@ abstract final class ArtAssets {
         Scenario.rushHour => '$_dir/icon_scene_rush.webp',
       };
 
+  /// The venues with painted backdrops (the rest keep their painted look).
+  static const Set<Venue> backdropVenues = {Venue.society};
+
+  /// The shaft wall behind the rails, cabin, NEXT strip and gauge, or null
+  /// for a venue without one. 1200 x 800 px.
+  static String? shaftBackdrop(Venue venue, ShaftBand band) =>
+      backdropVenues.contains(venue) ? '$_dir/bg_${venue.name}_shaft_${band.name}.webp' : null;
+
+  /// The lobby floor under the lanes, or null for a venue without one.
+  /// 1200 x 900 px, lifted so lane text and floor tags keep 4.3:1 contrast.
+  static String? lobbyFloor(Venue venue) => backdropVenues.contains(venue) ? '$_dir/bg_${venue.name}_lobby.webp' : null;
+
+  /// The lift doorway in every shaft wall, as fractions of the image: the
+  /// cabin is drawn standing in it (`painters/shaft_painter.dart`).
+  static const ui.Rect shaftDoorway = ui.Rect.fromLTRB(332 / 1200, 72 / 800, 868 / 1200, 744 / 800);
+
+  /// Every backdrop the game ships.
+  static List<String> get backdrops => [
+        for (final v in Venue.values) ...[
+          for (final b in ShaftBand.values)
+            if (shaftBackdrop(v, b) case final path?) path,
+          if (lobbyFloor(v) case final path?) path,
+        ],
+      ];
+
   /// Every icon the game ships.
   static List<String> get icons => [
         for (final i in GameIcon.values) icon(i),
@@ -105,6 +165,7 @@ abstract final class ArtAssets {
           cabinDoor(k, left: false),
         ],
         ...icons,
+        ...backdrops,
       ];
 }
 
@@ -166,6 +227,18 @@ class SpriteCache extends ChangeNotifier {
       };
 
   ui.Image? scenarioIcon(Scenario s) => _images[ArtAssets.scenarioIcon(s)];
+
+  /// The shaft wall for [level] (its venue and storey band), or null.
+  ui.Image? shaftBackdrop(Level level) => switch (ArtAssets.shaftBackdrop(level.venue, ShaftBand.of(level))) {
+        final path? => _images[path],
+        null => null,
+      };
+
+  /// The lobby floor for [venue], or null.
+  ui.Image? lobbyFloor(Venue venue) => switch (ArtAssets.lobbyFloor(venue)) {
+        final path? => _images[path],
+        null => null,
+      };
 
   /// The cabin art for [kind], or null unless the interior and both leaves
   /// loaded (the cabin then keeps its painted look as a whole).

@@ -6,9 +6,11 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
 import '../theme.dart';
 
 enum BurstKind { sparks, coins, confetti, sparkle }
@@ -16,15 +18,32 @@ enum BurstKind { sparks, coins, confetti, sparkle }
 /// A burst at [origin] (screen coordinates inside the effects layer). Coins
 /// fly toward [target]; confetti falls across the whole layer.
 class Burst {
-  Burst({required this.kind, required this.origin, this.target, this.count = 18, this.label});
+  Burst({
+    required this.kind,
+    required this.origin,
+    this.target,
+    this.count = 18,
+    this.label,
+    this.sprite,
+    this.spriteSize = 0,
+    this.onDone,
+  });
 
   final BurstKind kind;
   final Offset origin;
   final Offset? target;
   final int count;
 
-  /// Floating text, e.g. "+15", shown with coin bursts.
+  /// Floating text, e.g. "+15", shown with a burst.
   final String? label;
+
+  /// Coins: the approved coin icon, drawn [spriteSize] across, instead of the
+  /// painted disc (null keeps the disc: sprite art off, or the icon failed).
+  final ui.Image? sprite;
+  final double spriteSize;
+
+  /// Called once the burst has played out (the coins have landed).
+  final VoidCallback? onDone;
 
   final int seed = _seeds++;
   static int _seeds = 1;
@@ -44,6 +63,10 @@ class EffectsLayerState extends State<EffectsLayer> {
 
   void add(Burst b) => setState(() => _bursts.add(b));
 
+  /// The bursts playing now.
+  @visibleForTesting
+  List<Burst> get debugBursts => List.unmodifiable(_bursts);
+
   @override
   Widget build(BuildContext context) => IgnorePointer(
         child: Stack(
@@ -51,7 +74,13 @@ class EffectsLayerState extends State<EffectsLayer> {
             for (final b in _bursts)
               Positioned.fill(
                 key: ObjectKey(b),
-                child: _BurstView(burst: b, onDone: () => setState(() => _bursts.remove(b))),
+                child: _BurstView(
+                  burst: b,
+                  onDone: () {
+                    setState(() => _bursts.remove(b));
+                    b.onDone?.call();
+                  },
+                ),
               ),
           ],
         ),
@@ -74,7 +103,7 @@ class _BurstViewState extends State<_BurstView> with SingleTickerProviderStateMi
     duration: Duration(
       milliseconds: switch (widget.burst.kind) {
         BurstKind.sparks => 650,
-        BurstKind.coins => 900,
+        BurstKind.coins => PunchMotion.coinFly.inMilliseconds,
         BurstKind.confetti => 2200,
         BurstKind.sparkle => 520,
       },
@@ -157,7 +186,17 @@ class _BurstPainter extends CustomPainter {
           final out = Curves.easeOut.transform((local * 2.5).clamp(0, 1));
           final home = Curves.easeInCubic.transform(((local - 0.3) / 0.7).clamp(0, 1));
           final p = Offset.lerp(b.origin + spread * out, target, home)!;
-          final r = 6.5 * (1 - home * 0.4);
+          final shrink = 1 - home * 0.4;
+          if (b.sprite case final coin?) {
+            canvas.drawImageRect(
+              coin,
+              Rect.fromLTWH(0, 0, coin.width.toDouble(), coin.height.toDouble()),
+              Rect.fromCenter(center: p, width: b.spriteSize * shrink, height: b.spriteSize * shrink),
+              Paint()..filterQuality = FilterQuality.medium,
+            );
+            continue;
+          }
+          final r = 6.5 * shrink;
           canvas
             ..drawCircle(p, r, Paint()..color = LL.brassDark)
             ..drawCircle(p - const Offset(0.8, 0.8), r * 0.82, Paint()..color = LL.brass)

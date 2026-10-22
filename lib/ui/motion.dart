@@ -71,7 +71,99 @@ abstract final class CabinMotion {
 
   /// Send to the next cabin's open doors with motion on (a walker still
   /// landing adds the walk).
-  static Duration get sendTotal => doorClose + rise + dropIn + doorOpen;
+  static Duration get sendTotal => doorClose + PunchMotion.bump + rise + dropIn + doorOpen;
+}
+
+/// The punch on Send and the small life in the lobby (style frame, "Punch"):
+/// the cabin bump, the score slam, the coin fly and the coin pill's pulse,
+/// the free seats breathing and the selected resident's hop. Amplitudes are
+/// in design units (times `Metrics.scale`) or plain factors. Under reduced
+/// motion none of it plays: the bump, slam and coins are skipped, the seat
+/// glow and the hop's glow hold still.
+abstract final class PunchMotion {
+  /// The cabin bumps once its doors are shut, before it rises: down and a
+  /// little squashed at [bumpDownAt], back up past rest at [bumpUpAt], then
+  /// still. Short, so a send is only this much slower than before.
+  static const Duration bump = Duration(milliseconds: 140);
+  static const double bumpDownAt = 0.3;
+  static const double bumpUpAt = 0.6;
+  static const double bumpDrop = 3;
+  static const double bumpRebound = 2;
+  static const double bumpStretchX = 0.01;
+  static const double bumpSquashY = 0.015;
+
+  /// The bump at [t] (0 to 1): how far down the cabin sits (design units,
+  /// negative is up) and its horizontal and vertical scale.
+  static ({double dy, double sx, double sy}) bumpAt(double t) {
+    if (t <= 0 || t >= 1) return (dy: 0, sx: 1, sy: 1);
+    double ease(double x) => Curves.easeInOut.transform(x.clamp(0, 1).toDouble());
+    if (t < bumpDownAt) {
+      final k = ease(t / bumpDownAt);
+      return (dy: bumpDrop * k, sx: 1 + bumpStretchX * k, sy: 1 - bumpSquashY * k);
+    }
+    if (t < bumpUpAt) {
+      final k = ease((t - bumpDownAt) / (bumpUpAt - bumpDownAt));
+      return (
+        dy: bumpDrop + (-bumpRebound - bumpDrop) * k,
+        sx: 1 + bumpStretchX * (1 - k),
+        sy: 1 - bumpSquashY * (1 - k),
+      );
+    }
+    final k = ease((t - bumpUpAt) / (1 - bumpUpAt));
+    return (dy: -bumpRebound * (1 - k), sx: 1, sy: 1);
+  }
+
+  /// The trip's score slams in over the shaft as the cabin bumps: it grows
+  /// from [slamFrom] with an overshoot over [slamIn], holds, then fades over
+  /// [slamOut] while it drifts up `Metrics.slamRise`. It runs on through the
+  /// rise and the next lift's arrival; it never holds up the send.
+  static const Duration slamIn = Duration(milliseconds: 320);
+  static const Duration slamHold = Duration(milliseconds: 640);
+  static const Duration slamOut = Duration(milliseconds: 260);
+  static Duration get slam => slamIn + slamHold + slamOut;
+  static const double slamFrom = 0.4;
+
+  /// Overshoot for the slam (CSS `cubic-bezier(.3, 1.8, .5, 1)`).
+  static const Curve slamCurve = Cubic(0.3, 1.8, 0.5, 1);
+
+  /// The slam at [t] (0 to 1 of [slam]): its scale, opacity, and how far it
+  /// has drifted up (0 to 1 of `Metrics.slamRise`).
+  static ({double scale, double opacity, double rise}) slamAt(double t) {
+    final inEnd = slamIn.inMicroseconds / slam.inMicroseconds;
+    final outStart = (slamIn + slamHold).inMicroseconds / slam.inMicroseconds;
+    final grow = slamCurve.transform((t / inEnd).clamp(0, 1).toDouble());
+    final fade = ((t - outStart) / (1 - outStart)).clamp(0, 1).toDouble();
+    return (
+      scale: slamFrom + (1 - slamFrom) * grow,
+      opacity: (t / inEnd * 2).clamp(0, 1).toDouble() * (1 - Curves.easeIn.transform(fade)),
+      rise: Curves.easeOut.transform((t / inEnd).clamp(0, 1).toDouble()),
+    );
+  }
+
+  /// Coins fly from the cabin to the HUD coin pill on a good or perfect trip;
+  /// they all land at the end of [coinFly], and the pill pulses up to
+  /// [pillPulseScale] and back over [pillPulse].
+  static const Duration coinFly = Duration(milliseconds: 900);
+
+  /// Coins in the flight: more for a perfect trip than a good one.
+  static const int coinsPerfect = 14;
+  static const int coinsGood = 8;
+  static const Duration pillPulse = Duration(milliseconds: 280);
+  static const double pillPulseScale = 1.18;
+
+  /// A free seat that can take the selected resident breathes: its glow
+  /// swells and it grows by up to [seatBreatheScale], once per [seatBreathe].
+  static const double seatBreathe = 1.4;
+  static const double seatBreatheScale = 0.03;
+
+  /// The selected resident hops [hopHeight] design units, once per [hop]
+  /// seconds, on a warm glow.
+  static const double hop = 1.1;
+  static const double hopHeight = 5;
+
+  /// 0 to 1 and back, once per [period] seconds, starting at 0 (an
+  /// ease-in-out loop like the CSS keyframes).
+  static double loop(double seconds, double period) => 0.5 - 0.5 * math.cos(seconds / period * 2 * math.pi);
 }
 
 class _DoorClose extends Curve {
