@@ -34,6 +34,12 @@ entries; fold older ones into "Earlier".
   196 x 214 units, so a square crops only the sides, which also trims any frame. The prompt page artifact (version 6) is updated to
   match. Each cabin's doors now attach their own interior as the reference (`reference` plus a doors-specific
   `reference_note` in `art_pack.json`); the other interiors take no reference so each kind keeps its own materials.
+- Approved: `cabin_old_interior` (dark wood, bare bulb; deep-brown skin on dark wood is the weakest contrast, check the gym
+  regular at integration) and `cabin_service_interior` (galvanised steel, quilted pad, side grab rails; wide dented
+  metal surround, crop in about 8%). Sparkle watermark removed from all three (mirrored left corner). `compose_check`
+  now trims the sides of a square scene instead of the top.
+- Rejected: `cabin_express_interior`. The back wall is clear glass showing a second room and floor, so it reads as a glass
+  corridor, not a lift. Prompt changed to an opaque frosted back wall; regenerate (the doors prompt takes the same fix).
 - Next: `cabin_normal_doors` (attach the approved interior as the reference image), then `venue_society_lobby`, then
   old, service and express cabins, then the other four venues.
 

@@ -47,9 +47,15 @@ def main():
     a = ap.parse_args()
     path = Path(a.approved) / "cabin_normal_interior.webp" if a.scene == "cabin" else Path(a.scene)
     scene = Image.open(path).convert("RGBA")
+    target = CABIN_UNITS[0] / CABIN_UNITS[1]
+    if scene.width / scene.height > target:  # square or wider: trim the sides, keep full height
+        cw = round(scene.height * target)
+        x0 = (scene.width - cw) // 2
+        scene = scene.crop((x0, 0, x0 + cw, scene.height))
+    else:  # taller than the cabin (4:5): trim the top, keep the floor
+        h = round(scene.width / target)
+        scene = scene.crop((0, a.top, scene.width, min(a.top + h, scene.height)))
     w = scene.width
-    h = round(w * CABIN_UNITS[1] / CABIN_UNITS[0])
-    scene = scene.crop((0, a.top, w, min(a.top + h, scene.height)))
     k = w / (CABIN_UNITS[0] * PX_PER_UNIT)
     feet = int(scene.height * a.feet)
     sheets = []
