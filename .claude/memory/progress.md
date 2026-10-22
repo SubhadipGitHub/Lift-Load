@@ -20,10 +20,10 @@ entries; fold older ones into "Earlier".
 
 **Cast status** (originals live with the owner; `/art/` is git-ignored)
 - Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard,
-  wheelchair patient, bellhop, parent with the pram.
+  wheelchair patient, bellhop, parent with the pram, student (11 of 14 residents).
 - Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult), rider (sturdier).
-- Not yet sent: student. After it: 3 cargo props, blink frames,
-  four lift kinds, five venues, home art, store art, icon.
+- All 14 residents have been sent once. Still to make: the 3 redos, then 3 cargo props, four lift kinds (interior and
+  doors), five venues (lobby floor and shaft wall), home skylines, store art, icon, and blink frames last (optional).
 
 **Open**
 - Art ships after Gate A only: the heavy-types metric measures the current silhouettes. Integration needs PRD v1.5.
