@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../game/cast.dart';
 import '../../game/engine.dart';
 import '../../game/scenario.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
@@ -276,6 +277,11 @@ class _NextChip extends StatelessWidget {
   }
 }
 
+/// The cabin: a tap target that shows who is riding. With sprite art on and
+/// this kind's images loaded it draws the approved interior, the riders, then
+/// the two door leaves over them, with the floor pill (and the kind's sign)
+/// on top; otherwise the painted cabin. Either way the riders' feet sit at
+/// [Metrics.cabinFeetLine] and nothing drawn depends on load.
 class _Cabin extends StatelessWidget {
   const _Cabin({
     required this.game,
@@ -295,136 +301,255 @@ class _Cabin extends StatelessWidget {
   final Set<int> hiddenIds;
   final VoidCallback onTap;
 
+  /// How long the hint glow and the crash colours take to change.
+  static const Duration _chromeFade = Duration(milliseconds: 180);
+
   @override
   Widget build(BuildContext context) {
     final kind = LiftKindStyle.of(game.liftKind);
-    final riders = game.riders;
-    final m = Metrics.of(context);
-    final s = m.scale;
     return Semantics(
       button: true,
       label: '${game.liftKind == LiftKind.normal ? 'Lift' : kind.sign} to ${GameController.floorList(game.liftFloors)} '
-          'with ${riders.length} riders. Tap to board the selected resident.',
+          'with ${game.riders.length} riders. Tap to board the selected resident.',
       child: GestureDetector(
         onTap: game.phase == Phase.playing ? onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: m.cabinWidth,
-          height: m.cabinHeight,
-          padding: EdgeInsets.all(m.cabinPadding),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: crashed
-                  ? const [LL.alarmSoft, LL.alarm]
-                  : [
-                      Color.lerp(kind.cabin, Colors.white, 0.25)!,
-                      kind.cabin,
-                      Color.lerp(kind.cabin, Colors.black, 0.18)!
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(16 * s),
-            boxShadow: [
-              const BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 5)),
-              if (hint) BoxShadow(color: kind.cabin.withValues(alpha: 0.5), spreadRadius: 4 * s, blurRadius: 6),
-            ],
-          ),
-          child: Column(
+        child: SpriteArtScope.of(context)
+            ? ListenableBuilder(
+                listenable: SpriteCache.instance,
+                builder: (context, _) => switch (SpriteCache.instance.cabin(game.liftKind)) {
+                  final art? => _art(context, art),
+                  null => _painted(context),
+                },
+              )
+            : _painted(context),
+      ),
+    );
+  }
+
+  /// The riders in a row, feet [bottom] above the bottom of their stack
+  /// (less the part of the figure box below the feet).
+  Widget _riders(Metrics m, double bottom) => Positioned(
+        left: 0,
+        right: 0,
+        bottom: bottom - m.cabinFigure * ResidentFigure.belowFeet,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          // Shrinking a full cabin keeps the feet on the line.
+          alignment: Alignment.bottomCenter,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (kind.icon != null) ...[
-                      Icon(kind.icon, size: 16 * s, color: LL.ink),
-                      SizedBox(width: 4 * s),
-                    ],
-                    for (var i = 0; i < game.liftFloors.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 4),
-                      _FloorPill(floor: game.liftFloors[i], prefix: game.liftFloors.length == 1 ? 'Up to ' : ''),
-                    ],
-                  ],
-                ),
-              ),
-              SizedBox(height: 5 * s),
-              Expanded(
-                child: ClipRRect(
-                  key: interiorKey,
-                  borderRadius: BorderRadius.circular(10 * s),
-                  child: CustomPaint(
-                    painter: CabinInteriorPainter(alarm: crashed),
-                    foregroundPainter: CabinDoorsPainter(open: doorOpen),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 4 * s,
-                          right: 4 * s,
-                          top: 8 * s,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              kind.sign,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 10 * m.textScale,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1,
-                                color: const Color(0xFF5B6270),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (riders.isEmpty)
-                          Center(
-                            child: Text(
-                              hint ? 'Tap to board' : 'Empty',
-                              style: TextStyle(
-                                fontSize: m.font(12),
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF4A5060),
-                              ),
-                            ),
-                          ),
-                        // Feet at the cabin's feet line, mid-floor.
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: m.cabinFeetInset - m.cabinFigure * ResidentFigure.belowFeet,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            // Shrinking a full cabin keeps the feet on the line.
-                            alignment: Alignment.bottomCenter,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                for (final r in riders)
-                                  Align(
-                                    widthFactor: 0.68,
-                                    child: Opacity(
-                                      opacity: hiddenIds.contains(r.id) ? 0 : 1,
-                                      child: IdleSway(
-                                        seed: r.id,
-                                        amplitude: 0.5,
-                                        builder: (context, blink) =>
-                                            ResidentFigure.of(r, height: m.cabinFigure, blink: blink),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+              for (final r in game.riders)
+                Align(
+                  widthFactor: 0.68,
+                  child: Opacity(
+                    opacity: hiddenIds.contains(r.id) ? 0 : 1,
+                    child: IdleSway(
+                      seed: r.id,
+                      amplitude: 0.5,
+                      builder: (context, blink) => ResidentFigure.of(r, height: m.cabinFigure, blink: blink),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
+      );
+
+  /// The interior dims as the doors close.
+  Widget _dim() => IgnorePointer(
+        child: ColoredBox(color: LL.doorShade.withValues(alpha: CabinMotion.closedDim * (1 - doorOpen.clamp(0, 1)))),
+      );
+
+  /// The destination: the kind's badge and one pill per floor. Over the art
+  /// the badge sits on a dark plate, so it reads on a dark wood interior too.
+  Widget _floorRow(Metrics m, LiftKindStyle kind, {bool onArt = false}) => FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (kind.icon != null) ...[
+              if (onArt)
+                Container(
+                  padding: EdgeInsets.all(3 * m.scale),
+                  decoration: const BoxDecoration(color: LL.cabinPlate, shape: BoxShape.circle),
+                  child: Icon(kind.icon, size: 14 * m.scale, color: LL.cream),
+                )
+              else
+                Icon(kind.icon, size: 16 * m.scale, color: LL.ink),
+              SizedBox(width: 4 * m.scale),
+            ],
+            for (var i = 0; i < game.liftFloors.length; i++) ...[
+              if (i > 0) SizedBox(width: 4 * m.scale),
+              _FloorPill(floor: game.liftFloors[i], prefix: game.liftFloors.length == 1 ? 'Up to ' : ''),
+            ],
+          ],
+        ),
+      );
+
+  String get _emptyText => hint ? 'Tap to board' : 'Empty';
+
+  /// The approved art: interior, riders, dim, leaves, then the chrome that
+  /// carries game information on dark plates so it reads on any interior.
+  Widget _art(BuildContext context, CabinArt art) {
+    final m = Metrics.of(context);
+    final s = m.scale;
+    final kind = LiftKindStyle.of(game.liftKind);
+    final radius = BorderRadius.circular(m.cabinRadius);
+    final plate = BoxDecoration(color: LL.cabinPlate, borderRadius: BorderRadius.circular(999));
+    return AnimatedContainer(
+      duration: _chromeFade,
+      width: m.cabinWidth,
+      height: m.cabinHeight,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: [
+          const BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 5)),
+          if (hint) BoxShadow(color: kind.cabin.withValues(alpha: 0.5), spreadRadius: 4 * s, blurRadius: 6),
+        ],
+      ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: crashed ? LL.alarm : kind.cabin, width: m.cabinRim),
+      ),
+      child: ClipRRect(
+        key: interiorKey,
+        borderRadius: radius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CustomPaint(painter: CabinArtPainter(art.interior)),
+            if (game.riders.isEmpty)
+              Center(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10 * s, vertical: 3 * s),
+                  decoration: plate,
+                  child: Text(
+                    _emptyText,
+                    style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.cream),
+                  ),
+                ),
+              ),
+            _riders(m, m.cabinFeetInset),
+            if (doorOpen < 1) _dim(),
+            if (crashed) const IgnorePointer(child: ColoredBox(color: LL.crashTint)),
+            if (doorOpen < 1)
+              CustomPaint(
+                painter: CabinLeavesPainter(left: art.left, right: art.right, open: doorOpen, seam: m.doorSeam),
+              ),
+            Positioned(
+              left: m.cabinChromeTop,
+              right: m.cabinChromeTop,
+              top: m.cabinChromeTop,
+              child: Column(
+                children: [
+                  _floorRow(m, kind, onArt: true),
+                  // The kind's sign says how this lift differs; a normal
+                  // lift's ("Mind the load") is decoration the art replaces.
+                  if (game.liftKind != LiftKind.normal) ...[
+                    SizedBox(height: 4 * s),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 7 * s, vertical: 2 * s),
+                        decoration: plate,
+                        child: Text(
+                          kind.sign,
+                          style: TextStyle(
+                            fontSize: 10 * m.textScale,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                            color: LL.cream,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The painted cabin (sprite art off, or this kind's images missing).
+  Widget _painted(BuildContext context) {
+    final kind = LiftKindStyle.of(game.liftKind);
+    final m = Metrics.of(context);
+    final s = m.scale;
+    return AnimatedContainer(
+      key: interiorKey,
+      duration: _chromeFade,
+      width: m.cabinWidth,
+      height: m.cabinHeight,
+      padding: EdgeInsets.all(m.cabinPadding),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: crashed
+              ? const [LL.alarmSoft, LL.alarm]
+              : [Color.lerp(kind.cabin, Colors.white, 0.25)!, kind.cabin, Color.lerp(kind.cabin, Colors.black, 0.18)!],
+        ),
+        borderRadius: BorderRadius.circular(m.cabinRadius),
+        boxShadow: [
+          const BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 5)),
+          if (hint) BoxShadow(color: kind.cabin.withValues(alpha: 0.5), spreadRadius: 4 * s, blurRadius: 6),
+        ],
+      ),
+      child: Column(
+        children: [
+          _floorRow(m, kind),
+          SizedBox(height: 5 * s),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10 * s),
+              child: CustomPaint(
+                painter: CabinInteriorPainter(alarm: crashed),
+                foregroundPainter: CabinDoorsPainter(open: doorOpen),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 4 * s,
+                      right: 4 * s,
+                      top: 8 * s,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          kind.sign,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10 * m.textScale,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                            color: const Color(0xFF5B6270),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (game.riders.isEmpty)
+                      Center(
+                        child: Text(
+                          _emptyText,
+                          style: TextStyle(
+                            fontSize: m.font(12),
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF4A5060),
+                          ),
+                        ),
+                      ),
+                    // This stack sits inside the cabin's padding.
+                    _riders(m, m.cabinFeetInset - m.cabinPadding),
+                    if (doorOpen < 1) Positioned.fill(child: _dim()),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

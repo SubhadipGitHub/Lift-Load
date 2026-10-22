@@ -3,6 +3,25 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · PRD v1.7 restyle slice 2: cabins and doors (branch restyle-slice2)
+
+**Done**
+- `assets/art/`: the 4 cabin interiors and 8 door leaves (about 530 KB). `ArtAssets.cabinInterior` / `cabinDoor`,
+  `SpriteCache.cabin(kind)` returns the three images only when all loaded; otherwise that kind keeps the painted cabin.
+- `_Cabin` (`widgets/lift_shaft.dart`): art mode draws the interior cover-cropped to the full 196 x 214 cabin
+  (`CabinArtPainter`), riders at `Metrics.cabinFeetLine`, a dim, the two leaves (`CabinLeavesPainter`, clipped, seam
+  shadow fading as they open), then the floor pills, the kind badge and sign on dark plates. The normal lift's
+  "MIND THE LOAD" and the drawn grille/floor are dropped in art mode. Painted fallback unchanged.
+- `CabinMotion` (`motion.dart`) holds every cabin timing: close 420 ms ease-in-out with an 80 ms settle (leaves bounce
+  back `Metrics.doorSettle`, 2 units, and meet again) as one curve, rise 500, drop-in 450, open 360, fall 1000;
+  dim 12%. Send: close, rise, `finishSend`, drop in shut, open. Crash leaves the doors open.
+- Tests: `cabin_doors_test` (assets per kind, leaf geometry, art per kind, close-then-rise-then-finishSend once,
+  settle, reduced motion snaps, crash, switch off, one failed image); responsive sweep covers all four kinds. 258 green.
+
+**Open**
+- Web build 45.35 MB before, 45.88 MB after (+0.53 MB).
+- The cabin rim is a plain kind-coloured border; the 3D rim from the style frame belongs to slice 3.
+
 ## 2026-10-22 · PRD v1.7 restyle slice 1: assets and sprite cast (branch restyle-slice1)
 
 **Done**

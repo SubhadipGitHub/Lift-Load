@@ -30,6 +30,16 @@ abstract final class LL {
   /// about 41% (`docs/art/gemini-art-pack.md`, Integration).
   static const contactShadow = Color(0x69180E0A);
 
+  /// Cabin doors: the dim over the interior while they close, and the shadow
+  /// on each leaf's seam edge. Near-black, used at low opacity.
+  static const doorShade = Color(0xFF0A0812);
+
+  /// The dark plate behind cabin text drawn over the art (deep at about 78%).
+  static const cabinPlate = Color(0xC714132E);
+
+  /// The red wash over the cabin art when the cable snaps.
+  static const crashTint = Color(0x47E5484D);
+
   /// The halo around the unknown ghost: the same for everyone.
   static const ghostGlow = Color(0x99A9C8FF);
 

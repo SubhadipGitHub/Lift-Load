@@ -1,10 +1,93 @@
 /// The lift cabin's interior and its sliding doors. Pure decoration: nothing
 /// here depends on who is riding or how heavy they are.
+///
+/// Two looks: the approved art ([CabinArtPainter], [CabinLeavesPainter]) and
+/// the painted fallback ([CabinInteriorPainter], [CabinDoorsPainter]) for
+/// when sprite art is off or an image failed to load.
 library;
+
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
 import '../theme.dart';
+
+/// One kind of cabin's approved interior, cover-cropped to the cabin: a
+/// square image loses only its sides, a 4:5 one a little top and bottom.
+class CabinArtPainter extends CustomPainter {
+  const CabinArtPainter(this.interior);
+
+  final ui.Image interior;
+
+  @override
+  void paint(Canvas canvas, Size size) => paintImage(
+        canvas: canvas,
+        rect: Offset.zero & size,
+        image: interior,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      );
+
+  @override
+  bool shouldRepaint(CabinArtPainter old) => old.interior != interior;
+}
+
+/// The two approved door leaves, each half the cabin, drawn over the
+/// interior and the riders and clipped to the cabin. [open] is 0 (the leaves
+/// meet at the centre) to 1 (both sit fully outside the cabin); a little
+/// above 0 leaves a gap at the seam (the settle). Each leaf's seam edge
+/// carries a thin dark gradient, [seam] wide, that fades as the doors open.
+class CabinLeavesPainter extends CustomPainter {
+  const CabinLeavesPainter({required this.left, required this.right, required this.open, required this.seam});
+
+  final ui.Image left, right;
+  final double open;
+  final double seam;
+
+  /// Where a leaf sits in a [size] cabin with the doors [open].
+  static Rect leafRect(Size size, double open, {required bool left}) {
+    final half = size.width / 2;
+    final shift = half * open.clamp(0.0, 1.0);
+    return left ? Rect.fromLTWH(-shift, 0, half, size.height) : Rect.fromLTWH(half + shift, 0, half, size.height);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (open >= 1) return;
+    canvas
+      ..save()
+      ..clipRect(Offset.zero & size);
+    final shade = CabinMotion.seamShadow * (1 - open.clamp(0.0, 1.0));
+    for (final isLeft in [true, false]) {
+      final image = isLeft ? left : right;
+      final r = leafRect(size, open, left: isLeft);
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        r,
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+      final edge = isLeft
+          ? Rect.fromLTRB(r.right - seam, r.top, r.right, r.bottom)
+          : Rect.fromLTRB(r.left, r.top, r.left + seam, r.bottom);
+      canvas.drawRect(
+        edge,
+        Paint()
+          ..shader = LinearGradient(
+            begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
+            end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
+            colors: [LL.doorShade.withValues(alpha: 0), LL.doorShade.withValues(alpha: shade)],
+          ).createShader(edge),
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(CabinLeavesPainter old) =>
+      old.open != open || old.left != left || old.right != right || old.seam != seam;
+}
 
 /// Brushed-steel walls, a warm light strip, a handrail and the floor.
 class CabinInteriorPainter extends CustomPainter {

@@ -149,7 +149,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       case Phase.playing when was == Phase.failed:
         // The repaired lift springs back.
         _doors.value = 1;
-        _run(from: 120, to: 0, ms: 450, curve: Curves.easeOutBack);
+        _run(from: CabinMotion.repairDistance, to: 0, duration: CabinMotion.repair, curve: Curves.easeOutBack);
       case Phase.playing:
         _snapHome();
       case Phase.won:
@@ -167,31 +167,47 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   bool _live(int seq) => mounted && seq == _seq;
 
   /// Doors close (after a rider still walking in lands), the cabin rises, and
-  /// the engine moves on to the next lift.
+  /// the engine moves on to the next lift. [GameController.finishSend] runs
+  /// once, only after both.
   Future<void> _depart(int seq) async {
     if (_flights.isNotEmpty) await Future<void>.delayed(const Duration(milliseconds: flightMs));
     if (!_live(seq)) return;
-    await _doorsTo(0, 180);
+    await _closeDoors();
     if (!_live(seq)) return;
-    await _run(from: 0, to: -300, ms: 500, curve: Curves.easeInCubic);
+    await _run(from: 0, to: -CabinMotion.riseDistance, duration: CabinMotion.rise, curve: Curves.easeInCubic);
     if (_live(seq)) c.finishSend();
   }
 
   /// Let the last rider land, then the cable goes. Still (reduced motion) it
-  /// runs without waiting, so no timer is left pending.
+  /// runs without waiting, so no timer is left pending. The doors stay as
+  /// they are: nothing delays the crash.
   Future<void> _fall(int seq) async {
     if (!_still) await Future<void>.delayed(const Duration(milliseconds: flightMs));
     if (!_live(seq)) return;
     _crashEffects();
-    await _run(from: 0, to: 340, tiltTo: -0.09, ms: 1000, curve: Curves.easeInQuad);
+    await _run(
+      from: 0,
+      to: CabinMotion.fallDistance,
+      tiltTo: CabinMotion.fallTilt,
+      duration: CabinMotion.fall,
+      curve: Curves.easeInQuad,
+    );
     if (_live(seq)) c.finishCrash();
   }
 
-  /// The next lift drops in, then opens its doors.
+  /// The next lift drops in with its doors shut, then opens them.
   Future<void> _arrive(int seq) async {
     _doors.value = 0;
-    await _run(from: -300, to: 0, ms: 450, curve: Curves.easeOutBack);
-    if (_live(seq)) await _doorsTo(1, 180);
+    await _run(from: -CabinMotion.riseDistance, to: 0, duration: CabinMotion.dropIn, curve: Curves.easeOutBack);
+    if (_live(seq)) await _doorsTo(1, CabinMotion.doorOpen);
+  }
+
+  /// The leaves travel to the seam, then settle: they bounce back
+  /// [Metrics.doorSettle] and meet again, all in [CabinMotion.doorClose].
+  /// Still, they shut at once.
+  Future<void> _closeDoors() {
+    final m = Metrics.of(context);
+    return _doorsTo(0, CabinMotion.doorClose, curve: CabinMotion.doorCloseCurve(m.doorSettle / (m.cabinWidth / 2)));
   }
 
   void _snapHome() {
@@ -202,18 +218,20 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _run(
-      {required double from, required double to, double tiltTo = 0, required int ms, required Curve curve}) {
+      {required double from, required double to, double tiltTo = 0, required Duration duration, required Curve curve}) {
     final curved = CurvedAnimation(parent: _anim, curve: curve);
     _dy = Tween(begin: from, end: to).animate(curved);
     _tilt = Tween(begin: 0.0, end: tiltTo).animate(curved);
     _anim
-      ..duration = Duration(milliseconds: _still ? 0 : ms)
+      ..duration = _still ? Duration.zero : duration
       ..reset();
     return _anim.forward().orCancel.catchError((Object _) {});
   }
 
-  Future<void> _doorsTo(double target, int ms) =>
-      _doors.animateTo(target, duration: Duration(milliseconds: _still ? 0 : ms)).orCancel.catchError((Object _) {});
+  Future<void> _doorsTo(double target, Duration duration, {Curve curve = CabinMotion.doorCurve}) => _doors
+      .animateTo(target, duration: _still ? Duration.zero : duration, curve: curve)
+      .orCancel
+      .catchError((Object _) {});
 
   void _startFlights(List<Motion> motions) {
     if (motions.isEmpty) return;
