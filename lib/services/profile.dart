@@ -135,6 +135,18 @@ class Profile {
     };
   }
 
+  /// A save as stored: null (first run), or text that may be truncated or not
+  /// JSON at all. Anything unreadable starts a fresh profile rather than
+  /// stopping the app at the splash.
+  static Profile fromStored(String? raw, DateTime now) {
+    if (raw == null) return Profile.fresh(now);
+    try {
+      return fromJson(jsonDecode(raw) as Map<String, dynamic>, now);
+    } on Object {
+      return Profile.fresh(now);
+    }
+  }
+
   static Profile fromJson(Map<String, dynamic> j, DateTime now) {
     try {
       return Profile(
@@ -178,8 +190,7 @@ class ProfileStore {
   static Future<ProfileStore> open() async => ProfileStore(await SharedPreferences.getInstance());
 
   Profile load(DateTime now) {
-    final raw = _prefs.getString(_key);
-    final profile = raw == null ? Profile.fresh(now) : Profile.fromJson(jsonDecode(raw) as Map<String, dynamic>, now);
+    final profile = Profile.fromStored(_prefs.getString(_key), now);
     profile.regenLives(now);
     return profile;
   }

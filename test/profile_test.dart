@@ -67,4 +67,14 @@ void main() {
     expect(p.stock(Power.trip), 3);
     expect(p.stock(Power.express), 999);
   });
+
+  test('an unreadable stored save starts a fresh profile instead of throwing', () {
+    final good = jsonEncode(Profile.fresh(now).toJson());
+    for (final raw in [null, '', 'not json', good.substring(0, good.length ~/ 2), '[1,2]', '"text"']) {
+      final p = Profile.fromStored(raw, now);
+      expect(p.level, 1, reason: 'for $raw');
+      expect(p.coins, Profile.fresh(now).coins);
+    }
+    expect(Profile.fromStored(jsonEncode((Profile.fresh(now)..level = 7).toJson()), now).level, 7);
+  });
 }
