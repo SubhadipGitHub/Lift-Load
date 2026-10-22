@@ -15,6 +15,14 @@ void main() {
     expect(p.leftHanded, isFalse);
   });
 
+  test('sprite art is on by default, saves, and an older save loads with it on', () {
+    expect(Profile.fresh(now).useSpriteArt, isTrue);
+    final off = Profile.fresh(now)..useSpriteArt = false;
+    expect(Profile.fromJson(jsonDecode(jsonEncode(off.toJson())) as Map<String, dynamic>, now).useSpriteArt, isFalse);
+    final old = Profile.fresh(now).toJson()..remove('useSpriteArt');
+    expect(Profile.fromJson(jsonDecode(jsonEncode(old)) as Map<String, dynamic>, now).useSpriteArt, isTrue);
+  });
+
   test('stock goes up with addPower and down with spendPower, never below zero', () {
     final p = Profile.fresh(now);
     expect(p.spendPower(Power.swap), isFalse);

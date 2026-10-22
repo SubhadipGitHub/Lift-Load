@@ -7,10 +7,14 @@ import 'package:lift_load/game/powers.dart';
 import 'package:lift_load/game/scenario.dart';
 import 'package:lift_load/game/venue.dart';
 import 'package:lift_load/services/analytics_service.dart';
+import 'package:lift_load/ui/art_assets.dart';
 import 'package:lift_load/ui/layout.dart';
+import 'package:lift_load/ui/painters/sprite_painter.dart';
 import 'package:lift_load/ui/screens/home_screen.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
+import 'package:lift_load/ui/widgets/lobby.dart';
 import 'package:lift_load/ui/widgets/power_dock.dart';
+import 'package:lift_load/ui/widgets/resident_figure.dart';
 
 import 'helpers.dart';
 
@@ -79,7 +83,55 @@ void expectTouchTarget(WidgetTester tester, Finder f, String what) {
   expect(rect.height, greaterThanOrEqualTo(Metrics.minTouch - 0.5), reason: '$what height');
 }
 
+/// Known figures drawn in [of], and the height each is drawn at on screen
+/// (after any FittedBox shrink).
+List<double> drawnHeights(WidgetTester tester, Type of) => [
+      for (final e in find
+          .descendant(of: find.byType(of), matching: find.byWidgetPredicate((w) => w is ResidentFigure && !w.dimmed))
+          .evaluate())
+        tester.getRect(find.byWidget(e.widget)).height,
+    ];
+
 void main() {
+  // The sweep runs with the sprites loaded, as the app does.
+  setUpAll(() => SpriteCache.instance.load());
+
+  test('the sprites are loaded for the sweep', () {
+    expect(SpriteCache.instance.loaded, isTrue);
+    expect(SpriteCache.instance.failed, isEmpty);
+  });
+
+  test('figures are +60% where they fit and never smaller than v1.6, at every size', () {
+    for (final MapEntry(key: name, value: size) in sizes.entries) {
+      final m = Metrics.from(size);
+      for (final lanes in [3, 4, 5]) {
+        final h = m.laneFigureFor(lanes);
+        expect(h, lessThanOrEqualTo(m.laneFigure), reason: '$name $lanes lanes');
+        expect(h, greaterThanOrEqualTo(54 * m.scale - 1e-9), reason: '$name $lanes lanes, v1.6 size');
+        // The widest figure fits its lane, unless the v1.6 size is the floor.
+        final lane = (m.lanesWidth - 2 * (m.gap + m.lanePadding)) / lanes - 2 * (m.slotPadding + Metrics.slotBorder);
+        if (h > 54 * m.scale) {
+          expect(h / 120 * Metrics.widestFigure, lessThanOrEqualTo(lane + 1e-6), reason: '$name $lanes lanes');
+        }
+      }
+      for (var seats = 1; seats <= 7; seats++) {
+        final h = m.benchFigureFor(seats);
+        expect(h, lessThanOrEqualTo(m.benchFigure), reason: '$name $seats seats');
+        expect(h, greaterThanOrEqualTo(52 * m.scale - 1e-9), reason: '$name $seats seats, v1.6 size');
+        expect(m.seatHeightFor(h), greaterThanOrEqualTo(Metrics.minTouch));
+      }
+      expect(m.cabinFigure, 128 * m.scale, reason: name);
+    }
+    // At the design size, four lanes and a four-seat bench get the full +60%.
+    final design = Metrics.from(const Size(390, 844));
+    expect(design.laneFigureFor(4), 86);
+    expect(design.benchFigureFor(4), 83);
+    // Five lanes on the narrowest phone shrink, but stay above v1.6.
+    final narrow = Metrics.from(const Size(320, 700));
+    expect(narrow.laneFigureFor(5), lessThan(narrow.laneFigure));
+    expect(narrow.laneFigureFor(5), greaterThan(54 * narrow.scale));
+  });
+
   for (final MapEntry(key: name, value: size) in sizes.entries) {
     testWidgets('home fits at $name', (tester) async {
       await sized(tester, size);
@@ -125,6 +177,18 @@ void main() {
           c.startLevel();
           await tester.pumpWidget(app(PlayScreen(controller: c), textScale: 1.3));
           final reason = '$lanes lanes, left-handed $leftHanded';
+          // Sprites, drawn at the fitted size and not shrunk any further.
+          final m = Metrics.from(size);
+          final laneFigures = drawnHeights(tester, QueueLanes);
+          expect(laneFigures, isNotEmpty, reason: reason);
+          for (final h in laneFigures) {
+            expect(h, closeTo(m.laneFigureFor(lanes), 0.5), reason: 'lane figure, $reason');
+          }
+          final figure = find.byType(ResidentFigure).first;
+          expect(
+            tester.widget<CustomPaint>(find.descendant(of: figure, matching: find.byType(CustomPaint)).first).painter,
+            isA<SpriteFigurePainter>(),
+          );
           // All four powers on the bar, one with stock and three empty.
           for (final p in Power.values) {
             expectTouchTarget(tester, find.bySemanticsLabel(RegExp('^${RegExp.escape(p.dockLabel)}: ')), p.name);
@@ -151,6 +215,9 @@ void main() {
           await tester.pump();
           expect(c.game.benchLength, 6);
           expect(tester.takeException(), isNull, reason: 'seats, $reason');
+          for (final h in drawnHeights(tester, BenchRow)) {
+            expect(h, closeTo(m.benchFigureFor(6), 0.5), reason: 'bench figure, $reason');
+          }
           expectTouchTarget(tester, find.bySemanticsLabel(RegExp(r'^Empty bench seat$')), 'bench seat, $reason');
           // The get-more sheet and the settings sheet over it.
           await tester.tap(find.byKey(const ValueKey('power-express')));

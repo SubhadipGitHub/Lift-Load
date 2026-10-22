@@ -3,6 +3,25 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · PRD v1.7 restyle slice 1: assets and sprite cast (branch restyle-slice1)
+
+**Done**
+- `assets/art/`: the 14 resident sprites, 3 cargo props and the ghost (about 480 KB). `lib/ui/art_assets.dart` holds
+  the only paths (`ArtAssets`) and `SpriteCache` (loaded once in `main`, waits up to 3 s for the first frame).
+- `ResidentFigure` draws `SpriteFigurePainter` (`painters/sprite_painter.dart`) when `Profile.useSpriteArt` (saved,
+  default on, no UI) is on and the images loaded; `ResidentPainter` otherwise, or for a sprite that failed. Same box
+  either way. Cargo sprites stand right-aligned in the painter's cargo strip (no resident sprite includes a prop).
+  Contact shadow per sprite and per prop; feet on y 116 of 120. Ghost: one sprite, glow and 0.85 opacity in code.
+- Figures +60% (`Metrics`: cabin 128, lane 86, bench 83), fitted to lane and seat width against the widest figure
+  box (90 units), never below the v1.6 sizes. Seat height follows the bench figure. Cabin feet at 90% of its height.
+- Tests: `sprite_art_test` (every asset decodes, sprite and shadow for every type and cargo, fallback, ghost size,
+  feet line), the responsive sweep runs with sprites and checks fitted sizes, profile flag. 244 green.
+
+**Open**
+- Empty bench seats are now 105 dp tall at 390 wide; the lanes area shrinks accordingly (it scrolls).
+- Web build 44.8 MB before, 45.3 MB after; CanvasKit alone is 37 MB, so the PRD's 25 MB web target is not met by the
+  baseline either (it reads as an APK budget).
+
 ## 2026-10-22 · PRD v1.6 UI slice 1 (branch ui-powers-v16, stacked on engine-powers-v16)
 
 **Done**

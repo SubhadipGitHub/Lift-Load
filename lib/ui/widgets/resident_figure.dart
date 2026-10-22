@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
+import '../art_assets.dart';
 import '../painters/floor_shape_painter.dart';
 import '../painters/resident_painter.dart';
+import '../painters/sprite_painter.dart';
 import '../theme.dart';
+
+/// Whether figures below use the sprite art (`Profile.useSpriteArt`). With no
+/// scope above, sprites are on, the same as a fresh profile.
+class SpriteArtScope extends InheritedWidget {
+  const SpriteArtScope({super.key, required this.enabled, required super.child});
+
+  final bool enabled;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SpriteArtScope>()?.enabled ?? true;
+
+  @override
+  bool updateShouldNotify(SpriteArtScope old) => old.enabled != enabled;
+}
 
 /// A resident drawn at [height] logical pixels. Width is half the height,
 /// plus room for a vehicle or [cargo].
+///
+/// With sprite art on and the images loaded ([SpriteCache]) the approved
+/// sprite stands in the box with a contact shadow; otherwise, or when an
+/// image failed to load, [ResidentPainter] draws the figure. Both use the
+/// same box, so switching never moves a layout.
 class ResidentFigure extends StatelessWidget {
   const ResidentFigure({
     super.key,
@@ -35,15 +56,36 @@ class ResidentFigure extends StatelessWidget {
   /// Draw a generic shadow instead of the resident (an unknown person).
   final bool dimmed;
 
-  /// Eyes closed for this frame.
+  /// Eyes closed for this frame (the painted figure only; a sprite has no blink frame).
   final bool blink;
 
+  /// The fraction of the box below the feet line.
+  static const double belowFeet = (designHeight - feetY) / designHeight;
+
+  /// The sprite painter for this figure, or null when the painter must draw it.
+  CustomPainter? _sprite(SpriteCache cache) {
+    if (dimmed) return switch (cache.ghost) { final g? => SpriteFigurePainter.ghost(g), null => null };
+    final person = cache.resident(type);
+    final prop = cache.cargo(cargo);
+    if (person == null || (cargo != Cargo.none && prop == null)) return null;
+    return SpriteFigurePainter(person: person, cargo: prop, designWidth: ResidentLook.designWidth(type, cargo));
+  }
+
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: height / 120 * ResidentLook.designWidth(type, cargo, dimmed: dimmed),
-        height: height,
-        child: CustomPaint(painter: ResidentPainter(type, cargo: cargo, dimmed: dimmed, blink: blink)),
-      );
+  Widget build(BuildContext context) {
+    final painted = ResidentPainter(type, cargo: cargo, dimmed: dimmed, blink: blink);
+    final sprites = SpriteArtScope.of(context);
+    return SizedBox(
+      width: height / designHeight * ResidentLook.designWidth(type, cargo, dimmed: dimmed),
+      height: height,
+      child: !sprites
+          ? CustomPaint(painter: painted)
+          : ListenableBuilder(
+              listenable: SpriteCache.instance,
+              builder: (context, _) => CustomPaint(painter: _sprite(SpriteCache.instance) ?? painted),
+            ),
+    );
+  }
 }
 
 /// The floor tag shown above a waiting resident: shape + floor label.

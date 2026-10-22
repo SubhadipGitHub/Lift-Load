@@ -44,9 +44,10 @@ class BenchRow extends StatelessWidget {
     final m = Metrics.of(context);
     final label = LL.label.copyWith(fontSize: m.font(11));
     final seats = game.bench.length;
-    final perRow = seats <= Metrics.benchRowMax ? seats : (seats + 1) ~/ 2;
+    final perRow = Metrics.benchPerRow(seats);
+    final figure = m.benchFigureFor(seats);
     return Padding(
-      padding: EdgeInsets.fromLTRB(m.gap + 2 * m.scale, 0, m.gap + 2 * m.scale, 8 * m.scale),
+      padding: EdgeInsets.fromLTRB(m.benchInset, 0, m.benchInset, 8 * m.scale),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -65,10 +66,10 @@ class BenchRow extends StatelessWidget {
             Row(
               children: [
                 for (var col = 0; col < perRow; col++) ...[
-                  if (col > 0) SizedBox(width: 8 * m.scale),
+                  if (col > 0) SizedBox(width: m.seatGap),
                   Expanded(
                     child: row * perRow + col < game.bench.length
-                        ? _seat(row * perRow + col, playing, seating)
+                        ? _seat(row * perRow + col, playing, seating, figure)
                         : const SizedBox.shrink(),
                   ),
                 ],
@@ -80,7 +81,7 @@ class BenchRow extends StatelessWidget {
     );
   }
 
-  Widget _seat(int i, bool playing, bool seating) => Shake(
+  Widget _seat(int i, bool playing, bool seating, double figure) => Shake(
         serial: i == shakeSeat ? shakeSerial : 0,
         child: _Seat(
           key: i < seatKeys.length ? seatKeys[i] : null,
@@ -89,6 +90,7 @@ class BenchRow extends StatelessWidget {
           seatHint: seating && game.bench[i] == null,
           hidden: game.bench[i] != null && hiddenIds.contains(game.bench[i]!.id),
           enabled: playing,
+          figure: figure,
           onTap: () => onTapSeat(i),
         ),
       );
@@ -102,11 +104,15 @@ class _Seat extends StatelessWidget {
     required this.seatHint,
     required this.hidden,
     required this.enabled,
+    required this.figure,
     required this.onTap,
   });
 
   final Resident? resident;
   final bool selected, seatHint, hidden, enabled;
+
+  /// Figure height, the same for every seat on this bench.
+  final double figure;
   final VoidCallback onTap;
 
   @override
@@ -132,11 +138,11 @@ class _Seat extends StatelessWidget {
     // While breathing the border changes every frame, so it must not tween.
     Widget seat(Color border) => AnimatedContainer(
           duration: clock == null ? motionMs(context, 150) : Duration.zero,
-          height: m.seatHeight,
+          height: m.seatHeightFor(figure),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(14 * m.scale),
-            border: Border.all(color: border, width: 2),
+            border: Border.all(color: border, width: Metrics.seatBorder),
           ),
           child: r != null
               ? Column(
@@ -150,7 +156,7 @@ class _Seat extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           child: IdleSway(
                             seed: r.id,
-                            builder: (context, blink) => ResidentFigure.of(r, height: m.benchFigure, blink: blink),
+                            builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
                           ),
                         ),
                       ),
@@ -231,6 +237,7 @@ class QueueLanes extends StatelessWidget {
     final style = VenueStyle.of(game.level.venue);
     final m = Metrics.of(context);
     final visible = m.visibleDepth;
+    final figure = m.laneFigureFor(lanes.length);
     final ink = TextStyle(fontSize: m.font(11), fontWeight: FontWeight.w800, color: style.laneInk);
     final pending = game.pendingArrivals;
     return Container(
@@ -244,7 +251,7 @@ class QueueLanes extends StatelessWidget {
       child: CustomPaint(
         painter: FloorPatternPainter(style),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(6 * m.scale, 8 * m.scale, 6 * m.scale, 4 * m.scale),
+          padding: EdgeInsets.fromLTRB(m.lanePadding, 8 * m.scale, m.lanePadding, 4 * m.scale),
           child: Column(
             children: [
               if (pending.isNotEmpty)
@@ -283,6 +290,7 @@ class QueueLanes extends StatelessWidget {
                                           selected: i == 0 && game.selection == Selection.queue(lane),
                                           pickable: swapping && i == 0 && playing && !game.isLaneLocked(lane),
                                           picked: swapping && i == 0 && swapFirst == lane,
+                                          figure: figure,
                                           onTap: () => onTapLane(lane),
                                         ),
                                       ),
@@ -291,7 +299,11 @@ class QueueLanes extends StatelessWidget {
                                 else
                                   // Unknown: the same ghost for everyone, no look and no floor tag. The
                                   // lobby never learns who it is until they reach the front.
-                                  _StepIn(key: ValueKey('unknown-$lane-$i'), depth: i, child: _UnknownSlot(depth: i)),
+                                  _StepIn(
+                                    key: ValueKey('unknown-$lane-$i'),
+                                    depth: i,
+                                    child: _UnknownSlot(depth: i, figure: figure),
+                                  ),
                               if (lanes[lane].isEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(top: 18 * m.scale),
@@ -398,6 +410,7 @@ class _QueueSlot extends StatelessWidget {
     required this.depth,
     required this.front,
     required this.selected,
+    required this.figure,
     required this.onTap,
     this.pickable = false,
     this.picked = false,
@@ -406,6 +419,9 @@ class _QueueSlot extends StatelessWidget {
   final Resident resident;
   final int depth;
   final bool front, selected;
+
+  /// Figure height, the same for every lane in this lobby.
+  final double figure;
   final VoidCallback onTap;
 
   /// Swap targeting: this front can be picked, and has been picked first.
@@ -426,7 +442,7 @@ class _QueueSlot extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           margin: EdgeInsets.only(bottom: 2 * m.scale),
           constraints: const BoxConstraints(minWidth: Metrics.minTouch, minHeight: Metrics.minTouch),
-          padding: EdgeInsets.fromLTRB(8 * m.scale, 3 * m.scale, 8 * m.scale, 1 * m.scale),
+          padding: EdgeInsets.fromLTRB(m.slotPadding, 3 * m.scale, m.slotPadding, 1 * m.scale),
           transform: Matrix4.translationValues(0, selected ? -3 : 0, 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -444,7 +460,7 @@ class _QueueSlot extends StatelessWidget {
                       : front
                           ? const Color(0xFFD9C29A)
                           : Colors.transparent,
-              width: selected || picked || pickable ? 3 : 2,
+              width: selected || picked || pickable ? Metrics.slotBorder : Metrics.slotBorderThin,
             ),
             boxShadow: [
               if (picked) BoxShadow(color: LL.brass.withValues(alpha: 0.55), blurRadius: 10, spreadRadius: 1),
@@ -462,7 +478,7 @@ class _QueueSlot extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: IdleSway(
                     seed: resident.id,
-                    builder: (context, blink) => ResidentFigure.of(resident, height: m.laneFigure, blink: blink),
+                    builder: (context, blink) => ResidentFigure.of(resident, height: figure, blink: blink),
                   ),
                 ),
               ],
@@ -561,9 +577,10 @@ class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
 /// An unknown person waiting behind the front of a lane: the same ghost shape for
 /// everyone (a generic shadow, never their own outline), no floor tag, not tappable.
 class _UnknownSlot extends StatelessWidget {
-  const _UnknownSlot({required this.depth});
+  const _UnknownSlot({required this.depth, required this.figure});
 
   final int depth;
+  final double figure;
 
   @override
   Widget build(BuildContext context) {
@@ -575,12 +592,12 @@ class _UnknownSlot extends StatelessWidget {
         child: Container(
           margin: EdgeInsets.only(bottom: 2 * m.scale),
           constraints: const BoxConstraints(minWidth: Metrics.minTouch, minHeight: Metrics.minTouch),
-          padding: EdgeInsets.fromLTRB(8 * m.scale, 3 * m.scale, 8 * m.scale, 1 * m.scale),
+          padding: EdgeInsets.fromLTRB(m.slotPadding, 3 * m.scale, m.slotPadding, 1 * m.scale),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: (compactTagHeight + 1) * m.scale),
-              FittedBox(fit: BoxFit.scaleDown, child: ResidentFigure.unknown(height: m.laneFigure)),
+              SizedBox(height: (Metrics.compactTagHeight + 1) * m.scale),
+              FittedBox(fit: BoxFit.scaleDown, child: ResidentFigure.unknown(height: figure)),
             ],
           ),
         ),
@@ -588,6 +605,3 @@ class _UnknownSlot extends StatelessWidget {
     );
   }
 }
-
-/// The height of a compact floor tag, so an unknown slot lines up with a known one.
-const double compactTagHeight = 14;

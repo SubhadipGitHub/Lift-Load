@@ -21,6 +21,7 @@ class Profile {
     this.musicOn = true,
     this.hapticsOn = true,
     this.leftHanded = false,
+    this.useSpriteArt = true,
     Map<int, int>? attempts,
     Map<Power, int>? powers,
   })  : attempts = attempts ?? {},
@@ -59,6 +60,11 @@ class Profile {
 
   /// Mirrors the bottom bar (Send left, powers right).
   bool leftHanded;
+
+  /// Draw residents with the approved sprites (PRD v1.7); off falls back to
+  /// the painted figures. No settings switch: kept for one release so a
+  /// tester build can compare the two looks.
+  bool useSpriteArt;
 
   /// Uses owned of each power, bought with coins or earned from a rewarded ad.
   final Map<Power, int> powers;
@@ -118,6 +124,7 @@ class Profile {
         'musicOn': musicOn,
         'hapticsOn': hapticsOn,
         'leftHanded': leftHanded,
+        'useSpriteArt': useSpriteArt,
         'powers': {for (final e in powers.entries) e.key.name: e.value},
         'attempts': {for (final e in attempts.entries) '${e.key}': e.value},
       };
@@ -156,6 +163,7 @@ class Profile {
         musicOn: j['musicOn'] as bool? ?? true,
         hapticsOn: j['hapticsOn'] as bool? ?? true,
         leftHanded: j['leftHanded'] as bool? ?? false,
+        useSpriteArt: j['useSpriteArt'] as bool? ?? true,
         powers: _powersFrom(j['powers']),
         attempts: {
           for (final e in (j['attempts'] as Map<String, dynamic>? ?? const {}).entries)
