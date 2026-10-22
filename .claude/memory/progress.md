@@ -25,6 +25,10 @@ entries; fold older ones into "Earlier".
   keeps an outer door frame and a strip of corridor floor, and two bright brass verticals on the back wall sit behind
   where residents stand. Crop in about 8% each side and 4% at the bottom at integration. The other three interior
   prompts now say "no outer door frame, no corridor floor" (this anchor was made before that wording).
+- Integration gate: `python3 tool/art/compose_check.py <scene>` stands approved residents and cargo on a scene at game
+  scale (cabin 196 x 214 units, so a 4:5 scene loses about 12% vertically). Run it before approving every cabin and
+  venue. First run on the anchor: style, scale and colour hold; needs contact shadows (code, at integration) and the feet
+  line sits about 15% above the floor front.
 - Next: `cabin_normal_doors` (attach the approved interior as the reference image), then `venue_society_lobby`, then
   old, service and express cabins, then the other four venues.
 
