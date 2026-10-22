@@ -1,6 +1,6 @@
 # PRD addendum v1.6: Power options, unknown residents, lane variety, left-handed bar
 
-Status: DRAFT v3. The owner's comments of 2026-10-22 are folded in. It still needs an explicit "signed off" before
+Status: DRAFT v3.1. The owner's comments of 2026-10-22 are folded in, including "no waiting count". It still needs an explicit "signed off" before
 docs/PRD.md and CLAUDE.md are edited and before any build. Date 2026-10-22. Owner: Subhadip.
 This addendum reopens docs/PRD.md and the locked rules in CLAUDE.md: rule 1 (unknown residents and lane count), rule 9
 (powers), rule 10 (the power cut scenario is removed) and, by interaction, rules 2, 6, 7 and 8. Where it differs from
@@ -26,6 +26,8 @@ that unknown people make levels feel unfair.
 - **Queue.** Four lanes. Each shows its first `visibleDepth` residents (3 on compact phones, 4 on phones) with look and
   floor tag. Only the front is selectable. The World 2 "power cut" scenario shadows depth 2 and beyond; it is removed
   by this addendum.
+- **A waiting count.** Each lane prints "+N waiting" under its visible people (`lobby.dart`), and the rush hour banner
+  prints "+N arriving after trip M". Both are removed by this addendum (see "No waiting count").
 - **Liars.** The puffer-jacket teen (looks heavy, is light, unlocks L45) and the gym regular (looks light, is heavy,
   unlocks L49).
 - **Engine hooks that fit.** The bench is a growable list, `tripsTotal` is mutable, the lanes are plain lists.
@@ -41,6 +43,7 @@ that unknown people make levels feel unfair.
 | Rewarded views per DAU | at least 2.5 (unchanged) | AdMob + Firebase |
 | Crashes testers call unfair | at most 1 in 5 (unchanged) | exit question |
 | Unknown people called unfair | at most 1 in 5 | new exit question |
+| Any number of people waiting shown to the player | none | widget test |
 | Weight leak | zero | architecture and widget tests |
 
 If the all-attempts rate climbs more than 20 points above the unassisted one, the powers are too strong: cut stock,
@@ -103,6 +106,15 @@ lane's front shows who it is and can be selected; some people behind a front are
 engine keeps the true identity and a per-resident `unknown` flag set by the generator. What the UI receives for an
 unknown person has no type, cargo or floor, so nothing in `lib/ui` can leak it. The solver still plays through the
 engine with full information, so par is unchanged, and the study below adds an information-limited bot.
+
+## No waiting count
+
+The player is never told how many people are waiting. The "+N waiting" text under each lane is removed on every level,
+and so is the number in the rush hour banner, which becomes "A crowd arrives after trip 3" (the trip stays; the head
+count goes). A lane draws at most its `visibleDepth` people, known or ghost, and nothing beyond that, so the silhouettes
+never promise a length: a lane with three people drawn may have three or thirty. An empty lane still reads "Clear". The
+bench caption ("2/5") is the player's own seats, not a queue, and stays. A widget test fails if any lane or banner text
+contains a digit that counts residents.
 
 ## More ways to raise difficulty
 
@@ -171,7 +183,7 @@ for Gate B testing. Interstitial rules are untouched, and a payer who removed ad
 - `Profile`: a stock map for the four powers (0 each) and `leftHanded`, saved as profile version 2 with a migration.
   `ad_policy.dart` gains `powerRefill`.
 - `GameController`: `usePower(power)`, a Swap targeting mode, the get-more sheet, analytics.
-- UI: the power dock, the Scale on the gauge plate, ghosts and counts in the lanes with the reveal effect, a variable
+- UI: the power dock, the Scale on the gauge plate, ghosts (no counts) in the lanes with the reveal effect, a variable
   number of lanes, a second bench row when seats exceed five, the settings switch, Restart in the pause menu. Figures
   grow 60%. Art still needed: the ghost (prompt ready) and icons for Swap and Express (a Gemini sheet, `icons_powers`).
 - Audio and feedback: a short distinct cue per power and for a reveal; none may vary with any resident's weight.
@@ -208,7 +220,8 @@ New events: `power_used` (`power`, `level`, `left`), `power_empty_tapped`, `powe
   solvable.
 - Profile migration test (a v1 save gains 0 of each power and `leftHanded` false); ad policy test for `powerRefill`,
   its cap and the daily total.
-- Architecture test: no `.kg` or "kg" in the power UI; the dock shows counts only.
+- Architecture test: no `.kg` or "kg" in the power UI; the dock shows power stock only. Widget test: no lane or banner
+  text shows a number of waiting residents.
 - Widget tests: 48 dp targets, no overflow from 320 × 568 up with 3, 4 and 5 lanes, the Swap targeting flow, the
   mirrored bar.
 - Solver study before any UI: a bot that spends one power per level, and an information-limited bot that sees only the

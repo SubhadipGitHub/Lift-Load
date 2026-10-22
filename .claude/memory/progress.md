@@ -102,7 +102,9 @@ entries; fold older ones into "Earlier".
   (3-5 from L16), lane spread and liar weight rise; the power cut scenario is REMOVED (rule 10 reworded); powers cost 150 coins
   (configurable) or 1 ad. New Gemini asset `unknown_ghost` (prompt on the prompt page, version 13). Unlock plan: unknown L11,
   lane variety L16, Swap L14, +2 seats L19, +1 trip L27, Express L29. Frame v5 shows ghosts, 5 lanes, 150-coin sheet.
-  Still waiting for an explicit "signed off"; two questions left (lane-count meaning, accept the curves/caps/unlocks). (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
+  Addendum v3.1: owner said the waiting count must never be shown: "+N waiting" under each lane and the number in the rush hour
+  banner are removed; a lane draws at most visibleDepth people (known or ghost), so nothing promises a length; widget test added.
+  Frame v6 drops the counts. Still waiting for an explicit "signed off"; two questions left (lane-count meaning, accept the curves/caps/unlocks). (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
   Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
   verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).
