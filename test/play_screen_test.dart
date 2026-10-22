@@ -102,7 +102,8 @@ void main() {
     c.tapQueue(0);
     c.tapLift();
     await tester.pump();
-    expect(find.text('Restart · 1 life'), findsOneWidget);
+    // Restart is not on the main screen; the settings sheet has it (see power_dock_test).
+    expect(find.textContaining('Restart'), findsNothing);
     c.restart();
     await tester.pump();
     expect(c.profile.lives, Formulas.maxLives - 1);

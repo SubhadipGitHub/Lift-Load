@@ -43,6 +43,8 @@ class BenchRow extends StatelessWidget {
     final seating = playing && game.selection != null && !game.selection!.fromBench;
     final m = Metrics.of(context);
     final label = LL.label.copyWith(fontSize: m.font(11));
+    final seats = game.bench.length;
+    final perRow = seats <= Metrics.benchRowMax ? seats : (seats + 1) ~/ 2;
     return Padding(
       padding: EdgeInsets.fromLTRB(m.gap + 2 * m.scale, 0, m.gap + 2 * m.scale, 8 * m.scale),
       child: Column(
@@ -56,31 +58,40 @@ class BenchRow extends StatelessWidget {
             ],
           ),
           SizedBox(height: 5 * m.scale),
-          Row(
-            children: [
-              for (var i = 0; i < game.bench.length; i++) ...[
-                if (i > 0) SizedBox(width: (game.bench.length > 6 ? 4 : 8) * m.scale),
-                Expanded(
-                  child: Shake(
-                    serial: i == shakeSeat ? shakeSerial : 0,
-                    child: _Seat(
-                      key: i < seatKeys.length ? seatKeys[i] : null,
-                      resident: game.bench[i],
-                      selected: game.selection == Selection.bench(i),
-                      seatHint: seating && game.bench[i] == null,
-                      hidden: game.bench[i] != null && hiddenIds.contains(game.bench[i]!.id),
-                      enabled: playing,
-                      onTap: () => onTapSeat(i),
-                    ),
+          // One row up to five seats; more (the +2 seats power) split into two even
+          // rows, so a seat never gets narrower than a touch target.
+          for (var row = 0; row * perRow < game.bench.length; row++) ...[
+            if (row > 0) SizedBox(height: 8 * m.scale),
+            Row(
+              children: [
+                for (var col = 0; col < perRow; col++) ...[
+                  if (col > 0) SizedBox(width: 8 * m.scale),
+                  Expanded(
+                    child: row * perRow + col < game.bench.length
+                        ? _seat(row * perRow + col, playing, seating)
+                        : const SizedBox.shrink(),
                   ),
-                ),
+                ],
               ],
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  Widget _seat(int i, bool playing, bool seating) => Shake(
+        serial: i == shakeSeat ? shakeSerial : 0,
+        child: _Seat(
+          key: i < seatKeys.length ? seatKeys[i] : null,
+          resident: game.bench[i],
+          selected: game.selection == Selection.bench(i),
+          seatHint: seating && game.bench[i] == null,
+          hidden: game.bench[i] != null && hiddenIds.contains(game.bench[i]!.id),
+          enabled: playing,
+          onTap: () => onTapSeat(i),
+        ),
+      );
 }
 
 class _Seat extends StatelessWidget {
@@ -174,10 +185,10 @@ class _Seat extends StatelessWidget {
   }
 }
 
-/// The four queues on the lobby floor. Only the front of each lane can be
-/// selected; up to four residents per lane are drawn, the rest are counted.
-/// The floor takes the venue's look, and the lobby scenario shows here:
-/// cones on a closed lane, shadows in a power cut, the next rush-hour wave.
+/// The queues on the lobby floor (three to five). Only the front of each lane
+/// can be selected; a few residents per lane are drawn and nothing says how
+/// many more wait. The floor takes the venue's look, and the lobby scenario
+/// shows here: cones on a closed lane, the next rush-hour wave.
 class QueueLanes extends StatelessWidget {
   const QueueLanes({
     super.key,
@@ -188,6 +199,9 @@ class QueueLanes extends StatelessWidget {
     this.shakeLane,
     this.coneSerial = 0,
     this.coneLane,
+    this.swapping = false,
+    this.swapFirst,
+    this.revealedId,
   });
 
   final LiftGame game;
@@ -201,6 +215,14 @@ class QueueLanes extends StatelessWidget {
   final int? shakeLane;
   final int coneSerial;
   final int? coneLane;
+
+  /// Swap is armed: every open lane with someone at the front can be picked,
+  /// and [swapFirst] is the lane picked first.
+  final bool swapping;
+  final int? swapFirst;
+
+  /// The person who has just stepped up from unknown: they pop in.
+  final int? revealedId;
 
   @override
   Widget build(BuildContext context) {
@@ -250,14 +272,19 @@ class QueueLanes extends StatelessWidget {
                                   _StepIn(
                                     key: ValueKey(person.id),
                                     depth: i,
-                                    child: Shake(
-                                      serial: i == 0 && lane == shakeLane ? shakeSerial : 0,
-                                      child: _QueueSlot(
-                                        resident: person,
-                                        depth: i,
-                                        front: i == 0 && playing && !game.isLaneLocked(lane),
-                                        selected: i == 0 && game.selection == Selection.queue(lane),
-                                        onTap: () => onTapLane(lane),
+                                    child: _Pop(
+                                      pop: i == 0 && person.id == revealedId,
+                                      child: Shake(
+                                        serial: i == 0 && lane == shakeLane ? shakeSerial : 0,
+                                        child: _QueueSlot(
+                                          resident: person,
+                                          depth: i,
+                                          front: i == 0 && playing && !game.isLaneLocked(lane),
+                                          selected: i == 0 && game.selection == Selection.queue(lane),
+                                          pickable: swapping && i == 0 && playing && !game.isLaneLocked(lane),
+                                          picked: swapping && i == 0 && swapFirst == lane,
+                                          onTap: () => onTapLane(lane),
+                                        ),
                                       ),
                                     ),
                                   )
@@ -372,12 +399,17 @@ class _QueueSlot extends StatelessWidget {
     required this.front,
     required this.selected,
     required this.onTap,
+    this.pickable = false,
+    this.picked = false,
   });
 
   final Resident resident;
   final int depth;
   final bool front, selected;
   final VoidCallback onTap;
+
+  /// Swap targeting: this front can be picked, and has been picked first.
+  final bool pickable, picked;
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +419,7 @@ class _QueueSlot extends StatelessWidget {
     return Semantics(
       button: front,
       selected: selected,
-      label: '$who${front ? '' : ', waiting in queue'}',
+      label: '$who${front ? '' : ', waiting in queue'}${picked ? ', picked for swap' : ''}',
       child: GestureDetector(
         onTap: front ? onTap : null,
         child: AnimatedContainer(
@@ -398,19 +430,26 @@ class _QueueSlot extends StatelessWidget {
           transform: Matrix4.translationValues(0, selected ? -3 : 0, 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            color: selected
+            color: selected || picked
                 ? LL.cream
                 : front
                     ? Colors.white.withValues(alpha: 0.7)
                     : Colors.transparent,
+            // Swap targeting: a mint frame says "pick me", a thick brass one "picked".
             border: Border.all(
-              color: selected
+              color: selected || picked
                   ? LL.brass
-                  : front
-                      ? const Color(0xFFD9C29A)
-                      : Colors.transparent,
-              width: selected ? 3 : 2,
+                  : pickable
+                      ? LL.mintDark
+                      : front
+                          ? const Color(0xFFD9C29A)
+                          : Colors.transparent,
+              width: selected || picked || pickable ? 3 : 2,
             ),
+            boxShadow: [
+              if (picked) BoxShadow(color: LL.brass.withValues(alpha: 0.55), blurRadius: 10, spreadRadius: 1),
+              if (pickable && !picked) BoxShadow(color: LL.mint.withValues(alpha: 0.35), blurRadius: 8),
+            ],
           ),
           child: Opacity(
             opacity: opacity,
@@ -423,8 +462,7 @@ class _QueueSlot extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: IdleSway(
                     seed: resident.id,
-                    builder: (context, blink) =>
-                        ResidentFigure.of(resident, height: m.laneFigure, blink: blink),
+                    builder: (context, blink) => ResidentFigure.of(resident, height: m.laneFigure, blink: blink),
                   ),
                 ),
               ],
@@ -434,6 +472,25 @@ class _QueueSlot extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Scales a person in when they have just been revealed (an unknown person
+/// reaching the front). No motion under reduced motion, and no effect for
+/// anyone else.
+class _Pop extends StatelessWidget {
+  const _Pop({required this.pop, required this.child});
+
+  final bool pop;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+        tween: Tween(begin: pop ? 0.55 : 1, end: 1),
+        duration: motionMs(context, 320),
+        curve: Curves.easeOutBack,
+        builder: (context, v, child) => Transform.scale(scale: v, alignment: Alignment.bottomCenter, child: child),
+        child: child,
+      );
 }
 
 /// Slides a lane slot into place when its resident moves up the queue (or

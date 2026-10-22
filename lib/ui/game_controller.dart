@@ -408,11 +408,13 @@ class GameController extends ChangeNotifier {
     _afterAction();
   }
 
-  String _powerBlocked(Power p) => switch (p) {
-        Power.swap => 'Swap needs two lanes with people in them',
-        Power.express => 'Select someone first, then Express',
-        Power.seats || Power.trip => 'Not available right now',
-      };
+  String _powerBlocked(Power p) => game.powerUses(p) >= Formulas.powerCap(p)
+      ? 'Already used on this level'
+      : switch (p) {
+          Power.swap => 'Swap needs two lanes with people in them',
+          Power.express => 'Select someone first, then Express',
+          Power.seats || Power.trip => 'Not available right now',
+        };
 
   void cancelPower({bool quiet = false}) {
     if (armedPower == null) return;

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../game/cast.dart';
 import '../../game/engine.dart';
 import '../../game/formulas.dart';
+import '../../game/powers.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
@@ -13,7 +14,7 @@ import '../theme.dart';
 import '../widgets/effects.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
-import '../widgets/pressable.dart';
+import '../widgets/play_bar.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 import '../widgets/settings_sheet.dart';
@@ -38,12 +39,17 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Animation<double> _tilt = const AlwaysStoppedAnimation(0);
   Phase? _lastPhase;
 
+  /// The last reveal this screen has played, and who it was.
+  late int _seenReveal = c.revealSerial;
+  int? _revealedId;
+  LiftGame? _revealGame;
+
   /// Bumped on every phase change, controller swap and dispose; see [_live].
   int _seq = 0;
 
   /// Where things are on screen, for walks and effects.
   final GlobalKey _stackKey = GlobalKey();
-  final List<GlobalKey> _laneKeys = List.generate(4, (_) => GlobalKey());
+  final List<GlobalKey> _laneKeys = [];
   final List<GlobalKey> _seatKeys = [];
   final GlobalKey _cabinKey = GlobalKey();
   final GlobalKey _coinKey = GlobalKey();
@@ -60,6 +66,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   /// Walk duration: the same for every resident (weights stay hidden).
   static const int flightMs = 260;
 
+  /// Sparkles in the burst when an unknown person is revealed.
+  static const int revealSparkles = 8;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +83,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       old.controller.removeListener(_onChange);
       _seq++;
       _lastPhase = c.game.phase;
+      _seenReveal = c.revealSerial;
+      _revealedId = null;
       _snapHome();
       _flights.clear();
       _hidden.clear();
@@ -89,6 +100,14 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _doors.dispose();
     _shake.dispose();
     super.dispose();
+  }
+
+  /// Lane count varies per level (3 to 5), so keys are made on demand.
+  GlobalKey _laneKey(int i) {
+    while (_laneKeys.length <= i) {
+      _laneKeys.add(GlobalKey());
+    }
+    return _laneKeys[i];
   }
 
   GlobalKey _seatKey(int i) {
@@ -110,6 +129,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final reward = c.takeReward();
     if (!mounted) return;
     if (!_still) _startFlights(motions);
+    _playReveal();
     final phase = c.hasGame ? c.game.phase : null;
     final was = _lastPhase;
     _lastPhase = phase;
@@ -199,7 +219,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     if (motions.isEmpty) return;
     final m = Metrics.of(context);
     for (final mo in motions) {
-      final from = mo.from.fromBench ? _rectOf(_seatKey(mo.from.index)) : _rectOf(_laneKeys[mo.from.index]);
+      final from = mo.from.fromBench ? _rectOf(_seatKey(mo.from.index)) : _rectOf(_laneKey(mo.from.index));
       final seat = mo.to.seat;
       final to = seat != null ? _rectOf(_seatKey(seat)) : _rectOf(_cabinKey);
       if (from == null || to == null) continue;
@@ -226,6 +246,31 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _flights.remove(f);
       if (!_flights.any((o) => o.resident.id == f.resident.id)) _hidden.remove(f.resident.id);
     });
+  }
+
+  /// An unknown person has just reached a lane front: they pop in (see
+  /// [QueueLanes]) and a few sparkles fly from them. Nothing is played under
+  /// reduced motion, and nothing depends on who they are.
+  void _playReveal() {
+    // A new level starts with nobody popping, whatever ids it reuses.
+    if (c.hasGame && !identical(c.game, _revealGame)) {
+      _revealGame = c.game;
+      _revealedId = null;
+    }
+    if (c.revealSerial == _seenReveal) return;
+    _seenReveal = c.revealSerial;
+    final lane = c.revealedLane;
+    if (lane == null || !c.hasGame || lane >= c.game.laneCount) return;
+    _revealedId = c.game.frontOf(lane)?.id;
+    if (_still) return;
+    final rect = _rectOf(_laneKey(lane));
+    if (rect == null) return;
+    final m = Metrics.of(context);
+    _effects.currentState?.add(Burst(
+      kind: BurstKind.sparkle,
+      origin: rect.topCenter + Offset(0, 18 * m.scale + m.laneFigure * 0.5),
+      count: revealSparkles,
+    ));
   }
 
   void _coinBurst(int coins) {
@@ -293,7 +338,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         cabinKey: _cabinKey,
         hiddenIds: _hidden,
         onTapLift: c.tapLift,
-        onSend: c.send,
+        onScale: g.phase == Phase.playing ? c.useScale : null,
+        scaleLeft: c.profile.scales,
+        scaleReady: c.canUseScale,
       ),
     );
     final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
@@ -348,11 +395,14 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final lanes = QueueLanes(
       game: g,
       onTapLane: c.tapQueue,
-      laneKeys: _laneKeys,
+      laneKeys: [for (var i = 0; i < g.laneCount; i++) _laneKey(i)],
       shakeSerial: refused?.fromBench == false ? c.refuseSerial : 0,
       shakeLane: refused?.fromBench == false ? refused!.index : null,
       coneSerial: c.coneSerial,
       coneLane: c.coneLane,
+      swapping: c.armedPower == Power.swap,
+      swapFirst: c.swapFirstLane,
+      revealedId: _revealedId,
     );
     // The lobby floor always reaches the bottom of its area, and scrolls when
     // the queues are longer than the screen.
@@ -361,7 +411,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         child: ConstrainedBox(constraints: BoxConstraints(minHeight: box.maxHeight), child: lanes),
       ),
     );
-    final toolbar = _Toolbar(c: c);
+    final bottomBar = PlayBottomBar(c: c);
 
     final Widget body;
     if (m.twoPane) {
@@ -391,7 +441,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    toolbar,
+                    bottomBar,
                   ],
                 ),
               ),
@@ -416,7 +466,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
               message,
               bench,
               Expanded(child: lanesArea),
-              toolbar,
+              bottomBar,
             ],
           ),
         ),
@@ -572,7 +622,7 @@ class _Hud extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'Settings',
-              onPressed: () => showSettingsSheet(context, c),
+              onPressed: () => showSettingsSheet(context, c, inLevel: true),
               iconSize: 22 * m.textScale,
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.settings_rounded, color: LL.lilac),
@@ -623,68 +673,6 @@ class _Chip extends StatelessWidget {
           Icon(icon, size: 16 * m.textScale, color: color),
           SizedBox(width: 5 * m.scale),
           Text(text, style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-}
-
-class _Toolbar extends StatelessWidget {
-  const _Toolbar({required this.c});
-
-  final GameController c;
-
-  @override
-  Widget build(BuildContext context) {
-    final playing = c.game.phase == Phase.playing;
-    final m = Metrics.of(context);
-    Widget tool({required IconData icon, required String label, required VoidCallback? onTap, String? tooltip}) =>
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 5 * m.scale),
-            child: Tooltip(
-              message: tooltip ?? label,
-              child: PressScale(
-                enabled: onTap != null,
-                child: FilledButton.icon(
-                  onPressed: onTap,
-                  icon: Icon(icon, size: 20 * m.textScale),
-                  label: Text(label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: m.font(13))),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: LL.facade,
-                    foregroundColor: LL.cream,
-                    disabledBackgroundColor: LL.facade.withValues(alpha: 0.5),
-                    minimumSize: Size.fromHeight(m.toolbarHeight - 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14 * m.scale)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-    return Container(
-      height: m.toolbarHeight,
-      color: LL.deep,
-      padding: EdgeInsets.symmetric(horizontal: 8 * m.scale),
-      child: Row(
-        children: [
-          tool(
-            icon: Icons.scale_rounded,
-            label: 'Scale · ${c.profile.scales}',
-            tooltip: 'Preview where the selected resident would put the needle',
-            onTap: playing ? c.useScale : null,
-          ),
-          tool(
-            icon: Icons.restart_alt_rounded,
-            label: c.levelInProgress
-                ? (m.form == FormFactor.compactPhone ? 'Restart −1♥' : 'Restart · 1 life')
-                : 'Restart',
-            tooltip: c.levelInProgress ? 'Start over. You have made moves, so this costs 1 life' : 'Start over',
-            onTap: playing && c.canRestart ? c.restart : null,
-          ),
         ],
       ),
     );

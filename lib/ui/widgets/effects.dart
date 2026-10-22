@@ -1,5 +1,6 @@
 /// One-shot particle effects drawn over the play screen: crash sparks, coins
-/// flying to the coin counter, and win confetti. Each effect owns a short
+/// flying to the coin counter, win confetti, and the sparkle when an unknown
+/// person is revealed. Each effect owns a short
 /// animation and removes itself when done. None of them runs under reduced
 /// motion (the caller skips them).
 library;
@@ -10,7 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-enum BurstKind { sparks, coins, confetti }
+enum BurstKind { sparks, coins, confetti, sparkle }
 
 /// A burst at [origin] (screen coordinates inside the effects layer). Coins
 /// fly toward [target]; confetti falls across the whole layer.
@@ -75,6 +76,7 @@ class _BurstViewState extends State<_BurstView> with SingleTickerProviderStateMi
         BurstKind.sparks => 650,
         BurstKind.coins => 900,
         BurstKind.confetti => 2200,
+        BurstKind.sparkle => 520,
       },
     ),
   )..forward().whenComplete(() {
@@ -122,6 +124,7 @@ class _BurstPainter extends CustomPainter {
   final Burst b;
   final double t;
 
+  static const _sparkleColors = [LL.cream, LL.brass, LL.mint, LL.lilac];
   static const _confettiColors = [LL.brass, LL.mint, Color(0xFFFF6B5B), Color(0xFF4C7DFF), Color(0xFFA066F5)];
 
   @override
@@ -159,6 +162,24 @@ class _BurstPainter extends CustomPainter {
             ..drawCircle(p, r, Paint()..color = LL.brassDark)
             ..drawCircle(p - const Offset(0.8, 0.8), r * 0.82, Paint()..color = LL.brass)
             ..drawCircle(p - const Offset(2, 2), r * 0.25, Paint()..color = const Color(0xCCFFFFFF));
+        }
+      case BurstKind.sparkle:
+        // A small ring of four-point stars flying outwards and shrinking.
+        final out = Curves.easeOutCubic.transform(t);
+        for (var i = 0; i < b.count; i++) {
+          final a = (i + rng.nextDouble() * 0.6) / b.count * 2 * math.pi;
+          final reach = 22 + rng.nextDouble() * 22;
+          final p = b.origin + Offset(math.cos(a), math.sin(a)) * (reach * out);
+          final r = (3.5 + rng.nextDouble() * 2.5) * (1 - t);
+          final c = _sparkleColors[i % _sparkleColors.length].withValues(alpha: (1.3 - t).clamp(0.0, 1.0));
+          final star = Path()
+            ..moveTo(p.dx, p.dy - r * 2)
+            ..quadraticBezierTo(p.dx, p.dy, p.dx + r * 2, p.dy)
+            ..quadraticBezierTo(p.dx, p.dy, p.dx, p.dy + r * 2)
+            ..quadraticBezierTo(p.dx, p.dy, p.dx - r * 2, p.dy)
+            ..quadraticBezierTo(p.dx, p.dy, p.dx, p.dy - r * 2)
+            ..close();
+          canvas.drawPath(star, Paint()..color = c);
         }
       case BurstKind.confetti:
         for (var i = 0; i < b.count; i++) {
