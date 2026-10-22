@@ -348,6 +348,117 @@ def cmd_sheet(pack: dict, _: argparse.Namespace) -> None:
     print(f"wrote  {dest.relative_to(ROOT)}")
 
 
+# ── review ───────────────────────────────────────────────────────────────────
+
+SKIN_TOLERANCE = 40  # per channel, 0-255. Lit skin renders lighter than the flat hex (the approved cast sits within
+# 35); a pale face on a deep-brown card, the miss that cost a redo, is far past it
+CREAM, NIGHT = (0xFF, 0xF4, 0xE2), (0x1C, 0x1A, 0x3F)  # the lobby and night backdrops a cut-out must survive
+REVIEW_ROWS = {"torso": (0.30, 0.50), "legs": (0.70, 0.88), "head": (0.05, 0.20)}  # bands, as share of height
+
+
+def _hex(h: str) -> tuple[int, int, int]:
+    return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
+
+
+def _measure(path: Path, skin_hex: str) -> dict:
+    """What the review checklist reads off one processed resident, so it never depends on eyeballing alone."""
+    import numpy as np
+    from PIL import Image
+
+    im = np.asarray(Image.open(path).convert("RGBA")).astype(int)
+    h, w = im.shape[:2]
+    solid = im[..., 3] > 128
+    widths = solid.sum(axis=1)
+
+    def band(name: str) -> slice:
+        lo, hi = REVIEW_ROWS[name]
+        return slice(int(h * lo), int(h * hi))
+
+    r, g, b = im[..., 0], im[..., 1], im[..., 2]
+    head = np.zeros_like(solid)
+    head[band("head")] = True
+    face = head & solid & (r > g) & (g > b) & (r - b >= 30) & (r >= 100)
+    tone = tuple(int(np.median(c[face])) for c in (r, g, b)) if face.sum() > 50 else None
+    want = _hex(skin_hex)
+    return {
+        "w": w, "h": h,
+        "torso": float(np.median(widths[band("torso")])) / h,
+        "legs": float(np.median(widths[band("legs")])) / h,
+        "area": float(solid.sum()) / (h * h),
+        "face": tone,
+        "face_off": max(abs(t - x) for t, x in zip(tone, want)) if tone else None,
+        "strong_green": int((solid & (g > r + 30) & (g > b + 30)).sum()),
+        "faint_green": int((solid & (g > np.maximum(r, b) + 12)).sum()),
+    }
+
+
+def cmd_review(pack: dict, args: argparse.Namespace) -> None:
+    """Measure every processed resident against its manifest card and write zoomed cream and night sheets.
+
+    The numbers do not replace looking at the sheets; they catch what the eye misses at phone size: a pale face where
+    the card says deep brown, a build out of its weight order, a green fringe.
+    """
+    from PIL import Image
+
+    src = Path(args.dir) if args.dir else OUT
+    people = [a for a in pack["assets"] if a["kind"] == "resident" and (src / f"{a['id']}.webp").exists()]
+    if not people:
+        raise SystemExit(f"No processed residents in {src}: run process first, or pass --dir.")
+    rows = [(a, _measure(src / f"{a['id']}.webp", a["skin"]["hex"])) for a in people]
+    print(f"{'resident':<20}{'build':>6}{'torso':>7}{'legs':>7}{'area':>7}  {'face (r,g,b)':<16}{'off':>4}{'green':>8}")
+    flags = []
+    for a, m in rows:
+        face = "-" if m["face"] is None else ",".join(map(str, m["face"]))
+        off = "-" if m["face_off"] is None else str(m["face_off"])
+        print(f"{a['name']:<20}{a.get('design_build', 0):>6}{m['torso'] * 100:>7.1f}{m['legs'] * 100:>7.1f}"
+              f"{m['area'] * 100:>7.1f}  {face:<16}{off:>4}{m['strong_green']:>5}/{m['faint_green']:<5}")
+        if m["face_off"] is None or m["face_off"] > SKIN_TOLERANCE:
+            flags.append(f"{a['name']}: face {face} is off the card's {a['skin']['hex']} (limit {SKIN_TOLERANCE})")
+        if m["strong_green"] > 0:
+            flags.append(f"{a['name']}: {m['strong_green']} strongly green pixels (regenerate if on the rim)")
+    # Build order: silhouette area (share of the height squared) should climb with the design build. Rows of width
+    # are too sensitive to pose and props, so area is the figure the approved cast tracks best.
+    ranked = sorted((r for r in rows if r[0].get("design_build")), key=lambda r: r[0]["design_build"])
+    measured = sorted(ranked, key=lambda r: r[1]["area"])
+    print("\ndesign build order :", " < ".join(a["name"] for a, _ in ranked))
+    print("silhouette area order:", " < ".join(a["name"] for a, _ in measured))
+    honest = [r for r in ranked if r[0]["type"] not in ("gym", "puffer")]  # the two liars are meant to break order
+    rank = {a["id"]: i for i, (a, _) in enumerate(sorted(honest, key=lambda r: r[1]["area"]))}
+    n = len(honest)
+    d2 = sum((rank[a["id"]] - i) ** 2 for i, (a, _) in enumerate(honest))
+    rho = 1 - 6 * d2 / (n * (n * n - 1)) if n > 2 else 1.0
+    print(f"rank correlation without the two liars: {rho:.2f} (the approved cast scores 0.87; look closer below 0.8)")
+    if rho < 0.8:
+        flags.append(f"build order drifts from the design (rho {rho:.2f})")
+    out = ROOT / "art" / "review"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, bg in (("cream", CREAM), ("night", NIGHT)):
+        z, pad, limit = args.zoom, 16, 3200
+        tiles = [Image.open(src / f"{a['id']}.webp").convert("RGBA") for a, _ in rows]
+        tiles = [t.resize((t.width * z // 2, t.height * z // 2), Image.LANCZOS) for t in tiles]
+        lines, line, used = [], [], pad
+        for t in tiles:
+            if line and used + t.width + pad > limit:
+                lines.append(line)
+                line, used = [], pad
+            line.append(t)
+            used += t.width + pad
+        lines.append(line)
+        height = sum(max(t.height for t in ln) + pad for ln in lines) + pad
+        sheet = Image.new("RGB", (limit, height), bg)
+        y = pad
+        for ln in lines:
+            x, floor = pad, y + max(t.height for t in ln)
+            for t in ln:
+                sheet.paste(t, (x, floor - t.height), t)
+                x += t.width + pad
+            y = floor + pad
+        dest = out / f"zoom_{name}.png"
+        sheet.save(dest)
+        print(f"wrote  {dest.relative_to(ROOT)}")
+    print("\n" + ("\n".join("CHECK  " + f for f in flags) if flags else "No numeric flags; now read the sheets."))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -358,9 +469,13 @@ def main() -> int:
     g.add_argument("--force", action="store_true", help="regenerate even if art/raw/<id>.png exists")
     sub.add_parser("process", help="art/raw -> art/processed: key out green, trim, size, WebP")
     sub.add_parser("sheet", help="cast line-up at in-game relative heights")
+    rv = sub.add_parser("review", help="measure processed residents against their cards; write cream and night zooms")
+    rv.add_argument("--dir", help="folder of processed WebP (default art/processed; docs/art/approved holds the cast)")
+    rv.add_argument("--zoom", type=int, default=4, help="sheet scale in half-steps: 4 = 2x (default)")
     args = ap.parse_args()
     pack = load_pack()
-    {"prompts": cmd_prompts, "generate": cmd_generate, "process": cmd_process, "sheet": cmd_sheet}[args.cmd](pack, args)
+    {"prompts": cmd_prompts, "generate": cmd_generate, "process": cmd_process, "sheet": cmd_sheet,
+     "review": cmd_review}[args.cmd](pack, args)
     return 0
 
 

@@ -46,7 +46,7 @@ behind interfaces in `lib/services/`; M1 ships stubs (`StubAdsService`, `DebugAn
 | `lib/ui/` | `game_controller.dart` (only bridge from widgets to engine), `theme.dart` (palette, `VenueStyle`, `LiftKindStyle`), `layout.dart` (`Metrics`: every size from the 390×844 design, four form factors), `motion.dart` (one idle clock, sway/blink, shake; all still under reduce-motion), `painters/` (parametric resident bodies, vehicles, cargo, gauge, cabin, shaft walls, sky, lobby floors), `widgets/` (incl. `effects.dart` particle bursts, `pressable.dart`, `settings_sheet.dart`), `screens/` |
 | `tool/simulate.dart` | Prints the level table: par, trips, bench, floors per level |
 | `tool/audio/synth.py`, `tool/icons/make_icons.py` | Regenerate `assets/sfx`, `assets/music` (numpy + ffmpeg) and the `web/` icons (PIL); both deterministic |
-| `tool/art/` | `art_pack.json` (style bible + prompt per asset) and `gemini_art.py` (Gemini generate, key out, size, line-up); see `docs/art/gemini-art-pack.md` |
+| `tool/art/` | `art_pack.json` (style bible + prompt per asset) and `gemini_art.py` (Gemini generate, key out, size, line-up, review); `docs/art/approved/` holds the approved cast sprites (not shipped); see `docs/art/gemini-art-pack.md` |
 | `tool/gate_a_report.dart` | Gate A metrics from the result files testers send back (`docs/gate-a.md`) |
 | `assets/`, `web/` | Bundled fonts (OFL), synthesized audio, the web shell (icons, manifest, boot splash) |
 | `docs/` | `PRD.md`, `analytics.md`, `concept/` notes |
