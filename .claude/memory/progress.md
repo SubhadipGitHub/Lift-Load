@@ -30,8 +30,9 @@ entries; fold older ones into "Earlier".
   venue. First run on the anchor: style, scale and colour hold; needs contact shadows (code, at integration) and the feet
   line sits about 15% above the floor front.
 - Decision: the seven remaining cabin assets are now 1:1 in `art_pack.json` (the anchor stays 4:5). The game cabin is
-  196 x 214 units, so a square crops only the sides, which also trims any frame. The prompt page artifact still shows
-  4:5 for these until it is regenerated from `gemini_art.py prompts`.
+  196 x 214 units, so a square crops only the sides, which also trims any frame. The prompt page artifact (version 6) is updated to
+  match. Each cabin's doors now attach their own interior as the reference (`reference` plus a doors-specific
+  `reference_note` in `art_pack.json`); the other interiors take no reference so each kind keeps its own materials.
 - Next: `cabin_normal_doors` (attach the approved interior as the reference image), then `venue_society_lobby`, then
   old, service and express cabins, then the other four venues.
 

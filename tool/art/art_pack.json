@@ -397,6 +397,8 @@
       "kind": "scene",
       "name": "Standard lift doors",
       "aspect": "1:1",
+      "reference": "cabin_normal_interior",
+      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
       "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: brushed steel walls with warm brass trim, a brass handrail, a soft white ceiling light panel. No call buttons, no floor numbers, no signs."
     },
     {
@@ -411,6 +413,8 @@
       "kind": "scene",
       "name": "Old lift doors",
       "aspect": "1:1",
+      "reference": "cabin_old_interior",
+      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
       "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: worn dark wood panelling, scuffed corners, a dim warm bare bulb, a slightly tarnished brass handrail; old but safe and charming. No call buttons, no floor numbers, no signs."
     },
     {
@@ -425,6 +429,8 @@
       "kind": "scene",
       "name": "Service lift doors",
       "aspect": "1:1",
+      "reference": "cabin_service_interior",
+      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
       "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: dented galvanised steel walls, quilted grey freight padding on the back wall, a bright utility light, sturdy steel rails. No call buttons, no floor numbers, no signs."
     },
     {
@@ -439,6 +445,8 @@
       "kind": "scene",
       "name": "Express lift doors",
       "aspect": "1:1",
+      "reference": "cabin_express_interior",
+      "reference_note": "Use the attached image as the exact reference for the materials, colours, lighting and finish of the doors. Draw the closed doors only, not the room.",
       "prompt": "A pair of closed lift doors seen straight on, filling the whole frame edge to edge, with a thin vertical seam down the exact centre, matching this style: sleek glass and chrome, a soft blue LED light strip, a polished dark floor. No call buttons, no floor numbers, no signs."
     },
     {

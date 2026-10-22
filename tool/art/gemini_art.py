@@ -63,7 +63,7 @@ def full_prompt(pack: dict, a: dict) -> str:
     body = a["prompt"] + (f" Skin tone: {skin['name']}, close to {skin['hex']}." if skin else "")
     parts = [body, style]
     if a.get("reference"):
-        parts.append(REFERENCE_NOTE)
+        parts.append(a.get("reference_note", REFERENCE_NOTE))
     return "\n\n".join(parts)
 
 
