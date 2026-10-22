@@ -20,9 +20,9 @@ entries; fold older ones into "Earlier".
 
 **Cast status** (originals live with the owner; `/art/` is git-ignored)
 - Approved: schoolkid (style anchor), gym regular (second take), uncle, puffer teen, aunty, office woman, guard,
-  wheelchair patient.
+  wheelchair patient, bellhop.
 - Redo, prompts already tightened on main: grandpa (no belly), office man (sturdier adult), rider (sturdier).
-- Not yet sent: student, parent with the pram, bellhop. After them: 3 cargo props, blink frames,
+- Not yet sent: student, parent with the pram. After them: 3 cargo props, blink frames,
   four lift kinds, five venues, home art, store art, icon.
 
 **Open**
