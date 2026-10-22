@@ -61,7 +61,9 @@ entries; fold older ones into "Earlier".
   is the one change beyond a reskin. Owner approved the direction and figures +60% (Gate A not started, reskin only). Production has started: icon set.
 - Icon set: four 3:2 sheets of six (`icons_hud`, `icons_floors`, `icons_results`, `icons_lifts`) in `art_pack.json`, a sheet
   splitter and a magenta keyer in `gemini_art.py` (tested on synthetic sheets). Prompts are at the top of the prompt page
-  (version 10). Waiting on the owner's four sheets. After the icons: Gemini backdrops, then the integration spec for lib/.
+  (version 10). Approved: `icons_hud` (coin, heart, scale, restart, trip, star; six 256 px icons in `docs/art/approved/`). The Gemini sparkle sat on
+  the star's rim, so it was patched in the raw by mirroring the star's other side; the splitter now cuts on solid pixels only,
+  joins parts within about 12 px (the trip icon's arrow) and drops translucent ghosts. Waiting on `icons_floors`, `icons_results`, `icons_lifts`. After the icons: Gemini backdrops, then the integration spec for lib/.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
   each with its own palette and storey bands) or stay with Gemini.
 

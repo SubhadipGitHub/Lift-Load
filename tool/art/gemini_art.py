@@ -232,7 +232,7 @@ def _key_out(img):
     return Image.fromarray(rgba, "RGBA")
 
 
-def _drop_specks(img):
+def _drop_specks(img, frac=0.05, thresh=8):
     """Clear small islands left after keying (a corner watermark from the Gemini app, a stray fleck), keeping
     every part at least 5% the size of the largest one (so a pram or trolley beside its owner survives)."""
     import numpy as np
@@ -240,7 +240,7 @@ def _drop_specks(img):
 
     step = 4
     alpha = img.getchannel("A")
-    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > 8
+    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > thresh
     h, w = small.shape
     labels = np.zeros((h, w), dtype=np.int32)
     sizes = [0]
@@ -262,7 +262,7 @@ def _drop_specks(img):
     if len(sizes) <= 2:
         return img
     biggest = max(sizes)
-    keep = np.isin(labels, [i for i, c in enumerate(sizes) if i and c >= 0.05 * biggest])
+    keep = np.isin(labels, [i for i, c in enumerate(sizes) if i and c >= frac * biggest])
     # Grow the kept mask by one coarse cell so soft edges are not shaved off.
     grown = keep.copy()
     grown[1:, :] |= keep[:-1, :]
@@ -306,14 +306,21 @@ def _key_out_magenta(img):
     return Image.fromarray(np.dstack([r, g, b, alpha * 255.0]).clip(0, 255).astype(np.uint8), "RGBA")
 
 
-def _components(img, min_frac=0.12):
+def _components(img, min_frac=0.12, thresh=24, merge=0):
     """Bounding boxes (x0, y0, x1, y1) of the separate objects in a keyed sheet, in reading order."""
     import numpy as np
     from PIL import Image
 
     step = 4
     alpha = img.getchannel("A")
-    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > 24
+    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > thresh
+    for _ in range(merge):  # a small part close to a big one (the arrow above the lift) joins it
+        grown = small.copy()
+        grown[1:, :] |= small[:-1, :]
+        grown[:-1, :] |= small[1:, :]
+        grown[:, 1:] |= small[:, :-1]
+        grown[:, :-1] |= small[:, 1:]
+        small = grown
     h, w = small.shape
     labels = np.zeros((h, w), dtype=np.int32)
     boxes, sizes = [None], [0]
@@ -360,8 +367,8 @@ def _process_icon_sheet(a, img):
     from PIL import Image
 
     keyed = _key_out_magenta(img) if a.get("chroma") == "magenta" else _key_out(img)
-    keyed = _drop_specks(keyed)
-    boxes = _components(keyed)
+    # Cut on the solid pixels only (a translucent watermark never counts), joining parts within about 12 px.
+    boxes = _components(keyed, thresh=200, merge=3)
     names = a["icons"]
     if len(boxes) != len(names):
         print(f"WARN   {a['id']}: found {len(boxes)} separate icons, expected {len(names)}. Regenerate with wider gaps "
@@ -371,7 +378,7 @@ def _process_icon_sheet(a, img):
     boxes = _reading_order(boxes, a["rows"])[:len(names)]
     made = []
     for name, box in zip(names, boxes):
-        crop = keyed.crop(box)
+        crop = _drop_specks(keyed.crop(box), frac=0.025, thresh=200)  # drops a ghost of the Gemini sparkle, keeps an arrow
         tb = _trim_box(crop)
         if tb:
             crop = crop.crop(tb)
