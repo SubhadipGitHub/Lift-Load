@@ -1,6 +1,6 @@
 # PRD v1.7: restyle and art integration
 
-Status: DRAFT, waiting for the owner's sign-off. Date: 2026-10-22.
+Status: merged by the owner 2026-10-22; built with the three recommended decisions (on by default with a `useSpriteArt` switch, ship with the other venues on their current backgrounds, figures shrink only where five lanes do not fit).
 
 ## Problem
 
