@@ -69,7 +69,7 @@ abstract final class Solver {
         bestLane = null;
       }
     }
-    for (var i = 0; i < Formulas.queues; i++) {
+    for (var i = 0; i < g.laneCount; i++) {
       if (g.laneLength(i) == 0 || g.isLaneLocked(i)) continue;
       final r = g.laneAt(i, 0);
       if (g.goesTo(r.floor) && g.load + r.kg <= g.capacity && r.kg > bestKg) {
@@ -98,7 +98,7 @@ abstract final class Solver {
     if (seat < 0) return false;
     int? digLane;
     var digDepth = 1 << 30;
-    for (var i = 0; i < Formulas.queues; i++) {
+    for (var i = 0; i < g.laneCount; i++) {
       final n = g.laneLength(i);
       if (n == 0 || g.isLaneLocked(i) || g.goesTo(g.laneAt(i, 0).floor)) continue;
       for (var d = 0; d < n && d < digDepth; d++) {

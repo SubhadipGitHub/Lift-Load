@@ -143,7 +143,7 @@ class FailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final kind = c.game.failKind!;
-    final seats = GameController.seatsLabel(c.game.continueSeats);
+    final seats = c.seatsLabel(c.game.continueSeats);
     final (title, body, adLabel) = switch (kind) {
       FailKind.crash => (
           'Overloaded!',

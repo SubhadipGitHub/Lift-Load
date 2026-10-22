@@ -95,7 +95,7 @@ plays), and from then on they are a normal front resident. A lane's first person
 and bench residents are always known.
 
 **How many.** `unknownShare(level)` is the chance that a person behind the front is unknown: 0 below level 11, then
-proposed `min(0.15 + 0.01 × (L − 11), 0.6)`. Which people are unknown is seeded by the level, so a level plays the same
+proposed `min(0.15 + 0.01 × (L − 11), 0.35)` (tuned from 0.6 by the solver study). Which people are unknown is seeded by the level, so a level plays the same
 every time. Level 11 is a breather that guarantees at least three unknown people, so the new thing is seen enough.
 
 **The ghost asset.** A Gemini prompt for it is on the prompt page (`unknown_ghost`, attached to the schoolkid for
@@ -246,3 +246,10 @@ New events: `power_used` (`power`, `level`, `left`), `power_empty_tapped`, `powe
 - Accept the proposed unknown share curve (starts at level 11 at 15%, up to 60%), the lane spread, the liar weighting
   and the extra normal-level slack, to be tuned by the solver study?
 - Accept the caps per level and the unlock levels above?
+
+## Engine review decisions (2026-10-22)
+
+Power refill ads stop two views short of the 12-a-day total, keeping them for the fail-sheet continues. Unknown people
+keep their true floor in routing; the NEXT strip is not masked, and the jam sheet drops the seat count on levels with
+unknown people. +1 trip is used mid-level and is not offered on the fail sheet. A crash reveals nobody, and Express is
+refused when it would jam the lobby.

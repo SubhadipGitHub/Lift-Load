@@ -251,6 +251,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'New today: the ${kind.name} lift';
       case ScenarioDebut(:final scenario):
         return 'New today: ${_scenarioName(scenario)}';
+      case UnknownDebut():
+        return 'New today: mystery people in the queue';
+      case LaneDebut():
+        return 'New today: a different number of lanes';
+      case PowerDebut(:final power):
+        return GameController.powerTip(power);
       case null:
         break;
     }
@@ -265,7 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
 String _scenarioName(Scenario s) => switch (s) {
       Scenario.maintenance => 'lane maintenance',
-      Scenario.powerCut => 'a power cut',
       Scenario.rushHour => 'rush hour',
     };
 

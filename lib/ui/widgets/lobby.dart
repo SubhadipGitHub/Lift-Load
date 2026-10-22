@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../../game/engine.dart';
-import '../../game/formulas.dart';
-import '../../game/scenario.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
@@ -207,14 +205,12 @@ class QueueLanes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final playing = game.phase == Phase.playing;
-    final lanes = game.queues;
+    final lanes = game.visibleLanes;
     final style = VenueStyle.of(game.level.venue);
-    final powerCut = game.level.scenario == Scenario.powerCut;
     final m = Metrics.of(context);
     final visible = m.visibleDepth;
     final ink = TextStyle(fontSize: m.font(11), fontWeight: FontWeight.w800, color: style.laneInk);
     final pending = game.pendingArrivals;
-    final wave = pending.isEmpty ? 0 : pending.where((a) => a.afterTrip == pending.first.afterTrip).length;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: m.gap),
       clipBehavior: Clip.hardEdge,
@@ -229,18 +225,13 @@ class QueueLanes extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(6 * m.scale, 8 * m.scale, 6 * m.scale, 4 * m.scale),
           child: Column(
             children: [
-              if (wave > 0)
+              if (pending.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.only(bottom: 6 * m.scale),
                   child: _Banner(
                     icon: Icons.groups_rounded,
-                    text: '+$wave arriving after trip ${pending.first.afterTrip}',
+                    text: 'A crowd arrives after trip ${pending.first.afterTrip}',
                   ),
-                ),
-              if (powerCut)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 6 * m.scale),
-                  child: const _Banner(icon: Icons.flashlight_on_rounded, text: 'Power cut: only the front is lit'),
                 ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,25 +244,27 @@ class QueueLanes extends StatelessWidget {
                           Column(
                             children: [
                               for (var i = 0; i < lanes[lane].length && i < visible; i++)
-                                // Keyed by resident, so each one slides up as the
-                                // queue moves rather than the figures swapping.
-                                _StepIn(
-                                  key: ValueKey(lanes[lane][i].id),
-                                  depth: i,
-                                  child: Shake(
-                                    serial: i == 0 && lane == shakeLane ? shakeSerial : 0,
-                                    child: _QueueSlot(
-                                      resident: lanes[lane][i],
-                                      depth: i,
-                                      front: i == 0 && playing && !game.isLaneLocked(lane),
-                                      selected: i == 0 && game.selection == Selection.queue(lane),
-                                      dimmed: powerCut && i >= Formulas.powerCutDepth,
-                                      onTap: () => onTapLane(lane),
+                                if (lanes[lane][i] case final person?)
+                                  // Keyed by resident, so each one slides up as the
+                                  // queue moves rather than the figures swapping.
+                                  _StepIn(
+                                    key: ValueKey(person.id),
+                                    depth: i,
+                                    child: Shake(
+                                      serial: i == 0 && lane == shakeLane ? shakeSerial : 0,
+                                      child: _QueueSlot(
+                                        resident: person,
+                                        depth: i,
+                                        front: i == 0 && playing && !game.isLaneLocked(lane),
+                                        selected: i == 0 && game.selection == Selection.queue(lane),
+                                        onTap: () => onTapLane(lane),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              if (lanes[lane].length > visible)
-                                Text('+${lanes[lane].length - visible} waiting', style: ink),
+                                  )
+                                else
+                                  // Unknown: the same ghost for everyone, no look and no floor tag. The
+                                  // lobby never learns who it is until they reach the front.
+                                  _StepIn(key: ValueKey('unknown-$lane-$i'), depth: i, child: _UnknownSlot(depth: i)),
                               if (lanes[lane].isEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(top: 18 * m.scale),
@@ -378,20 +371,19 @@ class _QueueSlot extends StatelessWidget {
     required this.depth,
     required this.front,
     required this.selected,
-    required this.dimmed,
     required this.onTap,
   });
 
   final Resident resident;
   final int depth;
-  final bool front, selected, dimmed;
+  final bool front, selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final opacity = front ? 1.0 : (0.88 - depth * 0.12).clamp(0.5, 1.0).toDouble();
     final m = Metrics.of(context);
-    final who = dimmed ? 'Someone going to ${resident.floor.label}' : GameController.describe(resident);
+    final who = GameController.describe(resident);
     return Semantics(
       button: front,
       selected: selected,
@@ -432,7 +424,7 @@ class _QueueSlot extends StatelessWidget {
                   child: IdleSway(
                     seed: resident.id,
                     builder: (context, blink) =>
-                        ResidentFigure.of(resident, height: m.laneFigure, dimmed: dimmed, blink: blink && !dimmed),
+                        ResidentFigure.of(resident, height: m.laneFigure, blink: blink),
                   ),
                 ),
               ],
@@ -508,3 +500,37 @@ class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
         },
       );
 }
+
+/// An unknown person waiting behind the front of a lane: the same ghost shape for
+/// everyone (a generic shadow, never their own outline), no floor tag, not tappable.
+class _UnknownSlot extends StatelessWidget {
+  const _UnknownSlot({required this.depth});
+
+  final int depth;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = Metrics.of(context);
+    return Semantics(
+      label: 'Someone you cannot see yet, waiting in the queue',
+      child: Opacity(
+        opacity: (0.8 - depth * 0.1).clamp(0.4, 0.8).toDouble(),
+        child: Container(
+          margin: EdgeInsets.only(bottom: 2 * m.scale),
+          constraints: const BoxConstraints(minWidth: Metrics.minTouch, minHeight: Metrics.minTouch),
+          padding: EdgeInsets.fromLTRB(8 * m.scale, 3 * m.scale, 8 * m.scale, 1 * m.scale),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: (compactTagHeight + 1) * m.scale),
+              FittedBox(fit: BoxFit.scaleDown, child: ResidentFigure.unknown(height: m.laneFigure)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The height of a compact floor tag, so an unknown slot lines up with a known one.
+const double compactTagHeight = 14;

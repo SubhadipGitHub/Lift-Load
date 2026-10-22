@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lift_load/game/formulas.dart';
 import 'package:lift_load/services/ad_policy.dart';
 
 void main() {
@@ -54,6 +55,36 @@ void main() {
       final day2 = day1.add(const Duration(days: 1));
       expect(b.canShow(RewardedPlacement.extraLife, day2), isTrue);
       expect(b.totalToday, 0);
+    });
+
+    test('empty-power refills are capped per day, and count toward the 12', () {
+      final day = DateTime(2026, 10, 22, 9);
+      final b = RewardedBudget(day: RewardedBudget.dayKey(day));
+      for (var i = 0; i < Formulas.powerRefillDailyCap; i++) {
+        expect(b.canShow(RewardedPlacement.powerRefill, day), isTrue);
+        b.record(RewardedPlacement.powerRefill, day);
+      }
+      expect(b.canShow(RewardedPlacement.powerRefill, day), isFalse);
+      expect(b.canShow(RewardedPlacement.repairLift, day), isTrue, reason: 'other placements keep their share');
+      expect(b.totalToday, Formulas.powerRefillDailyCap);
+      expect(Formulas.powerRefillDailyCap, lessThan(RewardedBudget.dailyTotal));
+    });
+
+    test('refills stop two views short of the total so a crash can still be continued by ad', () {
+      final day = DateTime(2026, 10, 22, 9);
+      final b = RewardedBudget(day: RewardedBudget.dayKey(day));
+      for (var i = 0; i < 3; i++) {
+        b.record(RewardedPlacement.extraLife, day);
+      }
+      b.record(RewardedPlacement.dailyChest, day);
+      for (var i = 0; i < 6; i++) {
+        b.record(RewardedPlacement.powerRefill, day);
+      }
+      expect(b.totalToday, 10);
+      expect(b.canShow(RewardedPlacement.powerRefill, day), isFalse);
+      expect(b.canShow(RewardedPlacement.repairLift, day), isTrue);
+      b.record(RewardedPlacement.repairLift, day);
+      expect(b.canShow(RewardedPlacement.extraTrips, day), isTrue);
     });
   });
 }

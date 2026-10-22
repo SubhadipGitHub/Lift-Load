@@ -36,9 +36,6 @@ enum Scenario {
   /// One lane is coned off for the first few trips.
   maintenance(67),
 
-  /// Residents deep in the lanes are only shadows until they come forward.
-  powerCut(77),
-
   /// Waves of new residents join the lanes after set trips.
   rushHour(87);
 

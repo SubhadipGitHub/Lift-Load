@@ -5,10 +5,17 @@
 library;
 
 import 'cast.dart';
+import 'powers.dart';
 import 'scenario.dart';
 
 sealed class Debut {
   const Debut();
+
+  /// People behind a lane front start being unknown on this level (PRD v1.6).
+  static const int unknownLevel = 11;
+
+  /// The number of lanes starts to vary on this level (PRD v1.6).
+  static const int laneLevel = 16;
 
   /// What debuts on [level], if anything. At most one thing per level.
   static Debut? at(int level) {
@@ -20,6 +27,10 @@ sealed class Debut {
     if (kind != null) return LiftDebut(kind);
     final scenario = Scenario.introducedAt(level);
     if (scenario != null) return ScenarioDebut(scenario);
+    if (level == unknownLevel) return const UnknownDebut();
+    if (level == laneLevel) return const LaneDebut();
+    final power = Power.introducedAt(level);
+    if (power != null) return PowerDebut(power);
     return null;
   }
 
@@ -32,6 +43,9 @@ sealed class Debut {
         for (final k in LiftKind.values)
           if (k != LiftKind.normal) k.unlockLevel,
         for (final s in Scenario.values) s.unlockLevel,
+        unknownLevel,
+        laneLevel,
+        for (final p in Power.values) p.unlockLevel,
       ]..sort();
 
   /// Short name for the level table.
@@ -40,6 +54,9 @@ sealed class Debut {
         CargoDebut(:final cargo) => cargo.name,
         LiftDebut(:final kind) => '${kind.name} lift',
         ScenarioDebut(:final scenario) => scenario.name,
+        UnknownDebut() => 'unknown people',
+        LaneDebut() => 'lane variety',
+        PowerDebut(:final power) => '${power.name} power',
       };
 }
 
@@ -61,4 +78,20 @@ final class LiftDebut extends Debut {
 final class ScenarioDebut extends Debut {
   const ScenarioDebut(this.scenario);
   final Scenario scenario;
+}
+
+/// From this level some people behind a lane front are unknown until they reach it.
+final class UnknownDebut extends Debut {
+  const UnknownDebut();
+}
+
+/// From this level the number of lanes varies by level.
+final class LaneDebut extends Debut {
+  const LaneDebut();
+}
+
+/// The level a power becomes available.
+final class PowerDebut extends Debut {
+  const PowerDebut(this.power);
+  final Power power;
 }

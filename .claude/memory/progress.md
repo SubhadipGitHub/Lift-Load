@@ -3,6 +3,49 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-22 · PRD v1.6 engine (branch engine-powers-v16, stacked on the art PR)
+
+**Done**
+- Signed off: powers (Swap L14, +2 seats L19, +1 trip L27, Express L29; stock 0; 150 coins or 1 ad), unknown
+  residents from L11, 3 to 5 lanes from L16, no waiting count, power cut removed, left-handed bar.
+- Engine and generator: `Power`, unknown and reveal (`visibleLanes`, `frontOf`), four powers with caps, Express
+  re-routing a stranded lift, lane count and spread, liar boost from L45, +1 normal slack from L11.
+- Services and controller: `RewardedPlacement.powerRefill` (6 a day inside the 12), Profile v2 (powers, `leftHanded`,
+  v1 saves load with zero stock), controller power API (arm and pick for Swap, spend on success, coin buy, ad refill),
+  analytics `power_used`, `power_empty_tapped`, `power_refill_ad`, `power_bought`, `powers_used`, `lanes`,
+  `unknown_share` (docs/analytics.md).
+- Tests: 190 green; new `powers_test`, `controller_powers_test`, `profile_test`, refill cap, and architecture guards
+  (UI never reads `.queues` or `unknownIds`, never shows a waiting count).
+
+**Open**
+- No UI yet for the dock, Swap targeting, ghost art, reveal effect, mirrored bar, bench second row, settings switch,
+  Restart in the pause menu. Powers are reachable only through `GameController`.
+- Solver study not run: a bot spending one power per level, and an information-limited bot (it cannot see unknowns).
+  Slack, unknown share, lane spread, caps and price are untuned until then.
+- Art: Swap and Express icons, backdrops for office, hospital, mall, hotel.
+
+**Review (two read-only reviewers, a fuzz run of 3600 games)**
+- Fixed: a crash no longer reveals the person behind the rider (and the lane shows them unknown while the lift falls);
+  Express is refused when it would jam the lobby; refills gated on unlock and phase; tolerant power parsing.
+- Open for the owner: (a) 6 refill ads plus 3 life plus 1 chest leave 2 of 12 daily views for continues, so reserve
+  the last 2 for fail sheets?; (b) unknown people's floors leak through the NEXT strip and the jam sheet's "+N seats";
+  (c) +1 trip cannot rescue an out-of-trips fail because the fail sheet comes first (spend owned stock there, or hint
+  at the last trip).
+
+**Solver study (`dart run tool/blind_study.dart 11 100`, levels 11-100, real trip budgets)**
+- Three bots: full-information (the shipped solver, clears all 90), a blind bot that digs only toward people it can
+  see and explores otherwise, and the blind bot with one +1 trip and one +2 seats.
+- Unknown share capped at 0.6: blind 53/90, with powers 69/90. Capped at 0.35: blind 69/90, with powers 81/90.
+  Capped at 0.25: blind 74/90, with powers 82/90. Adopted 0.35 (`Formulas.unknownMax`).
+- Caveat: the blind bot explores crudely (benches the front of the lane with most unknowns), so it fails early jams a
+  person would avoid. Read the numbers as a ranking of settings, not a human clear rate. Gate A gives the real one.
+- Not yet studied: Swap and Express use, lane spread, liar boost, the extra slack.
+
+**Next**
+1. Level-designer pass on the remaining knobs; adjust `Formulas`, regenerate the level table.
+2. UI per docs/PRD-v1.6-powers.md; monetization-auditor and code-reviewer on the diff.
+3. Gate A with powers on.
+
 ## 2026-10-22 · Gemini art pack (PRs #6, #7, #8 merged; handoff prep on branch ccr-445849fc-sjvxbg)
 
 **Done**

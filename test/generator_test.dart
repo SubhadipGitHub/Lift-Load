@@ -18,7 +18,7 @@ void main() {
       final result = Solver.solve(level);
       expect(result.cleared, isTrue, reason: 'level $n');
       expect(result.trips, lessThanOrEqualTo(level.trips), reason: 'level $n');
-      expect(level.trips, level.parTrips + Formulas.slack(level.difficulty), reason: 'level $n');
+      expect(level.trips, level.parTrips + Formulas.slack(level.difficulty, level: n), reason: 'level $n');
       expect(level.residentCount, Formulas.residents(n), reason: 'level $n');
       expect(level.floors, hasLength(Formulas.floors(n)), reason: 'level $n');
     }
@@ -70,6 +70,13 @@ void main() {
         case ScenarioDebut(:final scenario):
           expect(level.scenario, scenario, reason: 'level $n');
           expect(level.liftSchedule, [LiftKind.normal], reason: 'level $n');
+        case UnknownDebut():
+          expect(level.unknownIds.length, greaterThanOrEqualTo(Formulas.unknownDebutMinimum), reason: 'level $n');
+        case LaneDebut():
+          expect(level.laneCount, Formulas.maxLanes, reason: 'level $n');
+        case PowerDebut():
+          expect(level.scenario, isNull, reason: 'level $n');
+          expect(level.liftSchedule, [LiftKind.normal], reason: 'level $n');
       }
     }
   });
@@ -108,6 +115,59 @@ void main() {
         expect(k.unlockLevel, lessThanOrEqualTo(n), reason: 'level $n');
       }
     }
+  });
+
+  test('unknown people: none before level 11, never a lane front, within the share, ids valid', () {
+    for (final MapEntry(key: n, value: level) in levels.entries) {
+      if (n < Debut.unknownLevel) {
+        expect(level.unknownIds, isEmpty, reason: 'level $n');
+        continue;
+      }
+      final fronts = {for (final q in level.queues) if (q.isNotEmpty) q.first.id};
+      final ids = {for (final r in everyone(level)) r.id};
+      expect(level.unknownIds.intersection(fronts), isEmpty, reason: 'level $n: a lane front is unknown');
+      expect(ids.containsAll(level.unknownIds), isTrue, reason: 'level $n');
+      final behind = level.queues.fold(0, (a, q) => a + (q.length - 1));
+      // About the share of the people behind a front, with generous room for chance.
+      final share = Formulas.unknownShare(n);
+      expect(level.unknownIds.length, lessThanOrEqualTo((behind * share + 3 * 5).ceil()), reason: 'level $n');
+      expect(level.unknownIds.length, greaterThanOrEqualTo(n == Debut.unknownLevel ? 3 : 0), reason: 'level $n');
+    }
+    expect(Formulas.unknownShare(10), 0);
+    expect(Formulas.unknownShare(11), closeTo(0.15, 1e-9));
+    expect(Formulas.unknownShare(100), Formulas.unknownMax);
+  });
+
+  test('lanes: four before level 16, five on 16, 3 to 5 after, none empty, spread within bounds', () {
+    final counts = <int>{};
+    for (final MapEntry(key: n, value: level) in levels.entries) {
+      expect(level.laneCount, Formulas.laneCount(n), reason: 'level $n');
+      if (n < Debut.laneLevel) expect(level.laneCount, 4, reason: 'level $n');
+      expect(level.laneCount, inInclusiveRange(Formulas.minLanes, Formulas.maxLanes), reason: 'level $n');
+      if (n >= Debut.laneLevel) counts.add(level.laneCount);
+      final total = level.queues.fold(0, (a, q) => a + q.length);
+      final average = total / level.laneCount;
+      for (final q in level.queues) {
+        expect(q, isNotEmpty, reason: 'level $n has an empty lane');
+        expect((q.length - average).abs(), lessThanOrEqualTo(Formulas.laneSpread(n) + 1), reason: 'level $n');
+      }
+    }
+    expect(counts, {3, 4, 5}, reason: 'lane counts vary from level 16');
+  });
+
+  test('liars get more common after both unlock', () {
+    expect(Formulas.isLiar(ResidentType.puffer), isTrue);
+    expect(Formulas.isLiar(ResidentType.gym), isTrue);
+    expect(Formulas.isLiar(ResidentType.uncle), isFalse);
+    expect(Formulas.liarBoost(44), 0);
+    expect(Formulas.liarBoost(45), 1);
+    expect(Formulas.liarBoost(95), 4);
+  });
+
+  test('normal levels get one extra slack trip once unknown people appear', () {
+    expect(Formulas.slack(Difficulty.normal, level: 10), 2);
+    expect(Formulas.slack(Difficulty.normal, level: 12), 3);
+    expect(Formulas.slack(Difficulty.hard, level: 20), 1);
   });
 
   test('sawtooth: hard levels get one slack trip, breathers three', () {

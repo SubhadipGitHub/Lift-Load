@@ -10,6 +10,7 @@ library;
 import 'cast.dart';
 import 'formulas.dart';
 import 'level.dart';
+import 'powers.dart';
 import 'scenario.dart';
 
 enum Phase { playing, departing, falling, won, failed }
@@ -109,6 +110,38 @@ class LaneOpenedEvent extends GameEvent {
   final int lane;
 }
 
+/// An unknown person reached the front of [lane] and is now who they are.
+class RevealedEvent extends GameEvent {
+  const RevealedEvent(this.resident, this.lane);
+  final Resident resident;
+  final int lane;
+}
+
+/// Swap: the fronts of [laneA] and [laneB] changed places.
+class SwapEvent extends GameEvent {
+  const SwapEvent(this.laneA, this.laneB);
+  final int laneA;
+  final int laneB;
+}
+
+/// +2 seats: [count] bench seats were added.
+class SeatsAddedEvent extends GameEvent {
+  const SeatsAddedEvent(this.count);
+  final int count;
+}
+
+/// +1 trip: the budget grew.
+class TripAddedEvent extends GameEvent {
+  const TripAddedEvent(this.tripsLeft);
+  final int tripsLeft;
+}
+
+/// Express: [resident] was delivered straight to their floor.
+class ExpressEvent extends GameEvent {
+  const ExpressEvent(this.resident);
+  final Resident resident;
+}
+
 class ScalePreviewEvent extends GameEvent {
   const ScalePreviewEvent(this.resident);
   final Resident resident;
@@ -161,6 +194,9 @@ class LiftGame {
     final first = _stopAfter(null, 0);
     if (first == null) throw ArgumentError('Level has no residents');
     _setStop(first);
+    for (final q in _queues) {
+      if (q.isNotEmpty) _revealed.add(q.first.id); // a lane's first person is always known
+    }
   }
 
   final Level level;
@@ -171,6 +207,13 @@ class LiftGame {
   final List<Arrival> _pendingArrivals;
   final List<GameEvent> _events = [];
   int? _lockedLane;
+
+  /// Residents who have reached a lane front, so they are known for good.
+  final Set<int> _revealed = {};
+
+  /// The floor the previous lift served, so a stranded lift can be re-routed.
+  Floor? _prevServed;
+  final Map<Power, int> _powerUses = {};
 
   /// Floors the waiting lift serves: one, or two for an express.
   late List<Floor> liftFloors;
@@ -199,7 +242,34 @@ class LiftGame {
   _Snapshot? _beforeCrash;
 
   // ── Read-only views ──
+
+  /// Every lane with full information (the solver, tests and analytics). The UI
+  /// must use [visibleLanes] instead, which hides unknown people.
   List<List<Resident>> get queues => List.unmodifiable(_queues.map(List<Resident>.unmodifiable));
+
+  /// Every lane as the player sees it: `null` is an unknown person, shown only
+  /// as a ghost. A lane's front is never null.
+  List<List<Resident?>> get visibleLanes => List.unmodifiable([
+        for (var lane = 0; lane < _queues.length; lane++)
+          List<Resident?>.unmodifiable([
+            for (var depth = 0; depth < _queues[lane].length; depth++)
+              isUnknownAt(lane, depth) ? null : _queues[lane][depth],
+          ]),
+      ]);
+
+  /// True when the person at [depth] in [lane] is still unknown to the player.
+  bool isUnknownAt(int lane, int depth) {
+    // A front is known, except while a crash is pending: the person behind the
+    // rider who snapped the cable has not stepped up.
+    if (depth == 0 && _beforeCrash == null) return false;
+    final id = _queues[lane][depth].id;
+    return level.unknownIds.contains(id) && !_revealed.contains(id);
+  }
+
+  /// The front of [lane], who is always known except while a crash is pending.
+  Resident? frontOf(int lane) => _queues[lane].isEmpty || isUnknownAt(lane, 0) ? null : _queues[lane].first;
+
+  int get laneCount => _queues.length;
   List<Resident?> get bench => List.unmodifiable(_bench);
   List<Resident> get riders => List.unmodifiable(_riders);
 
@@ -311,6 +381,7 @@ class LiftGame {
     _bench[seat] = mover;
     selection = null;
     _emit(SeatedEvent(mover, seat));
+    _revealFronts();
     _checkJam();
     return BenchResult.seated;
   }
@@ -335,11 +406,14 @@ class LiftGame {
     selection = null;
     ghostLoad = null;
     if (load > capacity) {
+      // Nobody steps up on a crash: whoever is behind stays unknown, and a
+      // repair puts the rider back.
       _beforeCrash = before;
       phase = Phase.falling;
       _emit(OverloadEvent(r));
       return BoardResult.overloaded;
     }
+    if (!s.fromBench) _revealFronts();
     _emit(BoardedEvent(r, zone));
     return BoardResult.boarded;
   }
@@ -352,6 +426,128 @@ class LiftGame {
     ghostLoad = load + r.kg;
     _emit(ScalePreviewEvent(r));
     return true;
+  }
+
+  // ── Powers (PRD v1.6) ──
+
+  /// Uses of [p] so far this level.
+  int powerUses(Power p) => _powerUses[p] ?? 0;
+
+  /// True when [p] can be used right now: playing, under the level's cap, and
+  /// whatever the power needs is there (a selection for Express, two open
+  /// lanes with people for Swap). The profile's stock is checked by the caller.
+  bool canUsePower(Power p) {
+    if (phase != Phase.playing || powerUses(p) >= Formulas.powerCap(p)) return false;
+    return switch (p) {
+      Power.swap => _queues.indexed.where((e) => e.$2.isNotEmpty && !isLaneLocked(e.$1)).length >= 2,
+      Power.seats || Power.trip => true,
+      Power.express => selected != null && !_expressWouldJam(),
+    };
+  }
+
+  /// True when delivering the selected person by Express would leave the lobby
+  /// jammed (empty lift, full bench, nobody who can board), so the power is
+  /// refused instead of spent on a fail. Mirrors [_settleAfterExpress] without
+  /// changing anything.
+  bool _expressWouldJam() {
+    final s = selection;
+    if (s == null || _riders.isNotEmpty) return false;
+    if (s.fromBench) return false; // the seat it frees keeps the bench open
+    final gone = _queues[s.index].removeAt(0);
+    try {
+      if (_bench.contains(null) || remainingTotal == 0) return false;
+      var floors = liftFloors;
+      if (!floors.any(_reachable)) {
+        final next = _stopAfter(_prevServed, tripsUsed);
+        if (next == null) return false; // late arrivals or the coned-off lane bring someone in
+        floors = next.floors;
+      }
+      if (_canBoardFor(floors)) return false;
+      final locked = _lockedLane;
+      return !(locked != null && _queues[locked].isNotEmpty && floors.contains(_queues[locked].first.floor));
+    } finally {
+      _queues[s.index].insert(0, gone);
+    }
+  }
+
+  /// Swap: the front residents of two open, non-empty lanes change places.
+  bool swapFronts(int a, int b) {
+    final n = _queues.length;
+    if (a == b || a < 0 || b < 0 || a >= n || b >= n || !canUsePower(Power.swap)) return false;
+    if (_queues[a].isEmpty || _queues[b].isEmpty || isLaneLocked(a) || isLaneLocked(b)) return false;
+    final front = _queues[a].first;
+    _queues[a][0] = _queues[b].first;
+    _queues[b][0] = front;
+    selection = null;
+    ghostLoad = null;
+    _spend(Power.swap);
+    _emit(SwapEvent(a, b));
+    return true;
+  }
+
+  /// +2 seats: more bench seats for the rest of the level.
+  bool addSeats() {
+    if (!canUsePower(Power.seats)) return false;
+    for (var i = 0; i < Formulas.powerSeats; i++) {
+      _bench.add(null);
+    }
+    _spend(Power.seats);
+    _emit(const SeatsAddedEvent(Formulas.powerSeats));
+    return true;
+  }
+
+  /// +1 trip: one more trip in the budget.
+  bool addTrip() {
+    if (!canUsePower(Power.trip)) return false;
+    tripsTotal += Formulas.powerTrips;
+    _spend(Power.trip);
+    _emit(TripAddedEvent(tripsLeft));
+    return true;
+  }
+
+  /// Express: the selected resident is delivered straight to their floor, with
+  /// no seat, trip or capacity used. Returns who was delivered, or null.
+  Resident? expressDeliver() {
+    final s = selection;
+    final r = selected;
+    if (s == null || r == null || !canUsePower(Power.express)) return null;
+    if (s.fromBench) {
+      _bench[s.index] = null;
+    } else {
+      _queues[s.index].removeAt(0);
+    }
+    selection = null;
+    ghostLoad = null;
+    _spend(Power.express);
+    _emit(ExpressEvent(r));
+    _revealFronts();
+    _settleAfterExpress();
+    return r;
+  }
+
+  void _spend(Power p) => _powerUses[p] = powerUses(p) + 1;
+
+  /// After an Express delivery: win if nobody is left, and re-route a waiting
+  /// lift whose floors nobody can reach any more, so the level cannot soft-lock.
+  void _settleAfterExpress() {
+    if (_riders.isEmpty && remainingTotal == 0) {
+      phase = Phase.won;
+      _emit(WonEvent(levelCoins, tripsUsed, perfects));
+      return;
+    }
+    if (_riders.isEmpty && !liftFloors.any(_reachable)) {
+      var next = _stopAfter(_prevServed, tripsUsed);
+      if (next == null && (_pendingArrivals.isNotEmpty || _lockedLane != null)) {
+        _admitArrivals(all: true);
+        if (_lockedLane != null) _openLane();
+        next = _stopAfter(_prevServed, tripsUsed);
+      }
+      if (next != null) {
+        _arrive(next);
+        return;
+      }
+    }
+    _checkJam();
   }
 
   TripRating? send() {
@@ -390,6 +586,7 @@ class LiftGame {
     load = 0;
     tripsUsed++;
     final served = liftFloors.last;
+    _prevServed = served;
     _admitArrivals(all: false);
     if (_lockedLane != null && tripsUsed >= level.lockedUntilTrip) _openLane();
     var next = _stopAfter(served, tripsUsed);
@@ -507,6 +704,17 @@ class LiftGame {
       count++;
     }
     if (count > 0) _emit(ArrivalsEvent(count));
+    _revealFronts();
+  }
+
+  /// Anyone now at the front of a lane is known for good. An unknown person
+  /// who just got there is revealed, with an event for the effect.
+  void _revealFronts() {
+    for (var lane = 0; lane < _queues.length; lane++) {
+      if (_queues[lane].isEmpty) continue;
+      final front = _queues[lane].first;
+      if (_revealed.add(front.id) && level.unknownIds.contains(front.id)) _emit(RevealedEvent(front, lane));
+    }
   }
 
   void _openLane() {

@@ -2,6 +2,8 @@
 /// the SDK so the rules are unit-tested and the SDK can be swapped.
 library;
 
+import '../game/formulas.dart';
+
 /// Rewarded placements. Each has a cap enforced by [RewardedBudget].
 enum RewardedPlacement {
   repairLift,
@@ -10,12 +12,16 @@ enum RewardedPlacement {
   tripleCoins,
   preHardScale,
   extraLife,
-  dailyChest;
+  dailyChest,
+
+  /// One use of an empty power (PRD v1.6).
+  powerRefill;
 
   /// Daily cap per placement; null = governed only by the per-attempt rule.
   int? get dailyCap => switch (this) {
         RewardedPlacement.extraLife => 3,
         RewardedPlacement.dailyChest => 1,
+        RewardedPlacement.powerRefill => Formulas.powerRefillDailyCap,
         _ => null,
       };
 }
@@ -83,6 +89,8 @@ class RewardedBudget {
   bool canShow(RewardedPlacement p, DateTime now) {
     rollTo(now);
     if (totalToday >= dailyTotal) return false;
+    // Power refills stop short of the total so the fail sheet keeps its views.
+    if (p == RewardedPlacement.powerRefill && totalToday >= dailyTotal - Formulas.powerRefillFailReserve) return false;
     final cap = p.dailyCap;
     return cap == null || (used[p.name] ?? 0) < cap;
   }

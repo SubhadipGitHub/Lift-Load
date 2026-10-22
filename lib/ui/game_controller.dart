@@ -6,6 +6,7 @@ import '../game/engine.dart';
 import '../game/formulas.dart';
 import '../game/generator.dart';
 import '../game/level.dart';
+import '../game/powers.dart';
 import '../game/scenario.dart';
 import '../services/ad_policy.dart';
 import '../services/ads_service.dart';
@@ -69,14 +70,27 @@ class GameController extends ChangeNotifier {
   int coneSerial = 0;
   int? coneLane;
 
+  /// Bumped when an unknown person reaches a lane front ([revealedLane]), so
+  /// the lobby can play the reveal.
+  int revealSerial = 0;
+  int? revealedLane;
+
   /// [refused], but only while the refused resident still stands there, so
   /// whoever steps up next does not replay their head-shake.
   Selection? get refusedSpot {
     final r = refused;
     if (r == null || !hasGame) return null;
-    final here = r.fromBench ? game.bench[r.index] : game.queues[r.index].firstOrNull;
+    final here = r.fromBench ? game.bench[r.index] : game.frontOf(r.index);
     return here?.id == _refusedId ? r : null;
   }
+
+  /// The power waiting for a second tap (only Swap needs one) and the first
+  /// lane the player picked for it.
+  Power? armedPower;
+  int? swapFirstLane;
+
+  /// Powers spent on this level, for analytics.
+  int _powersUsed = 0;
 
   /// Coins a send just earned, for the coin burst; cleared when taken.
   int _pendingRewardCoins = 0;
@@ -115,6 +129,7 @@ class GameController extends ChangeNotifier {
   void setSound(bool on) => _setting(() => profile.soundOn = on, 'sound', on);
   void setMusic(bool on) => _setting(() => profile.musicOn = on, 'music', on);
   void setHaptics(bool on) => _setting(() => profile.hapticsOn = on, 'haptics', on);
+  void setLeftHanded(bool on) => _setting(() => profile.leftHanded = on, 'left_handed', on);
 
   void _setting(void Function() apply, String name, bool on) {
     apply();
@@ -132,6 +147,9 @@ class GameController extends ChangeNotifier {
     refused = null;
     _refusedId = null;
     coneLane = null;
+    armedPower = null;
+    swapFirstLane = null;
+    _powersUsed = 0;
     _game = LiftGame(_levelFor(profile.level));
     _lobbyNews = '';
     tripleClaimed = false;
@@ -152,6 +170,8 @@ class GameController extends ChangeNotifier {
       'venue': game.level.venue.name,
       if (game.level.scenario != null) 'scenario': game.level.scenario!.name,
       'attempt': _attempt,
+      'lanes': game.laneCount,
+      'unknown_share': (game.level.unknownIds.length * 100 / game.level.residentCount).round(),
     });
     notifyListeners();
   }
@@ -224,6 +244,7 @@ class GameController extends ChangeNotifier {
       'via': via,
       'trips_used': game.tripsUsed,
       'attempt': _attempt,
+      'powers_used': _powersUsed,
     });
     profile.spendLife(now);
     profile.winStreak = 0;
@@ -274,11 +295,16 @@ class GameController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    if (armedPower == Power.swap) {
+      _pickSwapLane(lane);
+      return;
+    }
     game.tapQueue(lane);
     _afterAction();
   }
 
   void tapBench(int seat) {
+    cancelPower();
     _from = game.selection;
     final r = game.tapBench(seat);
     if (r == BenchResult.needSelection) message = 'Pick someone from the queue first';
@@ -286,6 +312,7 @@ class GameController extends ChangeNotifier {
   }
 
   void tapLift() {
+    cancelPower();
     _from = game.selection;
     final r = game.tapLift();
     if (r == BoardResult.noSelection) message = 'Select a resident first';
@@ -293,6 +320,7 @@ class GameController extends ChangeNotifier {
   }
 
   void send() {
+    cancelPower();
     game.send();
     _afterAction();
   }
@@ -325,6 +353,153 @@ class GameController extends ChangeNotifier {
       _save();
     }
     _afterAction();
+  }
+
+  // ── Powers (PRD v1.6) ──
+
+  /// The power has been unlocked by this level.
+  bool powerUnlocked(Power p) => hasGame && game.level.number >= p.unlockLevel;
+
+  int powerStock(Power p) => profile.stock(p);
+
+  /// Whether a tap on [p] would do something right now: unlocked, and the
+  /// engine allows it. An empty stock still counts: the tap opens a refill.
+  bool powerUsable(Power p) => powerUnlocked(p) && game.canUsePower(p);
+
+  /// Tap on a power button. With stock it acts (Swap arms and waits for two
+  /// lanes); without, it logs the tap and leaves the UI to offer a refill.
+  void usePower(Power p) {
+    if (!hasGame || game.phase != Phase.playing || adInFlight) return;
+    if (!powerUnlocked(p)) {
+      message = '${p.name} unlocks on level ${p.unlockLevel}';
+      notifyListeners();
+      return;
+    }
+    if (armedPower == p) {
+      cancelPower();
+      return;
+    }
+    cancelPower(quiet: true);
+    if (!game.canUsePower(p)) {
+      message = _powerBlocked(p);
+      notifyListeners();
+      return;
+    }
+    if (profile.stock(p) <= 0) {
+      analytics.log('power_empty_tapped', {'power': p.name, 'level': game.level.number});
+      message = 'No ${p.name} left. Watch an ad or spend coins';
+      notifyListeners();
+      return;
+    }
+    if (p == Power.swap) {
+      armedPower = p;
+      swapFirstLane = null;
+      message = 'Swap: tap the first lane';
+      notifyListeners();
+      return;
+    }
+    final done = switch (p) {
+      Power.seats => game.addSeats(),
+      Power.trip => game.addTrip(),
+      Power.express => game.expressDeliver() != null,
+      Power.swap => false,
+    };
+    if (done) _spentPower(p);
+    _afterAction();
+  }
+
+  String _powerBlocked(Power p) => switch (p) {
+        Power.swap => 'Swap needs two lanes with people in them',
+        Power.express => 'Select someone first, then Express',
+        Power.seats || Power.trip => 'Not available right now',
+      };
+
+  void cancelPower({bool quiet = false}) {
+    if (armedPower == null) return;
+    armedPower = null;
+    swapFirstLane = null;
+    if (!quiet) {
+      message = 'Tap a resident, then the lift or a bench seat';
+      notifyListeners();
+    }
+  }
+
+  void _pickSwapLane(int lane) {
+    if (game.isLaneLocked(lane) || game.frontOf(lane) == null) {
+      message = 'Pick a lane with someone at the front';
+      notifyListeners();
+      return;
+    }
+    final first = swapFirstLane;
+    if (first == null) {
+      swapFirstLane = lane;
+      message = 'Swap: now tap the second lane';
+      notifyListeners();
+      return;
+    }
+    if (first == lane) {
+      cancelPower();
+      return;
+    }
+    if (game.swapFronts(first, lane)) _spentPower(Power.swap);
+    armedPower = null;
+    swapFirstLane = null;
+    _afterAction();
+  }
+
+  void _spentPower(Power p) {
+    profile.spendPower(p);
+    _powersUsed++;
+    analytics.log('power_used', {
+      'power': p.name,
+      'level': game.level.number,
+      'left': profile.stock(p),
+      'trips_used': game.tripsUsed,
+    });
+    _save();
+  }
+
+  /// Stock can be bought only for a power the player has reached, so a stale
+  /// sheet cannot spend coins on something locked.
+  bool _powerReached(Power p) => profile.level >= p.unlockLevel;
+
+  bool canBuyPower(Power p) => _powerReached(p) && profile.coins >= Formulas.powerCoinPrice(p);
+
+  void buyPowerWithCoins(Power p) {
+    if (!canBuyPower(p)) return;
+    profile.coins -= Formulas.powerCoinPrice(p);
+    profile.addPower(p, 1);
+    analytics.log('power_bought', {
+      'power': p.name,
+      'coins': Formulas.powerCoinPrice(p),
+      'level': hasGame ? game.level.number : 0,
+    });
+    _save();
+    notifyListeners();
+  }
+
+  /// Offered only mid-level, never over a send or crash animation.
+  bool canAdForPower(Power p) =>
+      hasGame &&
+      game.phase == Phase.playing &&
+      _powerReached(p) &&
+      !adInFlight &&
+      profile.rewarded.canShow(RewardedPlacement.powerRefill, now);
+
+  /// One ad, [Formulas.powerAdUses] uses of [p]; granted only when the SDK
+  /// reports the reward earned.
+  Future<void> adForPower(Power p) async {
+    if (!canAdForPower(p)) return;
+    final ok = await _showRewarded(RewardedPlacement.powerRefill);
+    if (!ok) return;
+    profile.addPower(p, Formulas.powerAdUses);
+    analytics.log('power_refill_ad', {
+      'power': p.name,
+      'level': hasGame ? game.level.number : 0,
+      if (ads is StubAdsService) 'stub': true,
+    });
+    _save();
+    notifyListeners();
   }
 
   // ── Continues and rewards ──
@@ -483,14 +658,27 @@ class GameController extends ChangeNotifier {
             LiftKind.express => 'Express',
           };
           message = '$news$verdict$lift to ${floorList(floors)} arriving';
-        case ArrivalsEvent(:final count):
-          _lobbyNews += 'Rush hour: +$count in the queues · ';
-          message = 'Rush hour! $count more residents joined the queues';
+        case ArrivalsEvent():
+          _lobbyNews += 'Rush hour: a crowd joined the queues · ';
+          message = 'Rush hour! A crowd joined the queues';
         case LaneOpenedEvent(:final lane):
           _lobbyNews += 'Lane ${lane + 1} open · ';
           message = 'Maintenance done. Lane ${lane + 1} is open';
         case ScalePreviewEvent():
           message = 'The dashed needle shows where the load would land';
+        case RevealedEvent(:final lane):
+          revealSerial++;
+          revealedLane = lane;
+          analytics.log('unknown_revealed', {'level': game.level.number, 'lane': lane});
+          message = 'Someone new stepped up in lane ${lane + 1}';
+        case SwapEvent():
+          message = 'Swapped the two fronts';
+        case SeatsAddedEvent():
+          message = 'More bench seats';
+        case TripAddedEvent():
+          message = 'One more trip';
+        case ExpressEvent(:final resident):
+          message = 'Express! They went straight to ${resident.floor.label}';
         case WonEvent(:final coins, :final tripsUsed, :final perfects):
           message = 'Everyone is home!';
           profile
@@ -506,6 +694,7 @@ class GameController extends ChangeNotifier {
             'coins': coins,
             'attempt': _attempt,
             'continues': _continues,
+            'powers_used': _powersUsed,
           });
           if (tester.enabled && game.level.number == TesterConfig.lastLevel) {
             analytics.log('test_complete', {'level': game.level.number});
@@ -524,6 +713,7 @@ class GameController extends ChangeNotifier {
             'kind': kind.name,
             'trips_used': game.tripsUsed,
             'attempt': _attempt,
+            'powers_used': _powersUsed,
           });
         case ContinuedEvent(:final kind, :final seatsAdded):
           _lifeSpentForThisFail = false;
@@ -560,8 +750,14 @@ class GameController extends ChangeNotifier {
   static String describe(Resident r) =>
       '${r.type.displayName}${r.cargo == Cargo.none ? '' : ' with a ${r.cargo.displayName}'} going to ${r.floor.label}';
 
-  /// "+1 bench seat", "+2 bench seats", or empty for none.
-  static String seatsLabel(int n) => n <= 0 ? '' : '+$n bench ${n == 1 ? 'seat' : 'seats'}';
+  /// "+1 bench seat", "+2 bench seats", or empty for none. Where the level has
+  /// unknown people the count is left out: how many seats a jam needs would
+  /// say how deep a matching person stands.
+  String seatsLabel(int n) {
+    if (n <= 0) return '';
+    if (hasGame && game.level.unknownIds.isNotEmpty) return 'more bench seats';
+    return '+$n bench ${n == 1 ? 'seat' : 'seats'}';
+  }
 
   /// "2F" or "2F and 5F".
   static String floorList(List<Floor> floors) => floors.map((f) => f.label).join(' and ');
@@ -575,12 +771,22 @@ class GameController extends ChangeNotifier {
         LiftDebut(kind: LiftKind.express) => 'Express lifts stop at two floors in one trip',
         LiftDebut(kind: LiftKind.normal) => null,
         ScenarioDebut(:final scenario) => scenarioTip(scenario),
+        UnknownDebut() => 'Some people in the queue are a mystery until they reach the front',
+        LaneDebut() => 'The lobby now has a different number of lanes from level to level',
+        PowerDebut(:final power) => powerTip(power),
         null => null,
+      };
+
+  /// One line for a power's unlock, and for its button. Never hints at weight.
+  static String powerTip(Power p) => switch (p) {
+        Power.swap => 'New power: Swap trades the front people of two lanes',
+        Power.seats => 'New power: +2 seats adds two bench seats',
+        Power.trip => 'New power: +1 trip adds a trip',
+        Power.express => 'New power: Express sends the selected person straight to their floor',
       };
 
   static String? scenarioTip(Scenario? s) => switch (s) {
         Scenario.maintenance => 'One lane is closed for maintenance for the first trips',
-        Scenario.powerCut => 'Power cut! You only see who is near the front',
         Scenario.rushHour => 'Rush hour: more residents will arrive',
         null => null,
       };

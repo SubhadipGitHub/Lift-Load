@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../game/formulas.dart';
+import '../game/powers.dart';
 import 'ad_policy.dart';
 
 /// Everything saved on the device. Offline-first: no account, no server.
@@ -19,8 +20,15 @@ class Profile {
     this.soundOn = true,
     this.musicOn = true,
     this.hapticsOn = true,
+    this.leftHanded = false,
     Map<int, int>? attempts,
-  }) : attempts = attempts ?? {};
+    Map<Power, int>? powers,
+  })  : attempts = attempts ?? {},
+        powers = powers ?? {for (final p in Power.values) p: Formulas.startingPowerStock};
+
+  /// Save format. 2 added the powers and the left-handed switch; a version 1 save
+  /// loads with zero of each power and the switch off.
+  static const int version = 2;
 
   factory Profile.fresh(DateTime now) => Profile(
         level: 1,
@@ -48,6 +56,22 @@ class Profile {
   bool soundOn;
   bool musicOn;
   bool hapticsOn;
+
+  /// Mirrors the bottom bar (Send left, powers right).
+  bool leftHanded;
+
+  /// Uses owned of each power, bought with coins or earned from a rewarded ad.
+  final Map<Power, int> powers;
+
+  int stock(Power p) => powers[p] ?? 0;
+  void addPower(Power p, int n) => powers[p] = stock(p) + n;
+
+  /// Spends one use; false when there is none.
+  bool spendPower(Power p) {
+    if (stock(p) <= 0) return false;
+    powers[p] = stock(p) - 1;
+    return true;
+  }
 
   /// How many times each level has been started, so analytics can tell a
   /// first attempt from a retry.
@@ -80,7 +104,7 @@ class Profile {
   }
 
   Map<String, Object> toJson() => {
-        'v': 1,
+        'v': version,
         'level': level,
         'coins': coins,
         'lives': lives,
@@ -93,8 +117,23 @@ class Profile {
         'soundOn': soundOn,
         'musicOn': musicOn,
         'hapticsOn': hapticsOn,
+        'leftHanded': leftHanded,
+        'powers': {for (final e in powers.entries) e.key.name: e.value},
         'attempts': {for (final e in attempts.entries) '${e.key}': e.value},
       };
+
+  /// Stock per power from a save. One bad entry costs only that power, never
+  /// the rest of the profile.
+  static Map<Power, int> _powersFrom(Object? raw) {
+    final saved = raw is Map ? raw : const {};
+    return {
+      for (final p in Power.values)
+        p: switch (saved[p.name]) {
+          final num n => n.toInt().clamp(0, 999).toInt(),
+          _ => Formulas.startingPowerStock,
+        },
+    };
+  }
 
   static Profile fromJson(Map<String, dynamic> j, DateTime now) {
     try {
@@ -116,6 +155,8 @@ class Profile {
         soundOn: j['soundOn'] as bool? ?? true,
         musicOn: j['musicOn'] as bool? ?? true,
         hapticsOn: j['hapticsOn'] as bool? ?? true,
+        leftHanded: j['leftHanded'] as bool? ?? false,
+        powers: _powersFrom(j['powers']),
         attempts: {
           for (final e in (j['attempts'] as Map<String, dynamic>? ?? const {}).entries)
             int.parse(e.key): (e.value as num).toInt(),

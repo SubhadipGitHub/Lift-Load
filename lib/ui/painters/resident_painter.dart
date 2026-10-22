@@ -71,8 +71,8 @@ class ResidentLook {
   final Accessory accessory;
   final Vehicle vehicle;
 
-  /// Width of the design box for this type with [cargo]. A dimmed (power
-  /// cut) figure is always person-width so its outline gives nothing away.
+  /// Width of the design box for this type with [cargo]. A dimmed (unknown
+  /// person) figure is always person-width so its outline gives nothing away.
   static double designWidth(ResidentType t, Cargo cargo, {bool dimmed = false}) {
     if (dimmed) return personWidth;
     final v = of(t).vehicle;
@@ -853,7 +853,7 @@ class ResidentPainter extends CustomPainter {
   /// Eyes closed for this frame (idle blinking).
   final bool blink;
 
-  /// Power cut: a generic shadow with no type, build or cargo showing.
+  /// Unknown person: a generic shadow with no type, build or cargo showing.
   final bool dimmed;
 
   static final Map<ResidentType, _Figure> _cache = {};
