@@ -8,11 +8,14 @@ import '../../game/debuts.dart';
 import '../../game/formulas.dart';
 import '../../game/scenario.dart';
 import '../../game/venue.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
 import '../painters/sky_painter.dart';
 import '../theme.dart';
+import '../widgets/art_icon.dart';
+import '../widgets/glossy.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 import '../widgets/settings_sheet.dart';
@@ -72,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final m = Metrics.of(context);
     final stats = Row(
       children: [
-        _Stat(icon: Icons.favorite_rounded, color: LL.alarm, text: '${p.lives}'),
+        _Stat(icon: GameIcon.heart, label: 'Lives', text: '${p.lives}'),
         SizedBox(width: 6 * m.scale),
         Expanded(
           child: Text(
@@ -82,14 +85,20 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: m.font(12), color: LL.lilac, fontWeight: FontWeight.w700),
           ),
         ),
-        _Stat(icon: Icons.monetization_on_rounded, color: LL.brass, text: '${p.coins}'),
+        _Stat(icon: GameIcon.coin, label: 'Coins', text: '${p.coins}'),
         SizedBox(width: 6 * m.scale),
-        _Stat(icon: Icons.scale_rounded, color: LL.brass, text: '${p.scales}'),
-        IconButton(
-          tooltip: 'Settings',
+        _Stat(icon: GameIcon.scale, label: 'Scales', text: '${p.scales}'),
+        SizedBox(width: 6 * m.scale),
+        GlossyButton(
+          style: SurfaceStyle.plum,
           onPressed: () => showSettingsSheet(context, c),
-          iconSize: 24 * m.textScale,
-          icon: const Icon(Icons.settings_rounded, color: LL.lilac),
+          tooltip: 'Settings',
+          semanticsLabel: 'Settings',
+          width: m.hudRound,
+          height: m.hudRound,
+          inset: false,
+          touch: true,
+          child: Icon(Icons.settings_rounded, size: m.hudRoundIcon, color: LL.cream),
         ),
       ],
     );
@@ -139,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _Pulse(
             active: hasLives,
             child: PrimaryButton(
+              icon: hasLives ? GameIcon.play : null,
               label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
               height: 62 * m.scale,
               onPressed: hasLives ? _play : null,
@@ -294,26 +304,34 @@ class _Pulse extends StatelessWidget {
   }
 }
 
+/// A dark glossy pill on the home screen: an approved icon and a number.
 class _Stat extends StatelessWidget {
-  const _Stat({required this.icon, required this.color, required this.text});
+  const _Stat({required this.icon, required this.label, required this.text});
 
-  final IconData icon;
-  final Color color;
+  final GameIcon icon;
+  final String label;
   final String text;
 
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
-    return Container(
-      padding: EdgeInsets.fromLTRB(8 * m.scale, 5 * m.scale, 12 * m.scale, 5 * m.scale),
-      decoration: BoxDecoration(color: LL.facade, borderRadius: BorderRadius.circular(999)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18 * m.textScale, color: color),
-          SizedBox(width: 6 * m.scale),
-          Text(text, style: TextStyle(fontSize: m.font(14), fontWeight: FontWeight.w800)),
-        ],
+    return Semantics(
+      label: '$label $text',
+      child: ExcludeSemantics(
+        child: Glossy(
+          style: SurfaceStyle.chip,
+          depth: SurfaceDepth.chip,
+          inset: false,
+          padding: EdgeInsets.fromLTRB(m.hudChipGap, m.hudChipGap, m.hudChipGap * 3, m.hudChipGap),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArtIcon(icon, size: m.statIcon, color: ArtIcon.onDark(icon)),
+              SizedBox(width: m.hudChipGap * 2),
+              Text(text, style: LL.display.copyWith(fontSize: m.font(15), color: LL.cream)),
+            ],
+          ),
+        ),
       ),
     );
   }

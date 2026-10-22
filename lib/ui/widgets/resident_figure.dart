@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../art_assets.dart';
+import '../layout.dart';
 import '../painters/floor_shape_painter.dart';
 import '../painters/resident_painter.dart';
 import '../painters/sprite_painter.dart';
 import '../theme.dart';
+import 'glossy.dart';
 
 /// Whether figures below use the sprite art (`Profile.useSpriteArt`). With no
 /// scope above, sprites are on, the same as a fresh profile.
@@ -88,7 +90,10 @@ class ResidentFigure extends StatelessWidget {
   }
 }
 
-/// The floor tag shown above a waiting resident: shape + floor label.
+/// The floor tag shown above a waiting resident: a glossy pill in the
+/// floor's colour with its white shape and its label (style frame, `.tag`).
+/// The outline and edge paint around the tag, so its layout height is the
+/// same as before the restyle.
 class FloorTag extends StatelessWidget {
   const FloorTag({super.key, required this.floor, this.compact = false, this.scale = 1});
 
@@ -102,16 +107,18 @@ class FloorTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = FloorStyle.of(floor);
     final k = scale;
-    return Container(
-      height: (compact ? 14 : 20) * k,
+    return Glossy(
+      style: SurfaceStyle.floor(floor),
+      depth: SurfaceDepth.tag,
+      inset: false,
+      height: (compact ? Metrics.compactTagHeight : Metrics.tagHeight) * k,
       padding: EdgeInsets.symmetric(horizontal: (compact ? 5 : 8) * k),
-      decoration: BoxDecoration(color: style.color, borderRadius: BorderRadius.circular(10 * k)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox.square(
             dimension: (compact ? 8 : 11) * k,
-            child: CustomPaint(painter: FloorShapePainter(style.shape, Colors.white)),
+            child: CustomPaint(painter: FloorShapePainter(style.shape, LL.creamHi, shadow: LL.surfaceShade)),
           ),
           SizedBox(width: (compact ? 2 : 3) * k),
           Text(

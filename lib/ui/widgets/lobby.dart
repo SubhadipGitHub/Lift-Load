@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../../game/engine.dart';
+import '../../game/scenario.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
 import '../painters/lobby_painter.dart';
 import '../theme.dart';
+import 'art_icon.dart';
+import 'glossy.dart';
 import 'resident_figure.dart';
 
 /// Bench seats: tap a seated resident to select them, tap an empty seat to
@@ -119,59 +122,73 @@ class _Seat extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = resident;
     final m = Metrics.of(context);
-    final Color bg;
-    final Color border;
-    if (selected) {
-      bg = LL.cream;
-      border = LL.brass;
-    } else if (r != null) {
-      bg = LL.cream;
-      border = Colors.transparent;
-    } else if (seatHint) {
-      bg = LL.brass.withValues(alpha: 0.12);
-      border = LL.brass;
-    } else {
-      bg = Colors.transparent;
-      border = const Color(0xFF5A5592);
-    }
+    final radius = m.seatRadius;
+    final height = m.seatHeightFor(figure);
     final clock = seatHint ? IdleClock.of(context) : null;
-    // While breathing the border changes every frame, so it must not tween.
-    Widget seat(Color border) => AnimatedContainer(
-          duration: clock == null ? motionMs(context, 150) : Duration.zero,
-          height: m.seatHeightFor(figure),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14 * m.scale),
-            border: Border.all(color: border, width: Metrics.seatBorder),
-          ),
-          child: r != null
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    FloorTag(floor: r.floor, compact: true, scale: m.scale),
-                    Flexible(
-                      child: Opacity(
-                        opacity: hidden ? 0 : 1,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: IdleSway(
-                            seed: r.id,
-                            builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
-                          ),
-                        ),
-                      ),
+    Widget seat(double breath) {
+      if (r != null) {
+        // Occupied: a cream glossy seat; picked, its rim turns brass and glows.
+        return Glossy(
+          style: selected ? SurfaceStyle.seatPicked : SurfaceStyle.seat,
+          depth: SurfaceDepth.seat,
+          inset: false,
+          radius: radius,
+          height: height,
+          glow: selected ? LL.pickGlow : null,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloorTag(floor: r.floor, compact: true, scale: m.scale),
+              Flexible(
+                child: Opacity(
+                  opacity: hidden ? 0 : 1,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: IdleSway(
+                      seed: r.id,
+                      builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
                     ),
-                  ],
-                )
-              : seatHint
-                  ? Center(
-                      child: Text(
-                        'Seat',
-                        style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.brass),
-                      ),
-                    )
-                  : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
+      }
+      // Free: a dark well. One that can take the selection glows brass and
+      // breathes ([breath] 0 to 1).
+      return AnimatedContainer(
+        duration: clock == null ? motionMs(context, 150) : Duration.zero,
+        height: height,
+        decoration: BoxDecoration(
+          color: seatHint ? LL.brass.withValues(alpha: 0.13) : null,
+          gradient: seatHint
+              ? null
+              : const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.center,
+                  colors: [LL.seatWellShade, LL.seatWell],
+                ),
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(
+            color: seatHint ? LL.brass.withValues(alpha: 0.55 + 0.45 * breath) : LL.seatRim,
+            width: Metrics.seatBorder,
+          ),
+          boxShadow: seatHint
+              ? [BoxShadow(color: LL.pickGlow.withValues(alpha: LL.pickGlow.a * (0.6 + 0.4 * breath)), blurRadius: m.seatGlow)]
+              : null,
+        ),
+        child: seatHint
+            ? Center(
+                child: Text(
+                  'Seat',
+                  style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.brass),
+                ),
+              )
+            : null,
+      );
+    }
+
     return Semantics(
       button: true,
       label: r == null ? 'Empty bench seat' : 'Bench: ${GameController.describe(r)}',
@@ -180,11 +197,10 @@ class _Seat extends StatelessWidget {
         onTap: enabled ? onTap : null,
         // A free seat that can take the selection breathes its border.
         child: clock == null
-            ? seat(border)
+            ? seat(1)
             : ValueListenableBuilder<double>(
                 valueListenable: clock,
-                builder: (context, t, _) =>
-                    seat(border.withValues(alpha: 0.55 + 0.45 * (0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.1)))),
+                builder: (context, t, _) => seat(0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.1)),
               ),
       ),
     );
@@ -258,7 +274,7 @@ class QueueLanes extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.only(bottom: 6 * m.scale),
                   child: _Banner(
-                    icon: Icons.groups_rounded,
+                    icon: ArtIcon.scenario(Scenario.rushHour, size: Metrics.bannerIcon * m.scale),
                     text: 'A crowd arrives after trip ${pending.first.afterTrip}',
                   ),
                 ),
@@ -338,7 +354,7 @@ class QueueLanes extends StatelessWidget {
 class _Banner extends StatelessWidget {
   const _Banner({required this.icon, required this.text});
 
-  final IconData icon;
+  final Widget icon;
   final String text;
 
   @override
@@ -350,7 +366,7 @@ class _Banner extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14 * m.scale, color: LL.brass),
+          icon,
           SizedBox(width: 5 * m.scale),
           Flexible(
             child: Text(
@@ -387,7 +403,7 @@ class _Cones extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 SizedBox(height: 14 * m.scale),
-                Icon(Icons.construction_rounded, size: 30 * m.scale, color: const Color(0xFFFF8A3D)),
+                ArtIcon.scenario(Scenario.maintenance, size: Metrics.coneIcon * m.scale),
                 SizedBox(height: 4 * m.scale),
                 FittedBox(
                   fit: BoxFit.scaleDown,

@@ -7,12 +7,14 @@ import 'package:lift_load/services/analytics_service.dart';
 import 'package:lift_load/ui/game_controller.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
 import 'package:lift_load/ui/widgets/effects.dart';
+import 'package:lift_load/ui/widgets/glossy.dart';
+import 'package:lift_load/ui/widgets/play_bar.dart';
 
 import 'helpers.dart';
 
 Finder power(Power p) => find.byKey(ValueKey('power-${p.name}'));
 Finder badge(Power p, String text) => find.descendant(of: power(p), matching: find.text(text));
-Finder send() => find.widgetWithText(FilledButton, 'Send');
+Finder send() => find.byKey(SendButton.buttonKey);
 
 /// The lane front standing in [lane], found the way a screen reader finds it.
 Finder front(GameController c, int lane) =>
@@ -155,10 +157,10 @@ void main() {
     expect(find.text('Needs ${Formulas.powerCoinPrice(Power.seats)} coins. You have 40.'), findsOneWidget);
     expect(find.text('No more ad refills today.'), findsOneWidget);
     final coinButton = tester
-        .widget<FilledButton>(find.widgetWithText(FilledButton, 'Spend ${Formulas.powerCoinPrice(Power.seats)} coins'));
+        .widget<GlossyButton>(find.widgetWithText(GlossyButton, 'Spend ${Formulas.powerCoinPrice(Power.seats)} coins'));
     expect(coinButton.onPressed, isNull);
     final adButton =
-        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Watch an ad · +${Formulas.powerAdUses} Seats'));
+        tester.widget<GlossyButton>(find.widgetWithText(GlossyButton, 'Watch an ad · +${Formulas.powerAdUses} Seats'));
     expect(adButton.onPressed, isNull);
   });
 

@@ -12,8 +12,9 @@ import '../painters/floor_shape_painter.dart';
 import '../painters/lobby_painter.dart';
 import '../painters/shaft_painter.dart';
 import '../theme.dart';
+import 'art_icon.dart';
+import 'glossy.dart';
 import 'load_gauge.dart';
-import 'pressable.dart';
 import 'resident_figure.dart';
 
 /// The shaft panel: upcoming lifts, the cabin (a tap target that shows who
@@ -92,7 +93,14 @@ class LiftShaft extends StatelessWidget {
                       FittedBox(fit: BoxFit.scaleDown, child: Text('NEXT', style: label)),
                       SizedBox(height: 7 * s),
                       for (var i = 0; i < upcoming.length; i++) ...[
-                        Opacity(opacity: i == 0 ? 1 : 0.55, child: _NextChip(stop: upcoming[i])),
+                        // The lifts after the next one sit back, smaller and fainter.
+                        Opacity(
+                          opacity: i == 0 ? 1 : Metrics.nextDimOpacity,
+                          child: Transform.scale(
+                            scale: i == 0 ? 1 : Metrics.nextDimScale,
+                            child: _NextChip(stop: upcoming[i]),
+                          ),
+                        ),
                         SizedBox(height: 7 * s),
                       ],
                       const Spacer(),
@@ -159,11 +167,13 @@ class LiftShaft extends StatelessWidget {
                   padding: EdgeInsets.only(top: 14 * s),
                   child: Column(
                     children: [
-                      LoadGauge(
-                        fraction: game.loadFraction,
-                        zone: game.zone,
-                        ghost: game.ghostLoad == null ? null : game.ghostLoad! / game.capacity,
-                        width: m.gaugeWidth,
+                      _GaugePlate(
+                        child: LoadGauge(
+                          fraction: game.loadFraction,
+                          zone: game.zone,
+                          ghost: game.ghostLoad == null ? null : game.ghostLoad! / game.capacity,
+                          width: m.gaugeWidth,
+                        ),
                       ),
                       SizedBox(height: 10 * s),
                       _ScaleButton(left: scaleLeft, ready: scaleReady, onPressed: onScale),
@@ -216,65 +226,119 @@ class _FloorDisplay extends StatelessWidget {
   }
 }
 
-/// One upcoming lift: its floor colour and label, and a badge for its kind.
-/// An express shows both floors.
+/// The dark plate behind the load gauge (style frame, `.gauge`).
+class _GaugePlate extends StatelessWidget {
+  const _GaugePlate({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = Metrics.of(context);
+    final radius = BorderRadius.circular(m.gaugePlateRadius);
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: LL.gaugeBed, width: Metrics.gaugePlateRim),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [LL.gaugePlateTop, LL.gaugePlateBottom],
+        ),
+      ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: LL.gaugePlateRim, width: Metrics.messageRim),
+      ),
+      padding: EdgeInsets.symmetric(vertical: m.gaugePlatePadding, horizontal: m.gaugePlatePadding / 2),
+      child: child,
+    );
+  }
+}
+
+/// One upcoming lift: a glossy chip in its floor's colour with the floor's
+/// shape and label, and a badge on the corner for its kind. An express is
+/// split between its two floors.
 class _NextChip extends StatelessWidget {
   const _NextChip({required this.stop});
   final LiftStop stop;
 
   @override
   Widget build(BuildContext context) {
-    final s = FloorStyle.of(stop.floors.first);
-    final kind = LiftKindStyle.of(stop.kind);
+    final first = FloorStyle.of(stop.floors.first);
+    final last = FloorStyle.of(stop.floors.last);
     final express = stop.floors.length > 1;
     final m = Metrics.of(context);
     return Semantics(
       label:
           '${stop.kind == LiftKind.normal ? 'Lift' : '${stop.kind.name} lift'} to ${GameController.floorList(stop.floors)}',
-      child: Container(
-        width: m.nextChip,
-        height: m.nextChip,
-        decoration: BoxDecoration(
-          gradient: express
-              ? LinearGradient(colors: [
-                  s.color,
-                  s.color,
-                  FloorStyle.of(stop.floors.last).color,
-                  FloorStyle.of(stop.floors.last).color
-                ], stops: const [
-                  0,
-                  0.5,
-                  0.5,
-                  1
-                ])
-              : null,
-          color: express ? null : s.color,
-          borderRadius: BorderRadius.circular(12 * m.scale),
-          border: kind.icon == null ? null : Border.all(color: kind.cabin, width: 3 * m.scale),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: SizedBox.square(
+        dimension: m.nextChip,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            if (kind.icon != null)
-              Icon(kind.icon, size: 13 * m.scale, color: LL.ink)
-            else
-              SizedBox.square(
-                dimension: 13 * m.scale,
-                child: CustomPaint(painter: FloorShapePainter(s.shape, Colors.white)),
-              ),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                stop.floors.map((f) => f.label).join(' '),
-                maxLines: 1,
-                style: TextStyle(fontSize: (express ? 9 : 11) * m.scale, fontWeight: FontWeight.w800, color: LL.ink),
+            Glossy(
+              style: SurfaceStyle.floor(stop.floors.first),
+              depth: SurfaceDepth.chip,
+              inset: false,
+              radius: m.nextChipRadius,
+              width: m.nextChip,
+              height: m.nextChip,
+              faceGradient: express
+                  ? LinearGradient(
+                      colors: [first.light, first.color, last.light, last.color],
+                      stops: const [0, 0.5, 0.5, 1],
+                    )
+                  : null,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox.square(
+                    dimension: 13 * m.scale,
+                    child: CustomPaint(painter: FloorShapePainter(first.shape, LL.creamHi, shadow: LL.surfaceShade)),
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      stop.floors.map((f) => f.label).join(' '),
+                      maxLines: 1,
+                      style: TextStyle(
+                          fontSize: (express ? 9 : 11) * m.scale, fontWeight: FontWeight.w800, color: LL.ink),
+                    ),
+                  ),
+                ],
               ),
             ),
+            if (stop.kind != LiftKind.normal)
+              Positioned(
+                right: -m.kindBadge / 3,
+                top: -m.kindBadge / 3,
+                child: _KindBadge(kind: stop.kind, size: m.kindBadge),
+              ),
           ],
         ),
       ),
     );
   }
+}
+
+/// A lift kind's approved badge on a small dark disc (the disc lets the
+/// Material fallback read on any colour).
+class _KindBadge extends StatelessWidget {
+  const _KindBadge({required this.kind, required this.size});
+
+  final LiftKind kind;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(color: LL.cabinPlate, shape: BoxShape.circle),
+        child: ArtIcon.kind(kind, size: size * Metrics.kindBadgeArt, color: LL.cream),
+      );
 }
 
 /// The cabin: a tap target that shows who is riding. With sprite art on and
@@ -362,22 +426,15 @@ class _Cabin extends StatelessWidget {
         child: ColoredBox(color: LL.doorShade.withValues(alpha: CabinMotion.closedDim * (1 - doorOpen.clamp(0, 1)))),
       );
 
-  /// The destination: the kind's badge and one pill per floor. Over the art
-  /// the badge sits on a dark plate, so it reads on a dark wood interior too.
-  Widget _floorRow(Metrics m, LiftKindStyle kind, {bool onArt = false}) => FittedBox(
+  /// The destination: the kind's badge and one pill per floor. The badge
+  /// sits on a dark disc, so it reads on a dark wood interior too.
+  Widget _floorRow(Metrics m) => FittedBox(
         fit: BoxFit.scaleDown,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (kind.icon != null) ...[
-              if (onArt)
-                Container(
-                  padding: EdgeInsets.all(3 * m.scale),
-                  decoration: const BoxDecoration(color: LL.cabinPlate, shape: BoxShape.circle),
-                  child: Icon(kind.icon, size: 14 * m.scale, color: LL.cream),
-                )
-              else
-                Icon(kind.icon, size: 16 * m.scale, color: LL.ink),
+            if (game.liftKind != LiftKind.normal) ...[
+              _KindBadge(kind: game.liftKind, size: m.cabinKindBadge),
               SizedBox(width: 4 * m.scale),
             ],
             for (var i = 0; i < game.liftFloors.length; i++) ...[
@@ -389,6 +446,9 @@ class _Cabin extends StatelessWidget {
       );
 
   String get _emptyText => hint ? 'Tap to board' : 'Empty';
+
+  /// The dark lines either side of the rim: the kind's colour, deepened.
+  static Color _rimShade(LiftKindStyle kind) => Color.lerp(kind.cabin, LL.ink, 0.72)!;
 
   /// The approved art: interior, riders, dim, leaves, then the chrome that
   /// carries game information on dark plates so it reads on any interior.
@@ -407,8 +467,10 @@ class _Cabin extends StatelessWidget {
         boxShadow: [
           const BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 5)),
           if (hint) BoxShadow(color: kind.cabin.withValues(alpha: 0.5), spreadRadius: 4 * s, blurRadius: 6),
+          BoxShadow(color: _rimShade(kind), spreadRadius: m.cabinRimLine),
         ],
       ),
+      // The rim (style frame): the kind's colour between two dark lines.
       foregroundDecoration: BoxDecoration(
         borderRadius: radius,
         border: Border.all(color: crashed ? LL.alarm : kind.cabin, width: m.cabinRim),
@@ -438,13 +500,21 @@ class _Cabin extends StatelessWidget {
               CustomPaint(
                 painter: CabinLeavesPainter(left: art.left, right: art.right, open: doorOpen, seam: m.doorSeam),
               ),
+            IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(color: _rimShade(kind), width: m.cabinRim + m.cabinRimLine),
+                ),
+              ),
+            ),
             Positioned(
               left: m.cabinChromeTop,
               right: m.cabinChromeTop,
               top: m.cabinChromeTop,
               child: Column(
                 children: [
-                  _floorRow(m, kind, onArt: true),
+                  _floorRow(m),
                   // The kind's sign says how this lift differs; a normal
                   // lift's ("Mind the load") is decoration the art replaces.
                   if (game.liftKind != LiftKind.normal) ...[
@@ -502,7 +572,7 @@ class _Cabin extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _floorRow(m, kind),
+          _floorRow(m),
           SizedBox(height: 5 * s),
           Expanded(
             child: ClipRRect(
@@ -565,15 +635,17 @@ class _FloorPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = FloorStyle.of(floor);
     final m = Metrics.of(context);
-    return Container(
+    return Glossy(
+      style: SurfaceStyle.floor(floor),
+      depth: SurfaceDepth.tag,
+      inset: false,
       padding: EdgeInsets.fromLTRB(6 * m.scale, 2 * m.scale, 10 * m.scale, 2 * m.scale),
-      decoration: BoxDecoration(color: style.color, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox.square(
             dimension: 12 * m.scale,
-            child: CustomPaint(painter: FloorShapePainter(style.shape, Colors.white)),
+            child: CustomPaint(painter: FloorShapePainter(style.shape, LL.creamHi, shadow: LL.surfaceShade)),
           ),
           SizedBox(width: 5 * m.scale),
           Text(
@@ -587,6 +659,7 @@ class _FloorPill extends StatelessWidget {
 }
 
 /// Scale: previews the selected resident as a dashed needle on the gauge.
+/// A cream glossy pill with the approved scale icon and the uses left.
 class _ScaleButton extends StatelessWidget {
   const _ScaleButton({required this.left, required this.ready, required this.onPressed});
 
@@ -594,54 +667,42 @@ class _ScaleButton extends StatelessWidget {
   final bool ready;
   final VoidCallback? onPressed;
 
+  /// Faded while a tap would not preview anyone.
+  static const double idleOpacity = 0.6;
+
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
     final size = m.scaleButton;
     final usable = onPressed != null && ready && left > 0;
-    return Semantics(
-      button: true,
-      enabled: onPressed != null,
-      onTap: onPressed,
-      label: 'Scale: preview where the selected resident would put the needle, $left left',
-      child: ExcludeSemantics(
-        child: PressScale(
-          enabled: onPressed != null,
-          child: Opacity(
-            opacity: usable ? 1 : 0.6,
-            child: SizedBox(
-              width: size.width,
-              height: size.height,
-              child: Material(
-                color: LL.cream,
-                shape: StadiumBorder(side: BorderSide(color: LL.brassDark, width: 2 * m.scale)),
-                child: InkWell(
-                  customBorder: const StadiumBorder(),
-                  onTap: onPressed,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6 * m.scale),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.scale_rounded, size: 18 * m.textScale, color: LL.ink),
-                          SizedBox(width: 4 * m.scale),
-                          Text('Scale',
-                              style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.ink)),
-                          SizedBox(width: 5 * m.scale),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 6 * m.scale, vertical: 1),
-                            decoration: BoxDecoration(color: LL.brass, borderRadius: BorderRadius.circular(999)),
-                            child: Text('$left', style: LL.display.copyWith(fontSize: m.font(12), color: LL.ink)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+    return Opacity(
+      opacity: usable ? 1 : idleOpacity,
+      child: GlossyButton(
+        key: const ValueKey('scale'),
+        style: SurfaceStyle.cream,
+        disabledStyle: SurfaceStyle.cream,
+        onPressed: onPressed,
+        semanticsLabel: 'Scale: preview where the selected resident would put the needle, $left left',
+        width: size.width,
+        height: size.height,
+        padding: EdgeInsets.symmetric(horizontal: 4 * m.scale),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArtIcon(GameIcon.scale, size: m.scaleIcon),
+              SizedBox(width: 3 * m.scale),
+              Text('Scale', style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.ink)),
+              SizedBox(width: 4 * m.scale),
+              Glossy(
+                style: SurfaceStyle.brass,
+                depth: SurfaceDepth.tag,
+                inset: false,
+                padding: EdgeInsets.symmetric(horizontal: 6 * m.scale, vertical: 1),
+                child: Text('$left', style: LL.display.copyWith(fontSize: m.font(12), color: LL.ink)),
               ),
-            ),
+            ],
           ),
         ),
       ),

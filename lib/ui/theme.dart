@@ -43,6 +43,75 @@ abstract final class LL {
   /// The halo around the unknown ghost: the same for everyone.
   static const ghostGlow = Color(0x99A9C8FF);
 
+  // The 3D surface recipe (docs/art/style-frame): each surface has a lit
+  // gradient (hi, mid, lo), a dark outline that also forms the thick bottom
+  // edge, and a darker drop under that. See [SurfaceStyle].
+  static const mintHi = Color(0xFFB6FFDC);
+  static const mintLo = Color(0xFF19A56B);
+  static const mintEdge = Color(0xFF07402A);
+  static const mintDrop = Color(0xFF04200F);
+  static const brassHi = Color(0xFFFFE58F);
+  static const brassLo = Color(0xFFD88F12);
+  static const brassEdge = Color(0xFF5A3A05);
+  static const brassDrop = Color(0xFF2A1A02);
+  static const creamHi = Color(0xFFFFFFFF);
+  static const creamLo = Color(0xFFEAD7B4);
+  static const creamEdge = Color(0xFF4A3A20);
+  static const creamDrop = Color(0xFF241A0A);
+  static const plumHi = Color(0xFF8B86D8);
+  static const plumMid = Color(0xFF4A4590);
+  static const plumLo = Color(0xFF2F2B66);
+  static const plumEdge = Color(0xFF0B0A24);
+  static const plumDrop = Color(0xFF05041A);
+
+  /// HUD chips (lives, coins, trips): a dark pill with a faint gloss.
+  static const chipHi = Color(0xFF3A3585);
+  static const chipMid = Color(0xFF2D2970);
+  static const chipLo = Color(0xFF211E52);
+
+  /// An occupied bench seat: warm cream.
+  static const seatHi = Color(0xFFFFFAF0);
+  static const seatLo = Color(0xFFF0DFBD);
+
+  /// A free seat: a dark well with a lilac rim.
+  static const seatWell = Color(0x44000000);
+  static const seatWellShade = Color(0x55000000);
+  static const seatRim = Color(0xFF5A5592);
+
+  /// A disabled button: flat slate, no gloss, lilac text.
+  static const offHi = Color(0xFF6A6696);
+  static const offMid = Color(0xFF55517F);
+  static const offLo = Color(0xFF433F6B);
+  static const offEdge = Color(0xFF1B1938);
+  static const offDrop = Color(0xFF0B0A1E);
+
+  /// The light pieces of every surface: the top inner line, the gloss band
+  /// (from its top to its bottom) and the shade along the inner bottom.
+  static const surfaceHighlight = Color(0xB0FFFFFF);
+  static const surfaceGlossTop = Color(0x99FFFFFF);
+  static const surfaceGlossBottom = Color(0x10FFFFFF);
+  static const surfaceShade = Color(0x33000000);
+
+  /// The warm glow around a picked seat or a seat that can take someone.
+  static const pickGlow = Color(0x77F5B83D);
+
+  /// The message pill under the shaft.
+  static const messagePill = Color(0x77000000);
+  static const messageRim = Color(0x22FFFFFF);
+
+  /// The load gauge (style frame): its plate, the dark bed under the arcs,
+  /// the grey zone, the gloss line over the arcs, and the needle's hub.
+  static const gaugePlateTop = Color(0xCC14132E);
+  static const gaugePlateBottom = Color(0xEE0B0A24);
+  static const gaugePlateRim = Color(0x1FFFFFFF);
+  static const gaugeBed = Color(0xFF05041A);
+  static const gaugeGrey = Color(0xFF8F8AC4);
+  static const gaugeGloss = Color(0x59FFFFFF);
+  static const gaugeHub = Color(0xFFFFC233);
+
+  /// The cones' orange on a closed lane (the painted fallback icon).
+  static const cone = Color(0xFFFF8A3D);
+
   // Baloo 2 for display, Nunito Sans for everything else (bundled, OFL).
   static const displayFont = 'Baloo2';
   static const bodyFont = 'NunitoSans';
@@ -72,20 +141,107 @@ abstract final class LL {
 /// Each floor has a colour and a shape; the shape carries the meaning so the
 /// game reads in grayscale and for colour-blind players.
 class FloorStyle {
-  const FloorStyle(this.color, this.dark, this.shape);
+  const FloorStyle(this.color, this.dark, this.shape, {required this.light, required this.edge});
   final Color color;
   final Color dark;
   final FloorShape shape;
 
+  /// The top of a floor chip's lit gradient, and its outline and bottom
+  /// edge (style frame, `.tag` and `.nchip`).
+  final Color light;
+  final Color edge;
+
   static FloorStyle of(Floor f) => switch (f) {
-        Floor.coral => const FloorStyle(Color(0xFFFF6B5B), Color(0xFFB03A2E), FloorShape.circle),
-        Floor.sun => const FloorStyle(Color(0xFFFFC233), Color(0xFFA6740A), FloorShape.triangle),
-        Floor.teal => const FloorStyle(Color(0xFF14B8A6), Color(0xFF0B6E64), FloorShape.square),
-        Floor.blue => const FloorStyle(Color(0xFF4C7DFF), Color(0xFF2747B0), FloorShape.diamond),
-        Floor.plum => const FloorStyle(Color(0xFFA066F5), Color(0xFF5B2DB0), FloorShape.hexagon),
-        Floor.leaf => const FloorStyle(Color(0xFF7BD148), Color(0xFF3F7A1C), FloorShape.plus),
+        Floor.coral => const FloorStyle(Color(0xFFFF6B5B), Color(0xFFB03A2E), FloorShape.circle,
+            light: Color(0xFFFF9A8C), edge: Color(0xFF8A2A20)),
+        Floor.sun => const FloorStyle(Color(0xFFFFC233), Color(0xFFA6740A), FloorShape.triangle,
+            light: Color(0xFFFFE07A), edge: Color(0xFF7A5206)),
+        Floor.teal => const FloorStyle(Color(0xFF14B8A6), Color(0xFF0B6E64), FloorShape.square,
+            light: Color(0xFF4BE0CF), edge: Color(0xFF08524A)),
+        Floor.blue => const FloorStyle(Color(0xFF4C7DFF), Color(0xFF2747B0), FloorShape.diamond,
+            light: Color(0xFF86A6FF), edge: Color(0xFF1C3380)),
+        Floor.plum => const FloorStyle(Color(0xFFA066F5), Color(0xFF5B2DB0), FloorShape.hexagon,
+            light: Color(0xFFC49CFF), edge: Color(0xFF43208A)),
+        Floor.leaf => const FloorStyle(Color(0xFF7BD148), Color(0xFF3F7A1C), FloorShape.plus,
+            light: Color(0xFFA8EF7A), edge: Color(0xFF2D5A12)),
       };
 }
+
+/// One 3D surface from the style frame: a lit vertical gradient ([hi] at the
+/// top, [mid] at 48%, [lo] at the bottom), a dark [edge] that outlines it and
+/// forms its thick bottom edge, a darker [drop] under that, a top gloss of
+/// [gloss] strength, and the [ink] for text and icons on it. Drawn by
+/// `widgets/glossy.dart`; the sizes come from `Metrics.surface`.
+@immutable
+class SurfaceStyle {
+  const SurfaceStyle({
+    required this.hi,
+    required this.mid,
+    required this.lo,
+    required this.edge,
+    required this.drop,
+    required this.ink,
+    this.gloss = 1,
+  });
+
+  final Color hi, mid, lo, edge, drop, ink;
+
+  /// 0 to 1: how strong the top highlight and gloss band are.
+  final double gloss;
+
+  /// Send and the rewarded buttons.
+  static const mint = SurfaceStyle(hi: LL.mintHi, mid: LL.mint, lo: LL.mintLo, edge: LL.mintEdge, drop: LL.mintDrop, ink: LL.ink);
+
+  /// Primary actions that spend coins or move on; the level pill.
+  static const brass =
+      SurfaceStyle(hi: LL.brassHi, mid: LL.brass, lo: LL.brassLo, edge: LL.brassEdge, drop: LL.brassDrop, ink: LL.ink);
+
+  /// The dock, Scale and quiet sheet buttons.
+  static const cream =
+      SurfaceStyle(hi: LL.creamHi, mid: LL.cream, lo: LL.creamLo, edge: LL.creamEdge, drop: LL.creamDrop, ink: LL.ink);
+
+  /// Dark round HUD buttons (back, settings) and dark sheet buttons.
+  static const plum =
+      SurfaceStyle(hi: LL.plumHi, mid: LL.plumMid, lo: LL.plumLo, edge: LL.plumEdge, drop: LL.plumDrop, ink: LL.cream);
+
+  /// HUD pills: lives, coins, trips.
+  static const chip = SurfaceStyle(
+      hi: LL.chipHi, mid: LL.chipMid, lo: LL.chipLo, edge: LL.plumEdge, drop: LL.plumDrop, ink: LL.cream, gloss: 0.3);
+
+  /// An occupied bench seat, and the same seat picked.
+  static const seat = SurfaceStyle(
+      hi: LL.seatHi, mid: LL.seatHi, lo: LL.seatLo, edge: LL.creamEdge, drop: LL.creamDrop, ink: LL.ink, gloss: 0.5);
+  static const seatPicked = SurfaceStyle(
+      hi: LL.seatHi, mid: LL.seatHi, lo: LL.seatLo, edge: LL.brassDark, drop: LL.brassEdge, ink: LL.ink, gloss: 0.5);
+
+  /// Any button that cannot be pressed: flat slate, so it never reads as live.
+  static const off =
+      SurfaceStyle(hi: LL.offHi, mid: LL.offMid, lo: LL.offLo, edge: LL.offEdge, drop: LL.offDrop, ink: LL.lilac, gloss: 0);
+
+  /// A floor's chip or tag: its own colour, white glyph, ink label.
+  static SurfaceStyle floor(Floor f) {
+    final s = FloorStyle.of(f);
+    return SurfaceStyle(hi: s.light, mid: s.light, lo: s.color, edge: s.edge, drop: LL.plumDrop, ink: LL.ink);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is SurfaceStyle &&
+      other.hi == hi &&
+      other.mid == mid &&
+      other.lo == lo &&
+      other.edge == edge &&
+      other.drop == drop &&
+      other.ink == ink &&
+      other.gloss == gloss;
+
+  @override
+  int get hashCode => Object.hash(hi, mid, lo, edge, drop, ink, gloss);
+}
+
+/// How deep a surface is built: a button, a chip (HUD pills, NEXT chips,
+/// sheet rows), a floor tag, or a bench seat. Sizes in `Metrics.surface`.
+enum SurfaceDepth { button, chip, tag, seat }
 
 enum FloorShape { circle, triangle, square, diamond, hexagon, plus }
 
@@ -204,7 +360,8 @@ class LiftKindStyle {
   final Color cabin;
   final String sign;
 
-  /// Badge on the cabin and the NEXT chips; null for a normal lift.
+  /// The Material fallback for the kind's approved badge (`ArtIcon.kind`) on
+  /// the cabin and the NEXT chips; null for a normal lift.
   final IconData? icon;
 
   static LiftKindStyle of(LiftKind k) => switch (k) {

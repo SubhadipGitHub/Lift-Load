@@ -1,11 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../game/engine.dart';
 import '../../game/formulas.dart';
 import '../../game/venue.dart';
+import '../art_assets.dart';
 import '../game_controller.dart';
+import '../layout.dart';
 import '../theme.dart';
-import 'pressable.dart';
+import 'art_icon.dart';
+import 'glossy.dart';
 import 'tester_sheets.dart';
 
 /// Dimmed full-screen layer with a centred card.
@@ -47,6 +52,8 @@ class _Overlay extends StatelessWidget {
       );
 }
 
+/// Watch an ad: the mint glossy button with the play icon. Slate while it
+/// cannot be pressed.
 class RewardedButton extends StatelessWidget {
   const RewardedButton({super.key, required this.label, required this.onPressed});
 
@@ -54,84 +61,97 @@ class RewardedButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => PressScale(
-        enabled: onPressed != null,
-        child: SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: FilledButton.icon(
-            onPressed: onPressed,
-            icon: const Icon(Icons.play_circle_fill_rounded, size: 24),
-            label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            style: FilledButton.styleFrom(
-              backgroundColor: LL.mint,
-              foregroundColor: LL.mintInk,
-              elevation: 3,
-              shadowColor: LL.mintDark,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
-        ),
+  Widget build(BuildContext context) => SheetButton(
+        style: SurfaceStyle.mint,
+        icon: GameIcon.play,
+        label: label,
+        onPressed: onPressed,
+        height: SheetButton.tall,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       );
 }
 
+/// The main action on a sheet or the home screen: brass glossy.
 class PrimaryButton extends StatelessWidget {
-  const PrimaryButton({super.key, required this.label, required this.onPressed, this.height = 54});
+  const PrimaryButton({super.key, required this.label, required this.onPressed, this.height = 54, this.icon});
 
   final String label;
   final VoidCallback? onPressed;
   final double height;
+  final GameIcon? icon;
 
   @override
-  Widget build(BuildContext context) => PressScale(
-        enabled: onPressed != null,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: onPressed == null
-                ? null
-                : const [
-                    BoxShadow(color: LL.brassDark, offset: Offset(0, 4)),
-                    BoxShadow(color: Color(0x44000000), blurRadius: 10, offset: Offset(0, 6)),
-                  ],
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: height,
-            child: FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                backgroundColor: LL.brass,
-                foregroundColor: LL.ink,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: LL.display.copyWith(fontSize: 21))),
-            ),
-          ),
-        ),
+  Widget build(BuildContext context) => SheetButton(
+        style: SurfaceStyle.brass,
+        icon: icon,
+        label: label,
+        onPressed: onPressed,
+        height: height,
+        textStyle: LL.display.copyWith(fontSize: 21),
       );
 }
 
+/// A full-width glossy button on a sheet: an optional approved icon and a
+/// label that shrinks rather than wraps.
+class SheetButton extends StatelessWidget {
+  const SheetButton({
+    super.key,
+    required this.style,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.height = quiet,
+    this.textStyle = const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+  });
+
+  /// Heights: a rewarded button, and a quiet or secondary one.
+  static const double tall = 58;
+  static const double quiet = 52;
+
+  final SurfaceStyle style;
+  final String label;
+  final VoidCallback? onPressed;
+  final GameIcon? icon;
+  final double height;
+  final TextStyle textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = (onPressed == null ? SurfaceStyle.off : style).ink;
+    return GlossyButton(
+      style: style,
+      onPressed: onPressed,
+      width: double.infinity,
+      height: math.max(height, Metrics.minTouch),
+      radius: Metrics.sheetButtonRadius,
+      padding: const EdgeInsets.symmetric(horizontal: Metrics.sheetButtonGap),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon case final i?) ...[
+              ArtIcon(i, size: Metrics.sheetButtonIcon, color: ink),
+              const SizedBox(width: Metrics.sheetButtonGap / 2),
+            ],
+            Text(label, style: textStyle.copyWith(color: ink)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _QuietButton extends StatelessWidget {
-  const _QuietButton({required this.label, required this.onPressed});
+  const _QuietButton({required this.label, required this.onPressed, this.icon});
 
   final String label;
   final VoidCallback? onPressed;
+  final GameIcon? icon;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: LL.ink,
-            side: const BorderSide(color: Color(0xFFCDB993), width: 2),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-        ),
-      );
+  Widget build(BuildContext context) =>
+      SheetButton(style: SurfaceStyle.cream, icon: icon, label: label, onPressed: onPressed);
 }
 
 class FailSheet extends StatelessWidget {
@@ -162,9 +182,9 @@ class FailSheet extends StatelessWidget {
         ),
     };
     final (icon, tint) = switch (kind) {
-      FailKind.crash => (Icons.link_off_rounded, LL.alarm),
-      FailKind.outOfTrips => (Icons.hourglass_empty_rounded, LL.brassDark),
-      FailKind.jam => (Icons.event_seat_rounded, LL.inkSoft),
+      FailKind.crash => (GameIcon.cableSnap, LL.alarm),
+      FailKind.outOfTrips => (GameIcon.hourglass, LL.brassDark),
+      FailKind.jam => (GameIcon.seat, LL.inkSoft),
     };
     return _Overlay(
       label: title,
@@ -182,26 +202,22 @@ class FailSheet extends StatelessWidget {
         if (c.canContinueWithAd) ...[
           RewardedButton(
               label: c.adInFlight ? 'Loading ad…' : adLabel, onPressed: c.adInFlight ? null : c.continueWithAd),
-          const SizedBox(height: 10),
+          const SizedBox(height: Metrics.sheetButtonGap),
         ],
         if (c.canContinueWithCoins) ...[
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: FilledButton(
-              onPressed: c.adInFlight ? null : c.continueWithCoins,
-              style: FilledButton.styleFrom(
-                backgroundColor: LL.ink,
-                foregroundColor: LL.cream,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Text('${Formulas.coinContinuePrice} coins · same fix',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-            ),
+          SheetButton(
+            style: SurfaceStyle.plum,
+            icon: GameIcon.coin,
+            label: '${Formulas.coinContinuePrice} coins · same fix',
+            onPressed: c.adInFlight ? null : c.continueWithCoins,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Metrics.sheetButtonGap),
         ],
-        _QuietButton(label: 'Retry · uses 1 life', onPressed: c.adInFlight ? null : c.retry),
+        _QuietButton(
+          icon: GameIcon.restart,
+          label: 'Retry · uses 1 life',
+          onPressed: c.adInFlight ? null : c.retry,
+        ),
         const SizedBox(height: 6),
         TextButton(
           onPressed: c.adInFlight ? null : onHome,
@@ -224,14 +240,23 @@ class WinSheet extends StatelessWidget {
     return _Overlay(
       label: 'Tower delivered',
       children: [
-        const _Badge(icon: Icons.emoji_events_rounded, color: LL.brass),
+        const _Badge(icon: GameIcon.trophy, color: LL.brass),
         const SizedBox(height: 10),
         Text('LEVEL ${g.level.number} CLEAR', style: LL.label.copyWith(color: LL.inkSoft)),
         const SizedBox(height: 8),
         Text('Tower delivered!', textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
         const SizedBox(height: 8),
-        Text('${g.tripsUsed} trips · ${g.perfects} perfect loads',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: LL.inkSoft)),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ArtIcon(GameIcon.star, size: Metrics.sheetStar),
+            const SizedBox(width: Metrics.sheetButtonGap / 3),
+            Flexible(
+              child: Text('${g.tripsUsed} trips · ${g.perfects} perfect loads',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: LL.inkSoft)),
+            ),
+          ],
+        ),
         if (g.level.number == g.level.venue.lastLevel) ...[
           const SizedBox(height: 12),
           _BuildingComplete(venue: g.level.venue),
@@ -245,7 +270,7 @@ class WinSheet extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.monetization_on_rounded, color: LL.brass, size: 26),
+                ArtIcon(GameIcon.coin, size: Metrics.sheetButtonIcon),
                 const SizedBox(width: 6),
                 // Counts up to the award; settles, so tests stay deterministic.
                 TweenAnimationBuilder<int>(
@@ -265,7 +290,7 @@ class WinSheet extends StatelessWidget {
             label: c.adInFlight ? 'Loading ad…' : 'Watch ad · ×3 = ${g.levelCoins * 3} coins',
             onPressed: c.adInFlight ? null : c.claimTriple,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Metrics.sheetButtonGap),
         ],
         if (c.askHeavyTypes) ...[
           HeavyTypesCard(c: c),
@@ -322,22 +347,24 @@ class _BuildingComplete extends StatelessWidget {
   }
 }
 
-/// A round illustration at the top of a sheet.
+/// A round illustration at the top of a sheet: an approved icon on a soft
+/// disc of [color].
 class _Badge extends StatelessWidget {
   const _Badge({required this.icon, required this.color});
 
-  final IconData icon;
+  final GameIcon icon;
   final Color color;
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 76,
-        height: 76,
+        width: Metrics.sheetBadge,
+        height: Metrics.sheetBadge,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(colors: [color.withValues(alpha: 0.28), color.withValues(alpha: 0.08)]),
           border: Border.all(color: color.withValues(alpha: 0.5), width: 3),
         ),
-        child: Icon(icon, size: 40, color: color),
+        child: ArtIcon(icon, size: Metrics.sheetBadgeIcon, color: color),
       );
 }

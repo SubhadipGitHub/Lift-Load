@@ -10,6 +10,10 @@
 /// Each lift kind has a cabin interior (cover-cropped to the 196 x 214-unit
 /// cabin) and two door leaves, each half the cabin (98 x 214 units); the
 /// right leaf is the mirror of the left. A leaf is the same whatever rides.
+///
+/// The icons are 256 px squares: one per [GameIcon], one badge per lift kind
+/// (the normal lift has none) and one per lobby scenario. None of them says
+/// anything about a weight.
 library;
 
 import 'dart:async';
@@ -20,6 +24,29 @@ import 'package:flutter/services.dart';
 
 import '../game/cast.dart';
 import '../game/scenario.dart';
+
+/// The approved icons that stand for a thing in the game (not a lift kind or
+/// scenario, which have their own lookups). Each has a Material or painted
+/// fallback in `widgets/art_icon.dart`.
+enum GameIcon {
+  heart('heart'),
+  coin('coin'),
+  scale('scale'),
+  trip('trip'),
+  seat('seat'),
+  restart('restart'),
+  play('play'),
+  lock('lock'),
+  hourglass('hourglass'),
+  star('star'),
+  trophy('trophy'),
+  cableSnap('cable_snap');
+
+  const GameIcon(this.file);
+
+  /// The name in `icon_<file>.webp`.
+  final String file;
+}
 
 abstract final class ArtAssets {
   static const String _dir = 'assets/art';
@@ -46,6 +73,26 @@ abstract final class ArtAssets {
   static String cabinDoor(LiftKind kind, {required bool left}) =>
       '$_dir/cabin_${kind.name}_door_${left ? 'left' : 'right'}.webp';
 
+  /// An icon from the approved set.
+  static String icon(GameIcon i) => '$_dir/icon_${i.file}.webp';
+
+  /// A lift kind's badge, or null for the normal lift (it has none).
+  static String? kindIcon(LiftKind kind) => kind == LiftKind.normal ? null : '$_dir/icon_kind_${kind.name}.webp';
+
+  /// A lobby scenario's icon: cones for maintenance, a stopwatch for rush hour.
+  static String scenarioIcon(Scenario s) => switch (s) {
+        Scenario.maintenance => '$_dir/icon_scene_maintenance.webp',
+        Scenario.rushHour => '$_dir/icon_scene_rush.webp',
+      };
+
+  /// Every icon the game ships.
+  static List<String> get icons => [
+        for (final i in GameIcon.values) icon(i),
+        for (final k in LiftKind.values)
+          if (kindIcon(k) case final path?) path,
+        for (final s in Scenario.values) scenarioIcon(s),
+      ];
+
   /// Every image the game ships.
   static List<String> get all => [
         for (final t in ResidentType.values) resident(t),
@@ -57,6 +104,7 @@ abstract final class ArtAssets {
           cabinDoor(k, left: true),
           cabinDoor(k, left: false),
         ],
+        ...icons,
       ];
 }
 
@@ -109,6 +157,15 @@ class SpriteCache extends ChangeNotifier {
       };
 
   ui.Image? get ghost => _images[ArtAssets.ghost];
+
+  ui.Image? icon(GameIcon i) => _images[ArtAssets.icon(i)];
+
+  ui.Image? kindIcon(LiftKind kind) => switch (ArtAssets.kindIcon(kind)) {
+        final path? => _images[path],
+        null => null,
+      };
+
+  ui.Image? scenarioIcon(Scenario s) => _images[ArtAssets.scenarioIcon(s)];
 
   /// The cabin art for [kind], or null unless the interior and both leaves
   /// loaded (the cabin then keeps its painted look as a whole).

@@ -10,6 +10,15 @@ import '../theme.dart';
 class LoadGauge extends StatelessWidget {
   const LoadGauge({super.key, required this.fraction, required this.zone, this.ghost, this.width = 92});
 
+  /// How strongly the dial glows for the load aboard: not at all in the
+  /// grey, softly in the green, more at the limit, fully past it.
+  static double glowFor(LoadZone zone) => switch (zone) {
+        LoadZone.overload => 1,
+        LoadZone.limit => 0.85,
+        LoadZone.green => 0.6,
+        LoadZone.empty || LoadZone.light => 0,
+      };
+
   final double fraction;
   final LoadZone zone;
   final double? ghost;
@@ -41,13 +50,11 @@ class LoadGauge extends StatelessWidget {
               painter: GaugePainter(
                 fraction: f,
                 ghost: ghost,
-                glow: switch (zone) {
-                  LoadZone.overload => 1,
-                  LoadZone.limit => 0.8,
-                  LoadZone.green => 0.35,
-                  LoadZone.empty || LoadZone.light => 0,
-                },
+                // The glow follows only the load already aboard; the Scale
+                // preview stays a dashed needle.
+                glow: glowFor(zone),
                 glowColor: zone == LoadZone.overload ? LL.alarm : LL.mint,
+                over: zone == LoadZone.overload,
               ),
             ),
           ),
@@ -59,7 +66,13 @@ class LoadGauge extends StatelessWidget {
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: color),
+                style: TextStyle(
+                  fontSize: m.font(12),
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  // The zone word glows with the dial (style frame, `.lbl`).
+                  shadows: color == LL.lilac ? null : [Shadow(color: color, blurRadius: m.gaugeLabelGlow)],
+                ),
               ),
             ),
           ),
