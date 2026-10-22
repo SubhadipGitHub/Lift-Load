@@ -4,6 +4,7 @@ import 'package:lift_load/game/engine.dart';
 import 'package:lift_load/game/scenario.dart';
 import 'package:lift_load/game/venue.dart';
 import 'package:lift_load/services/analytics_service.dart';
+import 'package:lift_load/ui/motion.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
 import 'package:lift_load/ui/widgets/resident_figure.dart';
 
@@ -40,8 +41,8 @@ void main() {
     c.send();
     await tester.pump();
     expect(c.game.phase, Phase.departing);
-    // Doors 180 + rise 500, then the engine moves on; drop 450 + doors 180.
-    for (var i = 0; i < 16; i++) {
+    // Doors close, rise, then the engine moves on; drop in, doors open.
+    for (var t = Duration.zero; t <= CabinMotion.sendTotal; t += const Duration(milliseconds: 100)) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(c.game.phase, Phase.playing);
@@ -90,7 +91,14 @@ void main() {
   // Leaving mid-sequence (back, then "Leave") disposes the screen while the
   // cabin animates; the rest of the sequence must stop, not touch disposed
   // controllers or the engine.
-  for (final (label, ms) in [('door close', 100), ('rise', 400), ('next lift drop-in', 800)]) {
+  final close = CabinMotion.doorClose.inMilliseconds, rise = CabinMotion.rise.inMilliseconds;
+  for (final (label, ms) in [
+    ('door close', close ~/ 2),
+    ('door settle', close - CabinMotion.doorSettle.inMilliseconds ~/ 2),
+    ('rise', close + rise ~/ 2),
+    ('next lift drop-in', close + rise + CabinMotion.dropIn.inMilliseconds ~/ 2),
+    ('door open', close + rise + CabinMotion.dropIn.inMilliseconds + CabinMotion.doorOpen.inMilliseconds ~/ 2),
+  ]) {
     testWidgets('leaving during the $label is clean', (tester) async {
       await phone(tester);
       final c = controller(DebugAnalytics(), levelFor: (_) => variety(Venue.mall, LiftKind.normal, null));
@@ -124,7 +132,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(ResidentFigure).evaluate().length, before, reason: 'walker landed, rider visible');
     expect(c.game.phase, Phase.departing);
-    for (var i = 0; i < 18; i++) {
+    for (var t = Duration.zero; t <= CabinMotion.sendTotal; t += const Duration(milliseconds: 100)) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(c.game.phase, Phase.playing);

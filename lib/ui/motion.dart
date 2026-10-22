@@ -17,6 +17,76 @@ bool reduceMotion(BuildContext context) => MediaQuery.maybeDisableAnimationsOf(c
 /// A duration that collapses to zero under reduced motion.
 Duration motionMs(BuildContext context, int ms) => Duration(milliseconds: reduceMotion(context) ? 0 : ms);
 
+/// The cabin's timings and door looks, in one place for the play screen and
+/// its tests (PRD v1.7, `docs/art/gemini-art-pack.md`, "Doors, in two
+/// leaves"). Send runs: doors close, the cabin rises, the engine moves on, the
+/// next cabin drops in, its doors open. A crash leaves the doors as they are.
+/// Under reduced motion every step is instant.
+abstract final class CabinMotion {
+  /// The doors close in this long, ease-in-out, ending with [doorSettle].
+  static const Duration doorClose = Duration(milliseconds: 420);
+
+  /// The last part of [doorClose]: the leaves bounce back
+  /// [Metrics.doorSettle] from the seam and meet again.
+  static const Duration doorSettle = Duration(milliseconds: 80);
+
+  /// The leaves' travel to the seam, before the settle.
+  static Duration get doorTravel => doorClose - doorSettle;
+
+  /// The whole close as one curve: [doorCurve] to the seam over
+  /// [doorTravel], then a bounce back of [settle] (a fraction of the leaf's
+  /// travel) and shut again.
+  static Curve doorCloseCurve(double settle) => _DoorClose(
+        travel: doorTravel.inMicroseconds / doorClose.inMicroseconds,
+        settle: settle,
+      );
+
+  /// The next cabin's doors open in this long, ease-in-out, once it stops.
+  static const Duration doorOpen = Duration(milliseconds: 360);
+  static const Curve doorCurve = Curves.easeInOut;
+
+  /// Closed doors dim the interior (and the riders) by this much; the dim
+  /// follows the leaves.
+  static const double closedDim = 0.12;
+
+  /// Darkest point of the shadow on each leaf's seam edge, fully closed; it
+  /// fades as the doors open.
+  static const double seamShadow = 0.45;
+
+  /// The cabin rises out of the shaft, and the next one drops in.
+  static const Duration rise = Duration(milliseconds: 500);
+  static const Duration dropIn = Duration(milliseconds: 450);
+
+  /// After an overload: the fall, and the repaired cabin springing back.
+  static const Duration fall = Duration(milliseconds: 1000);
+  static const Duration repair = Duration(milliseconds: 450);
+
+  /// Design units the cabin travels: up and out on a send, down on a crash.
+  static const double riseDistance = 300;
+  static const double fallDistance = 340;
+  static const double fallTilt = -0.09;
+
+  /// Design units below its stop that the repaired cabin springs back from.
+  static const double repairDistance = 120;
+
+  /// Send to the next cabin's open doors with motion on (a walker still
+  /// landing adds the walk).
+  static Duration get sendTotal => doorClose + rise + dropIn + doorOpen;
+}
+
+class _DoorClose extends Curve {
+  const _DoorClose({required this.travel, required this.settle});
+
+  /// Share of the time spent travelling, and the bounce as a share of the travel.
+  final double travel, settle;
+
+  @override
+  double transformInternal(double t) {
+    if (t <= travel) return CabinMotion.doorCurve.transform(t / travel);
+    return 1 - settle * math.sin(math.pi * (t - travel) / (1 - travel));
+  }
+}
+
 /// Provides seconds since start to [IdleClock.of]. One ticker drives every
 /// sway, blink, pulse and drifting cloud below it. It does not tick at all
 /// when motion is reduced.

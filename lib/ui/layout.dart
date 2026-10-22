@@ -119,8 +119,20 @@ class Metrics {
   /// (`docs/art/gemini-art-pack.md`, Integration).
   static const double cabinFeetLine = 0.90;
 
-  /// From the bottom of the cabin interior up to the riders' feet.
-  double get cabinFeetInset => cabinHeight * (1 - cabinFeetLine) - cabinPadding;
+  /// From the bottom of the cabin up to the riders' feet.
+  double get cabinFeetInset => cabinHeight * (1 - cabinFeetLine);
+
+  /// Cabin chrome over the art: the floor pill row's inset from the top.
+  double get cabinChromeTop => 7 * scale;
+
+  /// Door leaves: how far each bounces back from the seam as the doors settle
+  /// shut, and the width of the shadow on its seam edge.
+  double get doorSettle => 2 * scale;
+  double get doorSeam => 7 * scale;
+
+  /// The cabin's corner radius, and the rim around the art.
+  double get cabinRadius => 16 * scale;
+  double get cabinRim => 2.5 * scale;
 
   /// Scale button on the gauge plate.
   Size get scaleButton => Size(math.max(92 * scale, minTouch), math.max(46 * scale, minTouch));

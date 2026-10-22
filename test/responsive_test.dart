@@ -9,6 +9,7 @@ import 'package:lift_load/game/venue.dart';
 import 'package:lift_load/services/analytics_service.dart';
 import 'package:lift_load/ui/art_assets.dart';
 import 'package:lift_load/ui/layout.dart';
+import 'package:lift_load/ui/painters/cabin_painter.dart';
 import 'package:lift_load/ui/painters/sprite_painter.dart';
 import 'package:lift_load/ui/screens/home_screen.dart';
 import 'package:lift_load/ui/screens/play_screen.dart';
@@ -145,10 +146,17 @@ void main() {
     testWidgets('play fits at $name', (tester) async {
       await sized(tester, size);
       final handle = tester.ensureSemantics();
-      for (final venue in [Venue.society, Venue.hotel]) {
-        final c = controller(DebugAnalytics(), levelFor: (_) => variety(venue, LiftKind.express, Scenario.rushHour));
+      // Every kind of cabin in its art, and the hotel's express.
+      for (final (venue, kind) in [
+        for (final k in LiftKind.values) (Venue.society, k),
+        (Venue.hotel, LiftKind.express),
+      ]) {
+        final c = controller(DebugAnalytics(), levelFor: (_) => variety(venue, kind, Scenario.rushHour));
         c.startLevel();
         await tester.pumpWidget(app(PlayScreen(controller: c), textScale: 1.3));
+        final reason = '${venue.name} ${kind.name}';
+        expect(find.byWidgetPredicate((w) => w is CustomPaint && w.painter is CabinArtPainter), findsOneWidget,
+            reason: reason);
         // Wide figures in the cabin and on the bench.
         c.tapQueue(0);
         c.tapLift();
@@ -157,7 +165,7 @@ void main() {
         c.tapQueue(2);
         c.tapBench(0);
         await tester.pump();
-        expect(tester.takeException(), isNull, reason: venue.name);
+        expect(tester.takeException(), isNull, reason: reason);
       }
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp(r'^Empty bench seat$')), 'bench seat');
       expectTouchTarget(tester, find.bySemanticsLabel(RegExp('Tap to board the selected resident')), 'cabin');

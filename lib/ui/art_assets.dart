@@ -1,10 +1,15 @@
-/// The shipped art: the one table from cast, cargo and the unknown ghost to an
-/// asset path, and a cache of the decoded images. No other file names a path.
+/// The shipped art: the one table from cast, cargo, the unknown ghost and the
+/// cabins to an asset path, and a cache of the decoded images. No other file
+/// names a path.
 ///
 /// The sprites are full-body cut-outs drawn at [ArtAssets.pxPerUnit] pixels per
 /// design unit of the 120-unit figure box (see `painters/resident_painter.dart`),
 /// with the feet on the bottom edge of the image. Nothing about an image varies
 /// with load: one image per type, one per cargo, one ghost for every unknown.
+///
+/// Each lift kind has a cabin interior (cover-cropped to the 196 x 214-unit
+/// cabin) and two door leaves, each half the cabin (98 x 214 units); the
+/// right leaf is the mirror of the left. A leaf is the same whatever rides.
 library;
 
 import 'dart:async';
@@ -14,6 +19,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../game/cast.dart';
+import '../game/scenario.dart';
 
 abstract final class ArtAssets {
   static const String _dir = 'assets/art';
@@ -33,14 +39,29 @@ abstract final class ArtAssets {
   /// One ghost for every unknown person.
   static const String ghost = '$_dir/unknown_ghost.webp';
 
-  /// Every sprite the game ships.
+  /// The cabin interior of a [kind] of lift.
+  static String cabinInterior(LiftKind kind) => '$_dir/cabin_${kind.name}_interior.webp';
+
+  /// One door leaf of a [kind] of lift: the [left] one or its mirror.
+  static String cabinDoor(LiftKind kind, {required bool left}) =>
+      '$_dir/cabin_${kind.name}_door_${left ? 'left' : 'right'}.webp';
+
+  /// Every image the game ships.
   static List<String> get all => [
         for (final t in ResidentType.values) resident(t),
         for (final c in Cargo.values)
           if (cargo(c) case final path?) path,
         ghost,
+        for (final k in LiftKind.values) ...[
+          cabinInterior(k),
+          cabinDoor(k, left: true),
+          cabinDoor(k, left: false),
+        ],
       ];
 }
+
+/// One kind of cabin's decoded art: its interior and its two door leaves.
+typedef CabinArt = ({ui.Image interior, ui.Image left, ui.Image right});
 
 /// The decoded sprites. Loaded once at startup; figures listen and swap from
 /// the painted fallback to the sprite when loading finishes. An image that
@@ -88,6 +109,16 @@ class SpriteCache extends ChangeNotifier {
       };
 
   ui.Image? get ghost => _images[ArtAssets.ghost];
+
+  /// The cabin art for [kind], or null unless the interior and both leaves
+  /// loaded (the cabin then keeps its painted look as a whole).
+  CabinArt? cabin(LiftKind kind) {
+    final interior = _images[ArtAssets.cabinInterior(kind)];
+    final left = _images[ArtAssets.cabinDoor(kind, left: true)];
+    final right = _images[ArtAssets.cabinDoor(kind, left: false)];
+    if (interior == null || left == null || right == null) return null;
+    return (interior: interior, left: left, right: right);
+  }
 
   /// Forgets every image (tests use this to exercise the fallback).
   @visibleForTesting
