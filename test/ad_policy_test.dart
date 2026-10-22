@@ -69,5 +69,22 @@ void main() {
       expect(b.totalToday, Formulas.powerRefillDailyCap);
       expect(Formulas.powerRefillDailyCap, lessThan(RewardedBudget.dailyTotal));
     });
+
+    test('refills stop two views short of the total so a crash can still be continued by ad', () {
+      final day = DateTime(2026, 10, 22, 9);
+      final b = RewardedBudget(day: RewardedBudget.dayKey(day));
+      for (var i = 0; i < 3; i++) {
+        b.record(RewardedPlacement.extraLife, day);
+      }
+      b.record(RewardedPlacement.dailyChest, day);
+      for (var i = 0; i < 6; i++) {
+        b.record(RewardedPlacement.powerRefill, day);
+      }
+      expect(b.totalToday, 10);
+      expect(b.canShow(RewardedPlacement.powerRefill, day), isFalse);
+      expect(b.canShow(RewardedPlacement.repairLift, day), isTrue);
+      b.record(RewardedPlacement.repairLift, day);
+      expect(b.canShow(RewardedPlacement.extraTrips, day), isTrue);
+    });
   });
 }

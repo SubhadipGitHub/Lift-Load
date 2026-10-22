@@ -97,3 +97,14 @@ Newest first. One line of decision, one line of why. Reopen a decision only with
 - **Left-handed mirror of the bottom bar now.** Restart moves into the pause menu.
 - **Restyle, new layout and the art pack come before Gate A.** Art is approved in docs/art/approved/; nothing under lib/ or
   assets/ changed yet.
+
+## 2026-10-22 (engine review, owner decisions)
+
+- **Power refills stop at 10 of the 12 daily rewarded views.** The last two are kept for fail-sheet continues (repair,
+  trips, seat). `Formulas.powerRefillFailReserve`.
+- **Unknown people keep their true floor in the routing logic.** The lobby still shows "?" for them; the NEXT strip is
+  not masked (masking it would soft-lock the level). The jam sheet no longer says how many seats ("more bench seats")
+  on levels with unknown people, so the number cannot point at a floor.
+- **+1 trip is used during the level, not from the fail sheet.** A player who owns one must use it while a trip is
+  left. A last-trip hint in the dock is a UI task.
+- **A crash reveals nobody;** Express is refused when it would jam the lobby.

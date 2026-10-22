@@ -246,3 +246,10 @@ New events: `power_used` (`power`, `level`, `left`), `power_empty_tapped`, `powe
 - Accept the proposed unknown share curve (starts at level 11 at 15%, up to 60%), the lane spread, the liar weighting
   and the extra normal-level slack, to be tuned by the solver study?
 - Accept the caps per level and the unlock levels above?
+
+## Engine review decisions (2026-10-22)
+
+Power refill ads stop two views short of the 12-a-day total, keeping them for the fail-sheet continues. Unknown people
+keep their true floor in routing; the NEXT strip is not masked, and the jam sheet drops the seat count on levels with
+unknown people. +1 trip is used mid-level and is not offered on the fail sheet. A crash reveals nobody, and Express is
+refused when it would jam the lobby.

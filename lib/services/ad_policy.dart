@@ -89,6 +89,8 @@ class RewardedBudget {
   bool canShow(RewardedPlacement p, DateTime now) {
     rollTo(now);
     if (totalToday >= dailyTotal) return false;
+    // Power refills stop short of the total so the fail sheet keeps its views.
+    if (p == RewardedPlacement.powerRefill && totalToday >= dailyTotal - Formulas.powerRefillFailReserve) return false;
     final cap = p.dailyCap;
     return cap == null || (used[p.name] ?? 0) < cap;
   }

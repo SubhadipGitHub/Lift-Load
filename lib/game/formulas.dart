@@ -142,6 +142,11 @@ abstract final class Formulas {
   /// Rewarded refills of powers per day, inside the total daily cap.
   static const int powerRefillDailyCap = 6;
 
+  /// Daily rewarded views kept back from power refills for the fail-sheet
+  /// continues (repair, trips, seat), so a player who refilled all day can
+  /// still watch one to carry on after a crash.
+  static const int powerRefillFailReserve = 2;
+
   /// Uses of a power per level.
   static int powerCap(Power p) => switch (p) {
         Power.swap => 2,

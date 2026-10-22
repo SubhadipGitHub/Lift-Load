@@ -750,8 +750,14 @@ class GameController extends ChangeNotifier {
   static String describe(Resident r) =>
       '${r.type.displayName}${r.cargo == Cargo.none ? '' : ' with a ${r.cargo.displayName}'} going to ${r.floor.label}';
 
-  /// "+1 bench seat", "+2 bench seats", or empty for none.
-  static String seatsLabel(int n) => n <= 0 ? '' : '+$n bench ${n == 1 ? 'seat' : 'seats'}';
+  /// "+1 bench seat", "+2 bench seats", or empty for none. Where the level has
+  /// unknown people the count is left out: how many seats a jam needs would
+  /// say how deep a matching person stands.
+  String seatsLabel(int n) {
+    if (n <= 0) return '';
+    if (hasGame && game.level.unknownIds.isNotEmpty) return 'more bench seats';
+    return '+$n bench ${n == 1 ? 'seat' : 'seats'}';
+  }
 
   /// "2F" or "2F and 5F".
   static String floorList(List<Floor> floors) => floors.map((f) => f.label).join(' and ');
