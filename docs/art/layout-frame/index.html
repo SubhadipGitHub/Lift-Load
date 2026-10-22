@@ -243,6 +243,27 @@ h1 span { color: var(--brass); }
 .new .peek { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; padding: 6px 9px 6px 6px; font: 800 12px/1 var(--display); cursor: pointer; }
 .new .peek img { width: 22px; height: 22px; } .new .peek i { font-style: normal; background: var(--brass); padding: 3px 6px; border-radius: 99px; font-size: 11px; box-shadow: 0 0 0 2px #5a3a05; }
 .new .peek.g3d { box-shadow: 0 0 0 2px var(--edge), 0 3px 0 2px var(--edge), 0 5px 0 2px var(--drop), inset 0 2px 0 #ffffffb0; }
+
+/* hidden queue: everyone behind the front is an identical dim silhouette, no look, no floor tag */
+.lane .hid { display: grid; justify-items: center; margin-top: 6px; }
+.lane .sil { width: calc(26px * var(--qk, 1)); height: calc(43px * var(--qk, 1)); fill: #3a1f0a; opacity: .30; margin-top: -9px; filter: blur(.4px); }
+.cur .lane .sil { --qk: 1; } .new .lane .sil { --qk: 1.15; }
+/* mirrored bottom bar for left-handed play */
+.new.mirror .send { left: 14px; }
+.new.mirror .powers { left: 142px; }
+.new.mirror .m3 { left: 18px; }
+.new .pw { width: 52px; height: 52px; } .new .powers { gap: 7px; }
+.pw.empty .badge { background: #ffffffcc; color: var(--ink); font-size: 15px; }
+.pw.empty { opacity: .92; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; padding: 16px 16px 22px; border-radius: 26px 26px 0 0; background: linear-gradient(180deg, #2c2966, #17153a); box-shadow: 0 -6px 30px #000b, inset 0 2px 0 #ffffff26; transform: translateY(105%); transition: transform .28s cubic-bezier(.2, .9, .3, 1); display: grid; gap: 10px; justify-items: center; text-align: center; }
+.sheet.open { transform: translateY(0); }
+.sheet img { width: 64px; height: 64px; } .sheet h3 { margin: 0; font: 800 22px/1 var(--display); color: var(--brass-hi); }
+.sheet p { margin: 0; font: 700 13px/1.35 var(--body); color: var(--soft); max-width: 300px; }
+.sheet .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: 4px; }
+.sheet .acts button { border-radius: 18px; padding: 12px 8px; font: 800 15px/1.1 var(--display); cursor: pointer; display: grid; gap: 4px; justify-items: center; }
+.sheet .acts small { font: 700 11px/1 var(--body); opacity: .75; }
+.sheet .x { background: transparent; border: 0; color: var(--soft); font: 800 13px var(--body); cursor: pointer; padding: 6px 12px; }
+@media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -264,6 +285,7 @@ h1 span { color: var(--brass); }
     <symbol id="i-up" viewBox="0 0 32 24"><path d="M3 21 16 8l13 13" fill="none" stroke="#07402a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 21 16 8l13 13" fill="none" stroke="#ffffff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-pip" viewBox="0 0 20 26"><rect x="1.5" y="1.5" width="17" height="23" rx="5" fill="var(--pip, #ffc233)" stroke="#5a3a05" stroke-width="2.4"/><path d="M10 6.5 5.5 12h3v6.5h3V12h3z" fill="#fff" opacity=".9"/><rect x="4" y="3.5" width="6" height="3" rx="1.5" fill="#fff" opacity=".55"/></symbol>
     <symbol id="i-plant" viewBox="0 0 40 56"><path d="M10 34h20l-3 20H13z" fill="#c0703a" stroke="#6b3a14" stroke-width="2"/><path d="M12 38h16" stroke="#e39a62" stroke-width="3" stroke-linecap="round"/><g stroke="#1f5a34" stroke-width="2" fill="#3fc27a"><circle cx="20" cy="17" r="9"/><circle cx="11" cy="25" r="7"/><circle cx="29" cy="25" r="7"/><circle cx="20" cy="27" r="7.5"/></g><ellipse cx="16" cy="13" rx="3.4" ry="2" fill="#fff" opacity=".45"/></symbol>
+  <symbol id="i-sil" viewBox="0 0 24 40"><circle cx="12" cy="8" r="6.5"/><path d="M3 38V24a9 9 0 0 1 18 0v14z"/></symbol>
   <symbol id="i-swap" viewBox="0 0 32 32"><path d="M5 11h19M18 5l7 6-7 6" fill="none" stroke="#2f2b66" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 21H8M14 15l-7 6 7 6" fill="none" stroke="#2f2b66" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
@@ -335,22 +357,22 @@ h1 span { color: var(--brass); }
           <div class="lanes">
             <div class="lane">
               <div class="front"><span class="tag coral"><svg><use href="#s-circle"/></svg>2F</span><img class="res" style="--hd:104" src="img/resident_gym.webp" alt="Gym regular"></div>
-              <div class="q"><span class="tag teal s"><svg><use href="#s-square"/></svg>5F</span><img style="--hd:66" src="img/resident_kid.webp" alt="Schoolkid"></div>
+              <div class="hid" aria-label="5 waiting, hidden"><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg></div>
             </div>
             <div class="lane">
               <div class="front sel"><span class="tag sun"><svg><use href="#s-triangle"/></svg>3F</span><img class="res" style="--hd:100" src="img/resident_uncle.webp" alt="Uncle, selected"></div>
-              <div class="q"><span class="tag blue s"><svg><use href="#s-diamond"/></svg>6F</span><img style="--hd:92" src="img/resident_student.webp" alt="Student"></div>
-              <div class="q"><span class="tag plumf s"><svg><use href="#s-hexagon"/></svg>8F</span><img style="--hd:92" src="img/resident_aunty.webp" alt="Aunty"></div>
+              <div class="hid" aria-label="7 waiting, hidden"><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg></div>
             </div>
             <div class="lane">
               <div class="front"><span class="tag blue"><svg><use href="#s-diamond"/></svg>6F</span><img class="res" style="--hd:96" src="img/resident_puffer.webp" alt="Teen in a puffer jacket"></div>
+              <div class="hid" aria-label="2 waiting, hidden"><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg></div>
             </div>
             <div class="lane">
               <div class="front"><span class="tag plumf"><svg><use href="#s-hexagon"/></svg>8F</span><img class="res" style="--hd:94" src="img/resident_grandpa.webp" alt="Grandpa"></div>
-              <div class="q"><span class="tag leaf-f s"><svg><use href="#s-plus"/></svg>9F</span><img style="--hd:96" src="img/resident_officeW.webp" alt="Office worker"></div>
+              <div class="hid" aria-label="4 waiting, hidden"><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg><svg class="sil"><use href="#i-sil"/></svg></div>
             </div>
           </div>
-          <div class="laneinfo"><span>+2 waiting</span><span>+4 waiting</span><span></span><span>+1 waiting</span></div>
+          <div class="laneinfo"><span>5 waiting</span><span>7 waiting</span><span>2 waiting</span><span>4 waiting</span></div>
         </div>
 
         <div class="tb-cur">
@@ -359,15 +381,17 @@ h1 span { color: var(--brass); }
         </div>
         <div class="tb-new"></div>
         <div class="powers" role="group" aria-label="Power options">
-          <button class="pw g3d cream" type="button" aria-label="Swap queue: swap the front two residents of any two lanes, 2 left"><svg class="pi"><use href="#i-swap"/></svg><i class="badge">2</i><i class="lab">Swap</i></button>
-          <button class="pw g3d cream" type="button" aria-label="Extra seats: 2 more bench seats this level, 2 left"><img src="img/icon_seat.webp" alt=""><i class="badge">2</i><i class="lab">+2 seats</i></button>
-          <button class="pw g3d cream" type="button" aria-label="Extra trip: one more lift trip, 2 left"><img src="img/icon_trip.webp" alt=""><i class="badge">2</i><i class="lab">+1 trip</i></button>
-          <button class="pw g3d cream" type="button" aria-label="Express ride: deliver the selected resident straight to their floor, 2 left"><img src="img/icon_kind_express.webp" alt=""><i class="badge">2</i><i class="lab">Express</i></button>
+          <button class="pw g3d cream" type="button" aria-label="Swap queue: swap the front residents of two lanes, 1 left"><svg class="pi"><use href="#i-swap"/></svg><i class="badge">1</i><i class="lab">Swap</i></button>
+          <button class="pw g3d cream empty" type="button" aria-label="Extra seats: none left, tap to get more" data-p="seats"><img src="img/icon_seat.webp" alt=""><i class="badge">+</i><i class="lab">+2 seats</i></button>
+          <button class="pw g3d cream empty" type="button" aria-label="Extra trip: none left, tap to get more" data-p="trip"><img src="img/icon_trip.webp" alt=""><i class="badge">+</i><i class="lab">+1 trip</i></button>
+          <button class="pw g3d cream empty" type="button" aria-label="Express: none left, tap to get more" data-p="express"><img src="img/icon_kind_express.webp" alt=""><i class="badge">+</i><i class="lab">Express</i></button>
         </div>
         <button class="send g3d mint" id="send" type="button" aria-label="Send the lift"><i class="ring"></i><svg><use href="#i-up"/></svg>SEND</button>
 
         <div class="ov reach"><i class="s"><b>STRETCH</b></i><i class="r"><b>REACH</b></i><i class="e"><b>EASY</b></i></div>
         <div class="ov flow"><span class="m m1">1</span><span class="m m2">2</span><span class="m m3">3</span></div>
+        <div class="sheet" id="sheet" role="dialog" aria-label="Get more of a power"><img id="shImg" src="img/icon_trip.webp" alt=""><h3 id="shName">+1 trip</h3><p id="shText">One more lift trip for this level.</p>
+          <div class="acts"><button class="g3d mint" type="button">Watch an ad<small>1 use</small></button><button class="g3d brass" type="button">500 coins<small>1 use</small></button></div><button class="x" type="button" id="shX">Not now</button></div>
         <div class="pop" id="pop">+15<small>PERFECT</small></div>
       </div>
     </div>
@@ -380,6 +404,7 @@ h1 span { color: var(--brass); }
         </div>
         <button class="tgl" type="button" id="tReach" aria-pressed="false">Thumb reach</button>
         <button class="tgl" type="button" id="tFlow" aria-pressed="false">Tap order</button>
+        <button class="tgl" type="button" id="tMir" aria-pressed="false">Mirror bottom bar</button>
       </div>
       <div class="note-cur">
         <div><h2>What the code does today</h2><p>From top to bottom the screen runs HUD, lift, message, bench, queue, then a toolbar with Scale and Restart. Send sits inside the lift panel, in the right column.</p></div>
@@ -390,16 +415,16 @@ h1 span { color: var(--brass); }
         </ul>
       </div>
       <div class="note-new">
-        <div><h2>The proposal, with power options</h2><p>Keep the lobby order. Move what you tap most to where the thumb already is, and give the bottom bar to the powers: four round buttons with their counts (every power starts at 2), then a wide Send.</p></div>
+        <div><h2>The proposal</h2><p>Keep the lobby order. Move what you tap most to where the thumb already is, hide the queue, and give the bottom bar to the powers.</p></div>
         <ul>
-          <li><b>Swap</b> swaps the front residents of two lanes. Tap Swap, then the two lanes.</li>
-          <li><b>+2 seats</b> adds two bench seats for this level.</li>
-          <li><b>+1 trip</b> adds one lift trip.</li>
-          <li><b>Express</b> (my reading of "send people by lift") delivers the selected resident straight to their floor, with no seat and no trip used. Tell me if you meant something else.</li>
-          <li><b>Scale stays, but moves onto the gauge.</b> It previews the needle, so it sits on the gauge plate as a small button. Without it nothing ever teaches a player the weights, and the whole game is guessing them.</li>
-          <li><b>No rider count.</b> Send is a plain wide button. Restart lives in the pause menu behind the gear, with a confirm.</li>
+          <li><b>The queue is hidden.</b> Only each lane's front shows who they are. Everyone behind is an identical dim silhouette with no look and no floor tag, and only a count says how many wait. Lanes get longer and more uneven as levels rise.</li>
+          <li><b>Powers start at zero.</b> Tap an empty power to watch one ad for a use, or pay 500 coins. Both are configurable. Swap shows 1 here; the other three are empty.</li>
+          <li><b>Swap</b> swaps two lane fronts. <b>+2 seats</b> and <b>+1 trip</b> add what they say. <b>Express</b> delivers the selected resident straight to their floor.</li>
+          <li><b>Scale stays on the gauge plate,</b> where it previews the needle.</li>
+          <li><b>Send is a plain wide button</b> at the bottom, with no rider count. Restart lives in the pause menu behind the gear, with a confirm.</li>
+          <li><b>Mirror bottom bar</b> flips Send and the powers for left-handed play (try the toggle).</li>
         </ul>
-        <div><h2>Rules this reopens</h2><p>Locked rule 9 says the Scale is the one booster, and the PRD must be reopened before any of this is built. Swap and Express are new ways to win a level, +2 seats and +1 trip change the jam and out-of-trips fails, and four consumables need prices and ad rewards through the ad policy. The generator and solver also need a pass so levels do not become trivial.</p></div>
+        <p>Hiding the queue also frees the vertical space the big queue figures needed, so the front resident can be large without squeezing anything.</p>
       </div>
       </aside>
   </div>
@@ -418,6 +443,10 @@ h1 span { color: var(--brass); }
   }
   bNew.onclick = function () { layout(true); }; bCur.onclick = function () { layout(false); };
   tR.onclick = function () { var on = tR.getAttribute('aria-pressed') !== 'true'; tR.setAttribute('aria-pressed', on); phone.classList.toggle('reach', on); };
+  var tM = document.getElementById('tMir'); tM.onclick = function () { var on = tM.getAttribute('aria-pressed') !== 'true'; tM.setAttribute('aria-pressed', on); phone.classList.toggle('mirror', on); };
+  var sheet = document.getElementById('sheet'), D = { seats: ['img/icon_seat.webp', '+2 seats', 'Two more bench seats for this level.'], trip: ['img/icon_trip.webp', '+1 trip', 'One more lift trip for this level.'], express: ['img/icon_kind_express.webp', 'Express', 'Deliver the selected resident straight to their floor.'] };
+  document.querySelectorAll('.pw.empty').forEach(function (b) { b.onclick = function () { var d = D[b.getAttribute('data-p')]; document.getElementById('shImg').src = d[0]; document.getElementById('shName').textContent = d[1]; document.getElementById('shText').textContent = d[2]; sheet.classList.add('open'); }; });
+  document.getElementById('shX').onclick = function () { sheet.classList.remove('open'); };
   tF.onclick = function () { var on = tF.getAttribute('aria-pressed') !== 'true'; tF.setAttribute('aria-pressed', on); phone.classList.toggle('flow', on); };
 
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;

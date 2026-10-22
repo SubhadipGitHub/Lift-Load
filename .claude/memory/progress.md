@@ -90,8 +90,13 @@ entries; fold older ones into "Earlier".
   once: the Scale is the only thing that teaches weights (locked rule 9), so it stays but moves onto the gauge plate, where it
   previews the needle. THESE POWERS REOPEN docs/PRD.md (rule 9, jam and out-of-trips fails, solver and generator, prices and
   rewarded-ad rewards via ad_policy, monetization-auditor): no engine or lib/ work until the owner signs a PRD change.
-  PRD change written: `docs/PRD-v1.6-powers.md` (DRAFT, awaiting the owner's sign-off and answers to its open questions; PRD.md and
-  CLAUDE.md are NOT yet edited). Recommends Gate A with powers off behind `powersEnabled`, on for Gate B; Scale stays on the gauge.
+  PRD change written: `docs/PRD-v1.6-powers.md` (DRAFT v2; PRD.md and CLAUDE.md are NOT yet edited, waiting for an explicit
+  "signed off"). Owner's answers folded in: Express as defined; new powers start at 0 stock, bought with 500 coins (configurable)
+  or 1 ad = 1 use; Gate A with powers ON; left-handed mirror now; Scale stays on the gauge; AND a new rule: the queue behind each
+  lane front is hidden (identical dim silhouettes, no look, no floor tag, count only), lanes longer and more uneven with level.
+  Flagged: this reopens locked rule 1, makes the power cut scenario redundant, raises difficulty (slack +1 until Gate A), and the
+  500-coin price makes the 300-coin fail rescue the cheaper path. Layout frame updated (v3): silhouettes, empty powers with + and
+  a get-more sheet, mirror toggle. (Earlier recommendation of Gate A with powers off was overruled by the owner: on.)
   Icons still to make for Swap and Express (swap is an inline SVG in the mock; Express borrows the bolt). Waiting on the owner's
   verdict (this widens "reskin only"
   to include layout, which the owner has now asked for).
