@@ -76,6 +76,17 @@ can line new art up against them with `review --dir` and `sheet`. It sits under 
 assets, so none of it ships. Add each new approved sprite there when you approve it. The integration PR moves the
 chosen files into `assets/`.
 
+## Icon sheets
+
+The UI icon set (coin, heart, booster, restart, trip, star; the six floor badges; results and states; lift kinds and
+lobby scenarios) is made as four 3:2 sheets of six icons, not one image per icon: `icons_hud`, `icons_floors`,
+`icons_results`, `icons_lifts` in `art_pack.json`. Attach the schoolkid for style, save each as `art/raw/<id>.png`, run
+`process`. It keys the backdrop (the floor sheet is magenta, because one badge is green; a keyer built for that is
+`_key_out_magenta`), cuts each separate icon in reading order, and writes `art/processed/icon_<name>.webp`, 256 px square,
+plus `_icons.png`, a contact sheet on the lobby floor and the night panel. It warns when it finds the wrong number of
+icons: regenerate with wider gaps. Buttons themselves are code (outline, bevel, gloss, press), so the icons sit on top
+of them; glyph-only marks (back arrow, gear, send chevron) are drawn in code too.
+
 ## Review checklist (per character, on the line-up)
 
 - **Height order.** Height order and relative size match the game: the kid is clearly smallest, and the gym regular

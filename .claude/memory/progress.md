@@ -58,7 +58,10 @@ entries; fold older ones into "Earlier".
   that closes the doors and bursts coins, plus a toggle for larger figures. Finding: a figure box is 120 design units,
   so the game's 80 dp cabin figure makes the tallest resident 69 dp (32% of the cabin) and 47 dp in a lane; earlier
   `compose_check` composites were 1.5x too large (fixed; `--figure`). Recommendation to the owner: figures +60%, which
-  is the one change beyond a reskin. Waiting on the owner's verdict on the frame before any production assets or lib/ work.
+  is the one change beyond a reskin. Owner approved the direction and figures +60% (Gate A not started, reskin only). Production has started: icon set.
+- Icon set: four 3:2 sheets of six (`icons_hud`, `icons_floors`, `icons_results`, `icons_lifts`) in `art_pack.json`, a sheet
+  splitter and a magenta keyer in `gemini_art.py` (tested on synthetic sheets). Prompts are at the top of the prompt page
+  (version 10). Waiting on the owner's four sheets. After the icons: Gemini backdrops, then the integration spec for lib/.
 - Next: decide whether office, hospital, mall and hotel get the same in-code treatment (recommended: yes, same script,
   each with its own palette and storey bands) or stay with Gemini.
 

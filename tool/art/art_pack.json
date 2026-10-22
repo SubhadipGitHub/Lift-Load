@@ -4,7 +4,8 @@
   "style": {
     "resident": "Stylized 3D animated-feature character rendering: soft rounded appealing shapes, slightly exaggerated cartoon proportions (head about one fifth of body height), large expressive eyes, subsurface-scattered skin, soft global illumination with a warm key light from the upper left and a cool rim light, gentle ambient occlusion, matte fabric with fine visible weave, clean readable silhouette. Friendly, relaxed expression. Full body including both feet, standing upright, front view with a very slight three-quarter turn. Centered on a perfectly flat, uniform pure green background (#00FF00) with no floor, no cast shadow, no gradient. Exactly one character. No text, no letters, no numbers, no logos, no brand marks, no watermark.",
     "prop": "Stylized 3D animated-feature prop rendering matching the reference style: soft rounded shapes, warm key light from the upper left, cool rim light, gentle ambient occlusion. Centered on a perfectly flat uniform pure green background (#00FF00), no floor, no shadow. No text, no logos, no numbers, no watermark.",
-    "scene": "Stylized 3D animated-feature environment rendering: soft rounded shapes, warm cinematic lighting, gentle depth of field, rich but soft colour, clean uncluttered composition that stays readable behind small game characters. No people. No text, no signage lettering, no logos, no brand marks, no watermark."
+    "scene": "Stylized 3D animated-feature environment rendering: soft rounded shapes, warm cinematic lighting, gentle depth of field, rich but soft colour, clean uncluttered composition that stays readable behind small game characters. No people. No text, no signage lettering, no logos, no brand marks, no watermark.",
+    "icon_sheet": "Stylized 3D animated-feature game icon rendering: chunky toy-like rounded shapes, soft glossy highlights, thick soft bevels, rich saturated colour, a warm key light from the upper left and a cool rim light, gentle ambient occlusion, a clean readable silhouette at small sizes. Each icon is one single centred object seen from the front. The sheet is a grid of {cols} columns by {rows} rows with every icon the same size and wide empty gaps between them, so no two icons touch or overlap. Perfectly flat uniform pure {bg} background ({hex}) with no floor, no shadow on the background, no gradient. No text, no letters, no numbers, no logos, no brand marks, no watermark."
   },
   "chroma": "#00FF00",
   "assets": [
@@ -498,6 +499,86 @@
       "name": "App icon",
       "aspect": "1:1",
       "prompt": "An app icon: a single cheerful brass lift cabin with its doors half open, a small glowing green arrow above it, on a deep night-blue background (#1C1A3F), bold simple shapes that read at 48 pixels, centred with generous margins, no characters."
+    },
+    {
+      "id": "icons_hud",
+      "kind": "icon_sheet",
+      "name": "Icons: HUD and booster",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "green",
+      "icons": [
+        "coin",
+        "heart",
+        "scale",
+        "restart",
+        "trip",
+        "star"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a round gold coin with a raised rim and an embossed upward chevron in the middle, no letters or numbers. 2) a plump glossy red heart. 3) a chunky brass two-pan balance scale on a small stand. 4) a chunky cream-white circular arrow, about three quarters of a ring with a rounded arrowhead and a brass edge. 5) a small cute lift car: a rounded gold box with two sliding doors and a seam down the middle, and a small upward arrow above it. 6) a puffy five-point gold star with rounded tips.",
+      "weight_read": "six separate objects, no overlap, none green; the coin and star must not carry a number."
+    },
+    {
+      "id": "icons_floors",
+      "kind": "icon_sheet",
+      "name": "Icons: floor badges",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "magenta",
+      "icons": [
+        "floor_coral",
+        "floor_sun",
+        "floor_teal",
+        "floor_blue",
+        "floor_plum",
+        "floor_leaf"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a glossy glass-candy badge shaped as a circle, coral red (#FF6B5B). 2) a glossy glass-candy badge shaped as a triangle with rounded corners, sunny yellow (#FFC233). 3) a glossy glass-candy badge shaped as a rounded square, teal (#14B8A6). 4) a glossy glass-candy badge shaped as a diamond, blue (#4C7DFF). 5) a glossy glass-candy badge shaped as a hexagon, plum purple (#A066F5). 6) a glossy glass-candy badge shaped as a plus sign with rounded arms, leaf green (#7BD148).",
+      "weight_read": "six badges, the shape is the meaning: circle, triangle, square, diamond, hexagon, plus; no numbers or letters."
+    },
+    {
+      "id": "icons_results",
+      "kind": "icon_sheet",
+      "name": "Icons: results and states",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "green",
+      "icons": [
+        "trophy",
+        "cable_snap",
+        "hourglass",
+        "lock",
+        "play",
+        "seat"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a chunky gold trophy cup with two handles and a small star on it. 2) two thick steel hoist cable ends snapping apart with a small orange spark between them. 3) a wooden-framed hourglass with golden sand, most of it in the lower bulb. 4) a chunky closed brass padlock. 5) a round blue-violet button with a white play triangle in the middle. 6) a cosy cream armchair seen from the front.",
+      "weight_read": "six objects, none green; the snapped cable must read as a break, not a rope."
+    },
+    {
+      "id": "icons_lifts",
+      "kind": "icon_sheet",
+      "name": "Icons: lift kinds and lobby scenarios",
+      "aspect": "3:2",
+      "cols": 3,
+      "rows": 2,
+      "chroma": "green",
+      "icons": [
+        "kind_old",
+        "kind_service",
+        "kind_express",
+        "scene_maintenance",
+        "scene_powercut",
+        "scene_rush"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of six game icons, left to right, top row first, then bottom row: 1) a worn brass pocket watch with a scuffed case, no numbers on the face. 2) an orange and grey toolbox with a wrench lying on top. 3) a bright blue lightning bolt on a rounded chrome badge. 4) an orange and white traffic cone with a small wrench leaning on it. 5) a clear glass light bulb, dark and unlit, with a tiny spark at its cracked filament. 6) a silver stopwatch with a red button, with motion lines streaking behind it, no numbers on the face.",
+      "weight_read": "six objects, none green; old, service and express must be told apart at a glance (they are the NEXT-strip lift kinds)."
     }
   ]
 }

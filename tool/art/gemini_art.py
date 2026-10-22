@@ -45,6 +45,9 @@ NEUTRAL_RB_GAP = 25  # a green-tinted grey has red and blue this close (0-255)
 NEUTRAL_LEAN = 40  # ...and green above both by less than this
 SCENE_SIZE = {"9:16": (1080, 1920), "16:9": (1920, 1080), "4:5": (864, 1080), "1:1": (1024, 1024)}
 
+ICON_BG = {"green": ("green", "#00FF00"), "magenta": ("magenta", "#FF00FF")}
+ICON_PX = 256  # every processed icon sits centred on a square canvas this size
+
 REFERENCE_NOTE = ("Use the attached reference image only for rendering style, lighting, materials and level of "
                   "detail; do not copy its character, pose or outfit.")
 
@@ -57,6 +60,9 @@ def full_prompt(pack: dict, a: dict) -> str:
     if a["kind"] == "resident_blink":
         return a["prompt"]
     style = pack["style"]["resident" if a["kind"] == "resident" else a["kind"]]
+    if a["kind"] == "icon_sheet":
+        bg = ICON_BG[a.get("chroma", "green")]
+        style = style.format(cols=a["cols"], rows=a["rows"], bg=bg[0], hex=bg[1])
     # Skin tones come from ResidentLook (lib/ui/painters/resident_painter.dart), the owner's cast. Left unsaid,
     # Gemini picks its own: the first gym regular came back pale where the design is the deepest brown.
     skin = a.get("skin")
@@ -68,7 +74,7 @@ def full_prompt(pack: dict, a: dict) -> str:
 
 
 # The Gemini app has no aspect-ratio setting, so app prompts say it in words.
-SHAPE = {"2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
+SHAPE = {"3:2": "Landscape image, 3:2 aspect ratio.", "2:3": "Tall portrait image, 2:3 aspect ratio.", "3:4": "Portrait image, 3:4 aspect ratio.",
          "9:16": "Tall portrait image, 9:16 aspect ratio.", "4:5": "Portrait image, 4:5 aspect ratio.",
          "16:9": "Wide landscape image, 16:9 aspect ratio.", "1:1": "Square image, 1:1 aspect ratio."}
 
@@ -273,15 +279,147 @@ def _trim_box(img):
     return img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
 
 
+def _key_out_magenta(img):
+    """Magenta background to alpha (for icons that are themselves green). Thresholds come from the border."""
+    import numpy as np
+    from PIL import Image
+
+    a = np.asarray(img.convert("RGB")).astype(np.float32)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    mag = np.minimum(r, b) - g
+    border = np.concatenate([mag[:8].ravel(), mag[-8:].ravel(), mag[:, :8].ravel(), mag[:, -8:].ravel()])
+    bg = max(80.0, float(np.median(border)))
+    clear, solid = 0.75 * bg, max(40.0, 0.35 * bg)
+    alpha = np.clip((clear - mag) / (clear - solid), 0.0, 1.0)
+    rim = alpha < 0.5
+    for _ in range(RIM_PX):
+        grown = rim.copy()
+        grown[1:, :] |= rim[:-1, :]
+        grown[:-1, :] |= rim[1:, :]
+        grown[:, 1:] |= rim[:, :-1]
+        grown[:, :-1] |= rim[:, 1:]
+        rim = grown
+    spill = (rim | (alpha < 1.0)) & (mag > 0)
+    lim = np.maximum(g, 0) + 0.25 * np.maximum(mag, 0)
+    r = np.where(spill, np.minimum(r, lim), r)
+    b = np.where(spill, np.minimum(b, lim), b)
+    return Image.fromarray(np.dstack([r, g, b, alpha * 255.0]).clip(0, 255).astype(np.uint8), "RGBA")
+
+
+def _components(img, min_frac=0.12):
+    """Bounding boxes (x0, y0, x1, y1) of the separate objects in a keyed sheet, in reading order."""
+    import numpy as np
+    from PIL import Image
+
+    step = 4
+    alpha = img.getchannel("A")
+    small = np.asarray(alpha.resize((max(1, img.width // step), max(1, img.height // step)), Image.BILINEAR)) > 24
+    h, w = small.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    boxes, sizes = [None], [0]
+    for y0 in range(h):
+        for x0 in range(w):
+            if not small[y0, x0] or labels[y0, x0]:
+                continue
+            n = len(sizes)
+            labels[y0, x0] = n
+            stack, count = [(y0, x0)], 0
+            bx = [x0, y0, x0, y0]
+            while stack:
+                y, x = stack.pop()
+                count += 1
+                bx = [min(bx[0], x), min(bx[1], y), max(bx[2], x), max(bx[3], y)]
+                for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= yy < h and 0 <= xx < w and small[yy, xx] and not labels[yy, xx]:
+                        labels[yy, xx] = n
+                        stack.append((yy, xx))
+            sizes.append(count)
+            boxes.append(bx)
+    if len(sizes) <= 1:
+        return []
+    biggest = max(sizes)
+    keep = [(boxes[i], sizes[i]) for i in range(1, len(sizes)) if sizes[i] >= min_frac * biggest]
+    pad = 2
+    out = [((b[0] - pad) * step, (b[1] - pad) * step, (b[2] + 1 + pad) * step, (b[3] + 1 + pad) * step) for b, _ in keep]
+    return out
+
+
+def _reading_order(boxes, rows):
+    """Sort boxes into `rows` rows by vertical centre, then left to right inside each row."""
+    boxes = sorted(boxes, key=lambda b: (b[1] + b[3]) / 2)
+    per = max(1, len(boxes) // rows)
+    ordered_boxes = []
+    for r in range(rows):
+        chunk = boxes[r * per:(r + 1) * per] if r < rows - 1 else boxes[r * per:]
+        ordered_boxes += sorted(chunk, key=lambda b: (b[0] + b[2]) / 2)
+    return ordered_boxes
+
+
+def _process_icon_sheet(a, img):
+    """Key out the backdrop, cut each separate icon, and write icon_<name>.webp on a square canvas."""
+    from PIL import Image
+
+    keyed = _key_out_magenta(img) if a.get("chroma") == "magenta" else _key_out(img)
+    keyed = _drop_specks(keyed)
+    boxes = _components(keyed)
+    names = a["icons"]
+    if len(boxes) != len(names):
+        print(f"WARN   {a['id']}: found {len(boxes)} separate icons, expected {len(names)}. Regenerate with wider gaps "
+              f"between icons (no two may touch), or crop the sheet by hand.")
+        if len(boxes) < len(names):
+            return []
+    boxes = _reading_order(boxes, a["rows"])[:len(names)]
+    made = []
+    for name, box in zip(names, boxes):
+        crop = keyed.crop(box)
+        tb = _trim_box(crop)
+        if tb:
+            crop = crop.crop(tb)
+        k = (ICON_PX - 8) / max(crop.width, crop.height)
+        crop = crop.resize((max(1, round(crop.width * k)), max(1, round(crop.height * k))), Image.LANCZOS)
+        canvas = Image.new("RGBA", (ICON_PX, ICON_PX), (0, 0, 0, 0))
+        canvas.alpha_composite(crop, ((ICON_PX - crop.width) // 2, (ICON_PX - crop.height) // 2))
+        dest = OUT / f"icon_{name}.webp"
+        canvas.save(dest, "WEBP", quality=92, method=6)
+        made.append(dest)
+        print(f"wrote  {dest.relative_to(ROOT)}  {ICON_PX}x{ICON_PX}  {dest.stat().st_size // 1024} KB")
+    return made
+
+
+def _icon_contact_sheet(files):
+    from PIL import Image
+
+    if not files:
+        return
+    n = len(files)
+    cols = min(6, n)
+    rows = (n + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * 136 * 2, rows * 136), (0, 0, 0))
+    for half, bg in enumerate([(244, 227, 195), (28, 26, 63)]):
+        for i, f in enumerate(files):
+            ic = Image.open(f).convert("RGBA").resize((128, 128), Image.LANCZOS)
+            tile = Image.new("RGBA", (136, 136), bg + (255,))
+            tile.alpha_composite(ic, (4, 4))
+            x = half * cols * 136 + (i % cols) * 136
+            sheet.paste(tile.convert("RGB"), (x, (i // cols) * 136))
+    dest = OUT / "_icons.png"
+    sheet.save(dest)
+    print(f"wrote  {dest.relative_to(ROOT)}  (icons at 128 px on the lobby floor and the night panel)")
+
+
 def cmd_process(pack: dict, _: argparse.Namespace) -> None:
     from PIL import Image
 
     OUT.mkdir(parents=True, exist_ok=True)
+    icon_files = []
     for a in pack["assets"]:
         src = RAW / f"{a['id']}.png"
         if not src.exists():
             continue
         img = Image.open(src)
+        if a["kind"] == "icon_sheet":
+            icon_files += _process_icon_sheet(a, img)
+            continue
         if a["kind"] in ("resident", "resident_blink", "prop"):
             img = _drop_specks(_key_out(img))
             box = _trim_box(img)
@@ -311,6 +449,7 @@ def cmd_process(pack: dict, _: argparse.Namespace) -> None:
         dest = OUT / f"{a['id']}.webp"
         img.save(dest, "WEBP", quality=90, method=6)
         print(f"wrote  {dest.relative_to(ROOT)}  {img.width}x{img.height}  {dest.stat().st_size // 1024} KB")
+    _icon_contact_sheet(icon_files)
 
 
 # ── sheet ────────────────────────────────────────────────────────────────────
