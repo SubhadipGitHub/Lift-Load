@@ -459,7 +459,11 @@ class GameController extends ChangeNotifier {
     _save();
   }
 
-  bool canBuyPower(Power p) => profile.coins >= Formulas.powerCoinPrice(p);
+  /// Stock can be bought only for a power the player has reached, so a stale
+  /// sheet cannot spend coins on something locked.
+  bool _powerReached(Power p) => profile.level >= p.unlockLevel;
+
+  bool canBuyPower(Power p) => _powerReached(p) && profile.coins >= Formulas.powerCoinPrice(p);
 
   void buyPowerWithCoins(Power p) {
     if (!canBuyPower(p)) return;
@@ -467,23 +471,33 @@ class GameController extends ChangeNotifier {
     profile.addPower(p, 1);
     analytics.log('power_bought', {
       'power': p.name,
-      'price': Formulas.powerCoinPrice(p),
+      'coins': Formulas.powerCoinPrice(p),
       'level': hasGame ? game.level.number : 0,
     });
     _save();
     notifyListeners();
   }
 
-  bool get canAdForPower => !adInFlight && profile.rewarded.canShow(RewardedPlacement.powerRefill, now);
+  /// Offered only mid-level, never over a send or crash animation.
+  bool canAdForPower(Power p) =>
+      hasGame &&
+      game.phase == Phase.playing &&
+      _powerReached(p) &&
+      !adInFlight &&
+      profile.rewarded.canShow(RewardedPlacement.powerRefill, now);
 
   /// One ad, [Formulas.powerAdUses] uses of [p]; granted only when the SDK
   /// reports the reward earned.
   Future<void> adForPower(Power p) async {
-    if (!canAdForPower) return;
+    if (!canAdForPower(p)) return;
     final ok = await _showRewarded(RewardedPlacement.powerRefill);
     if (!ok) return;
     profile.addPower(p, Formulas.powerAdUses);
-    analytics.log('power_refill_ad', {'power': p.name, 'level': hasGame ? game.level.number : 0});
+    analytics.log('power_refill_ad', {
+      'power': p.name,
+      'level': hasGame ? game.level.number : 0,
+      if (ads is StubAdsService) 'stub': true,
+    });
     _save();
     notifyListeners();
   }
@@ -655,6 +669,7 @@ class GameController extends ChangeNotifier {
         case RevealedEvent(:final lane):
           revealSerial++;
           revealedLane = lane;
+          analytics.log('unknown_revealed', {'level': game.level.number, 'lane': lane});
           message = 'Someone new stepped up in lane ${lane + 1}';
         case SwapEvent():
           message = 'Swapped the two fronts';

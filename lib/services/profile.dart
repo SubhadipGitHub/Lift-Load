@@ -122,6 +122,19 @@ class Profile {
         'attempts': {for (final e in attempts.entries) '${e.key}': e.value},
       };
 
+  /// Stock per power from a save. One bad entry costs only that power, never
+  /// the rest of the profile.
+  static Map<Power, int> _powersFrom(Object? raw) {
+    final saved = raw is Map ? raw : const {};
+    return {
+      for (final p in Power.values)
+        p: switch (saved[p.name]) {
+          final num n => n.toInt().clamp(0, 999).toInt(),
+          _ => Formulas.startingPowerStock,
+        },
+    };
+  }
+
   static Profile fromJson(Map<String, dynamic> j, DateTime now) {
     try {
       return Profile(
@@ -143,10 +156,7 @@ class Profile {
         musicOn: j['musicOn'] as bool? ?? true,
         hapticsOn: j['hapticsOn'] as bool? ?? true,
         leftHanded: j['leftHanded'] as bool? ?? false,
-        powers: {
-          for (final p in Power.values)
-            p: ((j['powers'] as Map<String, dynamic>? ?? const {})[p.name] as num?)?.toInt() ?? Formulas.startingPowerStock,
-        },
+        powers: _powersFrom(j['powers']),
         attempts: {
           for (final e in (j['attempts'] as Map<String, dynamic>? ?? const {}).entries)
             int.parse(e.key): (e.value as num).toInt(),

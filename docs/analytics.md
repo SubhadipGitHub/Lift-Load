@@ -14,8 +14,9 @@ with this file. Logged through `AnalyticsService` (`DebugAnalytics` in M1, Fireb
 | `scale_used` | level, left | Scale booster used | IAP intent |
 | `power_used` | power (swap / seats / trip / express), level, left, trips_used | A power is spent | Which powers carry difficulty; uses per level |
 | `power_empty_tapped` | power, level | A power is tapped with none in stock | Demand for refills, the best moment to offer one |
-| `power_refill_ad` | power, level | Rewarded ad earned a power use | Rewarded views per DAU, refill opt-in |
-| `power_bought` | power, price, level | Coins spent on a power | Coin sink; price sensitivity |
+| `power_refill_ad` | power, level, stub (true in tester builds) | Rewarded ad earned a power use | Rewarded views per DAU, refill opt-in |
+| `power_bought` | power, coins, level | Coins spent on a power | Coin sink; price sensitivity |
+| `unknown_revealed` | level, lane | An unknown person reaches a lane front | How often the mystery pays off; reveal pacing |
 | `coin_continue` | level, kind | 300-coin continue | Economy sink |
 | `rewarded_offer_accepted` | placement, level | Player taps a rewarded button | Opt-in rate |
 | `rewarded_complete` | placement | SDK reports reward earned | Rewarded views per DAU (≥ 2.5) |

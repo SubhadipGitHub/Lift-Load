@@ -41,7 +41,9 @@ void main() {
     bool grant = true,
     int number = 30,
   }) {
-    final profile = Profile.fresh(day)..coins = coins;
+    final profile = Profile.fresh(day)
+      ..coins = coins
+      ..level = number;
     stock.forEach(profile.addPower);
     final log = DebugAnalytics();
     final ctl = GameController(
@@ -163,7 +165,7 @@ void main() {
       m.ctl.buyPowerWithCoins(Power.trip);
       expect(m.profile.stock(Power.trip), 1);
       expect(m.profile.coins, 10);
-      expect(events(m.log, 'power_bought').single['price'], Formulas.powerCoinPrice(Power.trip));
+      expect(events(m.log, 'power_bought').single['coins'], Formulas.powerCoinPrice(Power.trip));
     });
 
     test('too few coins buys nothing', () {
@@ -192,9 +194,28 @@ void main() {
       for (var i = 0; i < Formulas.powerRefillDailyCap; i++) {
         await m.ctl.adForPower(Power.seats);
       }
-      expect(m.ctl.canAdForPower, isFalse);
+      expect(m.ctl.canAdForPower(Power.seats), isFalse);
       await m.ctl.adForPower(Power.seats);
       expect(m.profile.stock(Power.seats), Formulas.powerRefillDailyCap * Formulas.powerAdUses);
+    });
+  });
+
+  group('locked powers', () {
+    test('coins cannot buy a power the player has not reached', () {
+      final m = make(coins: 1000);
+      m.profile.level = 5;
+      expect(m.ctl.canBuyPower(Power.swap), isFalse);
+      m.ctl.buyPowerWithCoins(Power.swap);
+      expect(m.profile.coins, 1000);
+      expect(m.profile.stock(Power.swap), 0);
+    });
+
+    test('an ad cannot be shown for one, and none is offered outside play', () async {
+      final m = make();
+      m.profile.level = 5;
+      await m.ctl.adForPower(Power.swap);
+      expect(m.profile.rewarded.totalToday, 0);
+      expect(m.profile.stock(Power.swap), 0);
     });
   });
 

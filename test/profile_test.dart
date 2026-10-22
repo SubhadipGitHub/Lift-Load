@@ -53,4 +53,18 @@ void main() {
       expect(p.stock(power), 0);
     }
   });
+
+  test('one bad power entry costs only that power, not the profile', () {
+    final j = Profile.fresh(now).toJson()
+      ..['level'] = 40
+      ..['adsRemoved'] = true
+      ..['powers'] = {'swap': '2', 'seats': -5, 'trip': 3, 'express': 99999};
+    final p = Profile.fromJson(jsonDecode(jsonEncode(j)) as Map<String, dynamic>, now);
+    expect(p.level, 40);
+    expect(p.adsRemoved, isTrue);
+    expect(p.stock(Power.swap), 0);
+    expect(p.stock(Power.seats), 0);
+    expect(p.stock(Power.trip), 3);
+    expect(p.stock(Power.express), 999);
+  });
 }
