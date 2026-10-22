@@ -42,6 +42,16 @@ void main() {
     }
   });
 
+  test('the punch on Send knows only the trip rating and its coins, never the load', () {
+    // The score slam, coin fly, bump, hop and breathe must look the same
+    // whoever rides: nothing in them may read the load, the capacity or the
+    // Scale's preview.
+    final src = File('lib/ui/widgets/punch.dart').readAsStringSync();
+    for (final word in ['loadFraction', '.load', 'capacity', 'ghostLoad', 'zone', 'riders']) {
+      expect(src.contains(word), isFalse, reason: 'punch.dart mentions $word');
+    }
+  });
+
   test('UI never shows how many people are waiting', () {
     final count = RegExp(
       r'(\$\{?[\w.]+\}?|\d+)\s+(more\s+)?waiting|\+\$\{?[\w.]+\}?\s+more',

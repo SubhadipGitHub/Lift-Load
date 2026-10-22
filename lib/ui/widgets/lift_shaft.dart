@@ -1,7 +1,10 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
 import '../../game/engine.dart';
+import '../../game/level.dart';
 import '../../game/scenario.dart';
 import '../art_assets.dart';
 import '../game_controller.dart';
@@ -31,6 +34,7 @@ class LiftShaft extends StatelessWidget {
     required this.scaleLeft,
     required this.scaleReady,
     this.doorOpen = 1,
+    this.cabinBump = 0,
     this.cabinKey,
     this.hiddenIds = const {},
   });
@@ -48,6 +52,9 @@ class LiftShaft extends StatelessWidget {
 
   /// Cabin doors: 0 closed, 1 open. Driven by the send animation.
   final double doorOpen;
+
+  /// The bump once the doors shut, 0 to 1 ([PunchMotion.bumpAt]); 0 at rest.
+  final double cabinBump;
 
   /// Marks the cabin interior, where walking residents land.
   final Key? cabinKey;
@@ -68,6 +75,20 @@ class LiftShaft extends StatelessWidget {
 
     final pad = 10 * s;
     final railLeft = pad + m.nextColumn + 8 * s;
+    final bump = PunchMotion.bumpAt(cabinBump);
+    // The wall: Sunrise Towers' backdrop for this storey band once loaded
+    // (and sprite art is on), otherwise the painted wall.
+    Widget wall(ui.Image? art, Widget? content) => CustomPaint(
+          painter: ShaftPainter(
+            style: venue,
+            railLeft: railLeft,
+            railRight: railLeft + m.cabinWidth,
+            art: art,
+            floorY: m.cabinTop + m.cabinHeight,
+            channel: m.shaftChannel,
+          ),
+          child: content,
+        );
     return Container(
       height: m.shaftHeight,
       margin: EdgeInsets.symmetric(horizontal: m.gap),
@@ -77,8 +98,9 @@ class LiftShaft extends StatelessWidget {
         borderRadius: BorderRadius.circular(m.radius),
         boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 12, offset: Offset(0, 4))],
       ),
-      child: CustomPaint(
-        painter: ShaftPainter(style: venue, railLeft: railLeft, railRight: railLeft + m.cabinWidth),
+      child: _ShaftWall(
+        level: game.level,
+        builder: wall,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: pad),
           child: Row(
@@ -142,19 +164,26 @@ class LiftShaft extends StatelessWidget {
                     ),
                     Positioned(
                       left: 0,
-                      top: 30 * s,
+                      top: m.cabinTop,
                       child: Transform.translate(
                         offset: Offset(0, cabinDy),
                         child: Transform.rotate(
                           angle: cabinTilt,
-                          child: _Cabin(
-                            game: game,
-                            crashed: crashed,
-                            hint: hint,
-                            doorOpen: doorOpen,
-                            interiorKey: cabinKey,
-                            hiddenIds: hiddenIds,
-                            onTap: onTapLift,
+                          // The bump: down and squashed on its floor, then back.
+                          child: Transform(
+                            alignment: Alignment.bottomCenter,
+                            transform: Matrix4.identity()
+                              ..translateByDouble(0, bump.dy * s, 0, 1)
+                              ..scaleByDouble(bump.sx, bump.sy, 1, 1),
+                            child: _Cabin(
+                              game: game,
+                              crashed: crashed,
+                              hint: hint,
+                              doorOpen: doorOpen,
+                              interiorKey: cabinKey,
+                              hiddenIds: hiddenIds,
+                              onTap: onTapLift,
+                            ),
                           ),
                         ),
                       ),
@@ -187,6 +216,26 @@ class LiftShaft extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Builds the shaft wall: with sprite art on it listens for the backdrops to
+/// load and hands over this level's (null for a venue without one, or one
+/// that failed), so the painted wall stays the fallback.
+class _ShaftWall extends StatelessWidget {
+  const _ShaftWall({required this.level, required this.builder, required this.child});
+
+  final Level level;
+  final Widget Function(ui.Image? art, Widget? child) builder;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => SpriteArtScope.of(context)
+      ? ListenableBuilder(
+          listenable: SpriteCache.instance,
+          builder: (context, child) => builder(SpriteCache.instance.shaftBackdrop(level), child),
+          child: child,
+        )
+      : builder(null, child);
 }
 
 /// The lit indicator above the shaft: an arrow and the floor(s) this lift
@@ -303,8 +352,8 @@ class _NextChip extends StatelessWidget {
                     child: Text(
                       stop.floors.map((f) => f.label).join(' '),
                       maxLines: 1,
-                      style: TextStyle(
-                          fontSize: (express ? 9 : 11) * m.scale, fontWeight: FontWeight.w800, color: LL.ink),
+                      style:
+                          TextStyle(fontSize: (express ? 9 : 11) * m.scale, fontWeight: FontWeight.w800, color: LL.ink),
                     ),
                   ),
                 ],

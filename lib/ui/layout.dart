@@ -123,6 +123,14 @@ class Metrics {
   double get cabinFigure => 128 * scale;
   double get gaugeWidth => 92 * scale;
 
+  /// The cabin's top in the shaft, below the floor display; its bottom is
+  /// where a backdrop's doorway meets the floor.
+  double get cabinTop => 30 * scale;
+
+  /// The darker channel either side of the cabin, where the rails run; a
+  /// backdrop's doorway is fitted to the cabin plus this on each side.
+  double get shaftChannel => 6 * scale;
+
   /// Riders' feet sit at this fraction of the cabin's height, mid-floor
   /// (`docs/art/gemini-art-pack.md`, Integration).
   static const double cabinFeetLine = 0.90;
@@ -222,9 +230,38 @@ class Metrics {
   double get cabinRimLine => 1.5 * scale;
 
   /// Bench seats: their corner radius, and the glow around a picked seat or
-  /// one that can take the selected resident.
+  /// one that can take the selected resident (it swells to [seatGlowBreath]
+  /// as the seat breathes).
   double get seatRadius => 14 * scale;
   double get seatGlow => 14 * scale;
+  double get seatGlowBreath => 22 * scale;
+
+  /// The warm glow under the selected resident, as fractions of the figure's
+  /// box: how far it reaches past each side and below the feet, and where
+  /// it starts from the top (style frame, `.front.sel::before`).
+  static const double hopGlowSide = 0.12;
+  static const double hopGlowBelow = 0.06;
+  static const double hopGlowTop = 0.06;
+
+  /// Where the glow's core, its brass ring and its edge sit, from the centre.
+  static const List<double> hopGlowStops = [0, 0.45, 0.7];
+
+  /// The score slam (style frame, `.pop`): the coins line and the rating
+  /// line under it, their outlines, the drop under the coins, the glow
+  /// around them, and how far the slam drifts up as it lands.
+  double get slamFont => 38 * textScale;
+  double get slamSubFont => 17 * textScale;
+  double get slamStroke => 7 * textScale;
+  double get slamSubStroke => 5 * textScale;
+  double get slamDrop => 6 * scale;
+  double get slamGlow => 28 * scale;
+  double get slamRise => 18 * scale;
+
+  /// The rating line's letter spacing, as a share of its size.
+  static const double slamSubTracking = 0.08;
+
+  /// A coin icon flying to the coin pill.
+  double get coinFly => 22 * scale;
 
   /// Sheets (fail, win, get more, settings): the round badge at the top and
   /// its icon, the icon on a sheet button, the gap between stacked buttons
@@ -283,6 +320,12 @@ class Metrics {
   // Lobby lanes: the floor's inset and padding, and each slot's padding and
   // thickest border (Swap targeting), which share a lane's width.
   double get lanePadding => 6 * scale;
+
+  /// The lobby floor's room above the lanes, and how far a selected front
+  /// rises; the rise plus its hop ([PunchMotion.hopHeight]) fits in that
+  /// room, so the hopping front never meets the floor's top edge.
+  double get laneTop => 8 * scale;
+  double get selectedLift => 3 * scale;
   double get slotPadding => 8 * scale;
   static const double slotBorder = 3;
   static const double slotBorderThin = 2;

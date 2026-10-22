@@ -9,6 +9,7 @@ import 'package:lift_load/game/venue.dart';
 import 'package:lift_load/services/analytics_service.dart';
 import 'package:lift_load/ui/art_assets.dart';
 import 'package:lift_load/ui/layout.dart';
+import 'package:lift_load/ui/motion.dart';
 import 'package:lift_load/ui/painters/cabin_painter.dart';
 import 'package:lift_load/ui/painters/sprite_painter.dart';
 import 'package:lift_load/ui/screens/home_screen.dart';
@@ -17,6 +18,7 @@ import 'package:lift_load/ui/widgets/glossy.dart';
 import 'package:lift_load/ui/widgets/lobby.dart';
 import 'package:lift_load/ui/widgets/play_bar.dart';
 import 'package:lift_load/ui/widgets/power_dock.dart';
+import 'package:lift_load/ui/widgets/punch.dart';
 import 'package:lift_load/ui/widgets/resident_figure.dart';
 
 import 'helpers.dart';
@@ -264,6 +266,44 @@ void main() {
         }
       }
       handle.dispose();
+    });
+
+    testWidgets('the punch and the lobby life fit at $name', (tester) async {
+      await sized(tester, size);
+      for (final lanes in [3, 4, 5]) {
+        for (final leftHanded in [false, true]) {
+          final reason = '$lanes lanes, left-handed $leftHanded';
+          final c = powerController(DebugAnalytics(), level: dockLevel(lanes: lanes), stock: {Power.swap: 1});
+          c.profile.leftHanded = leftHanded;
+          c.startLevel();
+          await tester.pumpWidget(app(PlayScreen(controller: c), animate: true, textScale: 1.3));
+          await tester.pump(const Duration(milliseconds: 50));
+          // The front of lane 0 goes to this lift's floor: selected, it hops
+          // and the free seats breathe.
+          expect(c.game.goesTo(c.game.frontOf(0)!.floor), isTrue, reason: reason);
+          c.tapQueue(0);
+          await tester.pump(const Duration(milliseconds: 550));
+          expect(tester.widgetList<SelectedHop>(find.byType(SelectedHop)).where((h) => h.active), hasLength(1));
+          expect(tester.widgetList<Breathe>(find.byType(Breathe)).where((b) => b.active), isNotEmpty);
+          expect(tester.takeException(), isNull, reason: 'hop, $reason');
+          // Board and send: the doors, the bump, then the slam over the rise.
+          c.tapLift();
+          await tester.pump(const Duration(milliseconds: 300));
+          c.send();
+          await tester.pump();
+          for (var t = 0; t < CabinMotion.doorClose.inMilliseconds + 300; t += 50) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          expect(find.byType(ScoreSlam), findsOneWidget, reason: reason);
+          expect(tester.takeException(), isNull, reason: 'slam, $reason');
+          for (var t = 0; t < CabinMotion.sendTotal.inMilliseconds; t += 100) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          expect(c.game.tripsUsed, 1, reason: reason);
+          expect(tester.takeException(), isNull, reason: 'arrival, $reason');
+          await tester.pumpWidget(const SizedBox());
+        }
+      }
     });
 
     testWidgets('fail and win sheets fit at $name', (tester) async {

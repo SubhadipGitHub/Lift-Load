@@ -1,10 +1,36 @@
-/// Venue backgrounds: the lobby floor pattern under the lanes, and one prop
-/// in the shaft corner. Kept faint so residents always read on top.
+/// Venue backgrounds: the lobby floor pattern under the lanes (or the
+/// venue's painted floor), and one prop in the shaft corner. Kept faint so
+/// residents always read on top.
 library;
+
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+
+/// A venue's painted lobby floor, cover-fitted and centred on the area it
+/// fills. The image keeps the lane text's contrast on its own.
+class LobbyFloorPainter extends CustomPainter {
+  const LobbyFloorPainter(this.image);
+
+  final ui.Image image;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final src = Size(image.width.toDouble(), image.height.toDouble());
+    final fit = applyBoxFit(BoxFit.cover, src, size);
+    canvas.drawImageRect(
+      image,
+      Alignment.center.inscribe(fit.source, Offset.zero & src),
+      Offset.zero & size,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+  }
+
+  @override
+  bool shouldRepaint(LobbyFloorPainter old) => old.image != image;
+}
 
 class FloorPatternPainter extends CustomPainter {
   const FloorPatternPainter(this.style);
