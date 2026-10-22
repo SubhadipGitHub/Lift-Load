@@ -3,7 +3,7 @@ import 'package:lift_load/game/cast.dart';
 import 'package:lift_load/ui/painters/resident_painter.dart';
 
 void main() {
-  test('a power-cut shadow is the same size for everyone', () {
+  test('the shadow of an unknown person is the same size for everyone', () {
     for (final t in ResidentType.values) {
       for (final c in Cargo.values) {
         expect(ResidentLook.designWidth(t, c, dimmed: true), personWidth, reason: '${t.name} ${c.name}');

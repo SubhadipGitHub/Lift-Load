@@ -17,6 +17,13 @@ class ResidentFigure extends StatelessWidget {
     this.blink = false,
   });
 
+  /// The unknown person: one generic shadow for everyone, so nothing about them shows.
+  const ResidentFigure.unknown({super.key, this.height = 52})
+      : type = ResidentType.kid,
+        cargo = Cargo.none,
+        dimmed = true,
+        blink = false;
+
   /// Draws [r] with their cargo.
   ResidentFigure.of(Resident r, {Key? key, double height = 52, bool dimmed = false, bool blink = false})
       : this(key: key, type: r.type, cargo: r.cargo, height: height, dimmed: dimmed, blink: blink);
@@ -25,7 +32,7 @@ class ResidentFigure extends StatelessWidget {
   final Cargo cargo;
   final double height;
 
-  /// Power cut: draw a generic shadow instead of the resident.
+  /// Draw a generic shadow instead of the resident (an unknown person).
   final bool dimmed;
 
   /// Eyes closed for this frame.

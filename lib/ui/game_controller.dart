@@ -6,6 +6,7 @@ import '../game/engine.dart';
 import '../game/formulas.dart';
 import '../game/generator.dart';
 import '../game/level.dart';
+import '../game/powers.dart';
 import '../game/scenario.dart';
 import '../services/ad_policy.dart';
 import '../services/ads_service.dart';
@@ -69,12 +70,17 @@ class GameController extends ChangeNotifier {
   int coneSerial = 0;
   int? coneLane;
 
+  /// Bumped when an unknown person reaches a lane front ([revealedLane]), so
+  /// the lobby can play the reveal.
+  int revealSerial = 0;
+  int? revealedLane;
+
   /// [refused], but only while the refused resident still stands there, so
   /// whoever steps up next does not replay their head-shake.
   Selection? get refusedSpot {
     final r = refused;
     if (r == null || !hasGame) return null;
-    final here = r.fromBench ? game.bench[r.index] : game.queues[r.index].firstOrNull;
+    final here = r.fromBench ? game.bench[r.index] : game.frontOf(r.index);
     return here?.id == _refusedId ? r : null;
   }
 
@@ -483,14 +489,26 @@ class GameController extends ChangeNotifier {
             LiftKind.express => 'Express',
           };
           message = '$news$verdict$lift to ${floorList(floors)} arriving';
-        case ArrivalsEvent(:final count):
-          _lobbyNews += 'Rush hour: +$count in the queues · ';
-          message = 'Rush hour! $count more residents joined the queues';
+        case ArrivalsEvent():
+          _lobbyNews += 'Rush hour: a crowd joined the queues · ';
+          message = 'Rush hour! A crowd joined the queues';
         case LaneOpenedEvent(:final lane):
           _lobbyNews += 'Lane ${lane + 1} open · ';
           message = 'Maintenance done. Lane ${lane + 1} is open';
         case ScalePreviewEvent():
           message = 'The dashed needle shows where the load would land';
+        case RevealedEvent(:final lane):
+          revealSerial++;
+          revealedLane = lane;
+          message = 'Someone new stepped up in lane ${lane + 1}';
+        case SwapEvent():
+          message = 'Swapped the two fronts';
+        case SeatsAddedEvent():
+          message = 'More bench seats';
+        case TripAddedEvent():
+          message = 'One more trip';
+        case ExpressEvent(:final resident):
+          message = 'Express! They went straight to ${resident.floor.label}';
         case WonEvent(:final coins, :final tripsUsed, :final perfects):
           message = 'Everyone is home!';
           profile
@@ -575,12 +593,22 @@ class GameController extends ChangeNotifier {
         LiftDebut(kind: LiftKind.express) => 'Express lifts stop at two floors in one trip',
         LiftDebut(kind: LiftKind.normal) => null,
         ScenarioDebut(:final scenario) => scenarioTip(scenario),
+        UnknownDebut() => 'Some people in the queue are a mystery until they reach the front',
+        LaneDebut() => 'The lobby now has a different number of lanes from level to level',
+        PowerDebut(:final power) => powerTip(power),
         null => null,
+      };
+
+  /// One line for a power's unlock, and for its button. Never hints at weight.
+  static String powerTip(Power p) => switch (p) {
+        Power.swap => 'New power: Swap trades the front people of two lanes',
+        Power.seats => 'New power: +2 seats adds two bench seats',
+        Power.trip => 'New power: +1 trip adds a trip',
+        Power.express => 'New power: Express sends the selected person straight to their floor',
       };
 
   static String? scenarioTip(Scenario? s) => switch (s) {
         Scenario.maintenance => 'One lane is closed for maintenance for the first trips',
-        Scenario.powerCut => 'Power cut! You only see who is near the front',
         Scenario.rushHour => 'Rush hour: more residents will arrive',
         null => null,
       };

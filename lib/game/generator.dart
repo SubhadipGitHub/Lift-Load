@@ -37,6 +37,7 @@ abstract final class LevelGenerator {
         final seed = baseSeed * 1000 + number * 97 + attempt + extraSeats * 10007;
         final rng = math.Random(seed);
         final picks = _cast(rng, number, count, floors, venue);
+        final lanes = Formulas.laneCount(number);
         final arrivals = <Arrival>[];
         if (scenario == Scenario.rushHour) {
           // The last waves of the cast arrive later instead of waiting now.
@@ -45,11 +46,12 @@ abstract final class LevelGenerator {
           for (var i = 0; i < later.length; i++) {
             arrivals.add(Arrival(
               afterTrip: Formulas.rushWaveTrips[i ~/ Formulas.rushWaveSize],
-              lane: rng.nextInt(Formulas.queues),
+              lane: rng.nextInt(lanes),
               resident: later[i],
             ));
           }
         }
+        final queues = _deal(rng, picks, lanes, Formulas.laneSpread(number));
         final draft = Level(
           number: number,
           capacity: capacity,
@@ -57,19 +59,20 @@ abstract final class LevelGenerator {
           benchSize: Formulas.bench(number) + extraSeats,
           difficulty: difficulty,
           floors: floors,
-          queues: _deal(picks),
+          queues: queues,
           seed: seed,
           venue: venue,
           liftSchedule: schedule,
           scenario: scenario,
-          lockedLane: scenario == Scenario.maintenance ? rng.nextInt(Formulas.queues) : null,
+          lockedLane: scenario == Scenario.maintenance ? rng.nextInt(lanes) : null,
           lockedUntilTrip: scenario == Scenario.maintenance ? Formulas.maintenanceTrips : 0,
           arrivals: arrivals,
+          unknownIds: _unknown(rng, number, queues),
         );
         final result = Solver.solve(draft);
         if (result.cleared) {
           return draft.copyWith(
-            trips: Formulas.trips(par: result.trips, difficulty: difficulty),
+            trips: Formulas.trips(par: result.trips, difficulty: difficulty, level: number),
             parTrips: result.trips,
           );
         }
@@ -108,7 +111,9 @@ abstract final class LevelGenerator {
     final picks = <(Floor, ResidentType, Cargo)>[];
     for (var i = 0; i < count; i++) {
       final floor = floors[i % floors.length];
-      final type = (newType != null && i < Formulas.debutMinimum) ? newType : weighted(types, venue.weightOf);
+      final type = (newType != null && i < Formulas.debutMinimum)
+          ? newType
+          : weighted(types, (t) => venue.weightOf(t) + (Formulas.isLiar(t) ? Formulas.liarBoost(number) : 0));
       var cargo = Cargo.none;
       if (type.canCarry && cargos.isNotEmpty) {
         if (cargoDebutsLeft > 0) {
@@ -127,11 +132,50 @@ abstract final class LevelGenerator {
     ];
   }
 
-  static List<List<Resident>> _deal(List<Resident> picks) {
-    final lanes = List.generate(Formulas.queues, (_) => <Resident>[]);
-    for (var i = 0; i < picks.length; i++) {
-      lanes[i % Formulas.queues].add(picks[i]);
+  /// Deals [picks] into [lanes] lanes. Lanes start even, then [spread] makes them
+  /// uneven: residents move from one lane's back to another's, never leaving a
+  /// lane more than [spread] from the average or empty.
+  static List<List<Resident>> _deal(math.Random rng, List<Resident> picks, int lanes, int spread) {
+    final counts = List<int>.generate(lanes, (i) => picks.length ~/ lanes + (i < picks.length % lanes ? 1 : 0));
+    final average = picks.length / lanes;
+    for (var move = 0; move < spread * lanes * 2; move++) {
+      final from = rng.nextInt(lanes);
+      final to = rng.nextInt(lanes);
+      if (from == to || counts[from] <= 1) continue;
+      if ((counts[from] - 1 - average).abs() > spread || (counts[to] + 1 - average).abs() > spread) continue;
+      counts[from]--;
+      counts[to]++;
     }
-    return lanes;
+    final out = List.generate(lanes, (_) => <Resident>[]);
+    var next = 0;
+    for (var lane = 0; lane < lanes; lane++) {
+      for (var i = 0; i < counts[lane]; i++) {
+        out[lane].add(picks[next++]);
+      }
+    }
+    return out;
+  }
+
+  /// Which residents are unknown: each person behind a lane's front, with the
+  /// level's unknown share. The unknown debut level guarantees at least
+  /// [Formulas.unknownDebutMinimum] so the new thing is seen.
+  static Set<int> _unknown(math.Random rng, int number, List<List<Resident>> queues) {
+    final share = Formulas.unknownShare(number);
+    if (share <= 0) return const {};
+    final behind = [
+      for (final lane in queues) ...lane.skip(1),
+    ];
+    final picked = <int>{
+      for (final r in behind)
+        if (rng.nextDouble() < share) r.id,
+    };
+    if (Debut.at(number) is UnknownDebut) {
+      final pool = [for (final r in behind) if (!picked.contains(r.id)) r.id]..shuffle(rng);
+      for (final id in pool) {
+        if (picked.length >= Formulas.unknownDebutMinimum) break;
+        picked.add(id);
+      }
+    }
+    return Set.unmodifiable(picked);
   }
 }

@@ -22,6 +22,7 @@ class Level {
     this.lockedLane,
     this.lockedUntilTrip = 0,
     this.arrivals = const [],
+    this.unknownIds = const {},
   });
 
   final int number;
@@ -62,6 +63,13 @@ class Level {
   /// Rush hour: residents who join later, in arrival order.
   final List<Arrival> arrivals;
 
+  /// Ids of residents who are unknown (drawn as a ghost, no look, no floor tag)
+  /// until they reach the front of their lane. Never a lane's first resident.
+  final Set<int> unknownIds;
+
+  /// Lanes on this level.
+  int get laneCount => queues.length;
+
   LiftKind kindForTrip(int tripIndex) => liftSchedule[tripIndex % liftSchedule.length];
 
   int get residentCount => queues.fold(0, (a, q) => a + q.length) + arrivals.length;
@@ -82,6 +90,7 @@ class Level {
         lockedLane: lockedLane,
         lockedUntilTrip: lockedUntilTrip,
         arrivals: arrivals,
+        unknownIds: unknownIds,
       );
 
   /// The 18-resident slice from the concept canvas (Play artboard). Used by

@@ -84,8 +84,10 @@ void main() {
     c.tapLift();
     c.send();
     await tester.pumpAndSettle();
-    expect(c.message, contains('Rush hour: +2'));
+    expect(c.message, contains('Rush hour: a crowd joined'));
     expect(c.message, contains('arriving'));
+    // The head count is never shown to the player.
+    expect(c.message, isNot(matches(RegExp(r'\\+\\d'))));
   }, timeout: const Timeout(Duration(seconds: 60)));
 
   testWidgets('restart is free before the first move and costs a life after it', (tester) async {

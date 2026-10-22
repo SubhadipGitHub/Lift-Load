@@ -51,6 +51,21 @@ class FeedbackService {
         _sfx.play(Sfx.clank);
       case ScalePreviewEvent():
         _sfx.play(Sfx.tick);
+      case RevealedEvent():
+        _haptic(HapticFeedback.selectionClick);
+        _sfx.play(Sfx.chime);
+      case SwapEvent():
+        _haptic(HapticFeedback.lightImpact);
+        _sfx.play(Sfx.seat);
+      case SeatsAddedEvent():
+        _haptic(HapticFeedback.lightImpact);
+        _sfx.play(Sfx.clank);
+      case TripAddedEvent():
+        _haptic(HapticFeedback.lightImpact);
+        _sfx.play(Sfx.ding);
+      case ExpressEvent():
+        _haptic(HapticFeedback.mediumImpact);
+        _sfx.play(Sfx.coin);
       case WonEvent():
         _haptic(HapticFeedback.mediumImpact);
         _sfx.play(Sfx.fanfare);
