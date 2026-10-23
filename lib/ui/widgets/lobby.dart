@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
@@ -11,6 +13,7 @@ import '../motion.dart';
 import '../painters/lobby_painter.dart';
 import '../theme.dart';
 import 'art_icon.dart';
+import 'entrance.dart';
 import 'glossy.dart';
 import 'punch.dart';
 import 'resident_figure.dart';
@@ -142,15 +145,19 @@ class _Seat extends StatelessWidget {
                 alignment: Alignment.bottomCenter,
                 child: Opacity(
                   opacity: hidden ? 0 : 1,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: SelectedHop(
-                      active: selected,
-                      child: HopGlow(
+                  // A walker landing squashes and springs back, the same for all.
+                  child: LandSettle(
+                    hidden: hidden,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SelectedHop(
                         active: selected,
-                        child: IdleSway(
-                          seed: r.id,
-                          builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
+                        child: HopGlow(
+                          active: selected,
+                          child: IdleSway(
+                            seed: r.id,
+                            builder: (context, blink) => ResidentFigure.of(r, height: figure, blink: blink),
+                          ),
                         ),
                       ),
                     ),
@@ -238,10 +245,15 @@ class QueueLanes extends StatelessWidget {
     this.swapFirst,
     this.revealedId,
     this.paintFloor = true,
+    this.entrance,
   });
 
   final LiftGame game;
   final ValueChanged<int> onTapLane;
+
+  /// The level entrance (0 to 1, [EntranceMotion]): while it runs, each
+  /// person rises into place in their turn. Null, or at 1, they are just there.
+  final Animation<double>? entrance;
 
   /// Paint the venue's floor colour and pattern; off when a [LobbyFloor]
   /// below already shows the venue's painted floor.
@@ -319,10 +331,12 @@ class QueueLanes extends StatelessWidget {
                                   // queue moves rather than the figures swapping.
                                   _StepIn(
                                     key: ValueKey(person.id),
+                                    lane: lane,
                                     depth: i,
+                                    entrance: entrance,
                                     child: _Pop(
                                       pop: i == 0 && person.id == revealedId,
-                                      child: Shake(
+                                      builder: (context, ghost) => Shake(
                                         serial: i == 0 && lane == shakeLane ? shakeSerial : 0,
                                         child: _QueueSlot(
                                           resident: person,
@@ -332,6 +346,7 @@ class QueueLanes extends StatelessWidget {
                                           pickable: swapping && i == 0 && playing && !game.isLaneLocked(lane),
                                           picked: swapping && i == 0 && swapFirst == lane,
                                           figure: figure,
+                                          ghost: ghost,
                                           onTap: () => onTapLane(lane),
                                         ),
                                       ),
@@ -342,7 +357,9 @@ class QueueLanes extends StatelessWidget {
                                   // lobby never learns who it is until they reach the front.
                                   _StepIn(
                                     key: ValueKey('unknown-$lane-$i'),
+                                    lane: lane,
                                     depth: i,
+                                    entrance: entrance,
                                     child: _UnknownSlot(depth: i, figure: figure),
                                   ),
                               if (lanes[lane].isEmpty)
@@ -496,6 +513,7 @@ class _QueueSlot extends StatelessWidget {
     required this.onTap,
     this.pickable = false,
     this.picked = false,
+    this.ghost,
   });
 
   final Resident resident;
@@ -508,6 +526,10 @@ class _QueueSlot extends StatelessWidget {
 
   /// Swap targeting: this front can be picked, and has been picked first.
   final bool pickable, picked;
+
+  /// A reveal in progress: the unknown ghost lies over the figure and fades
+  /// out as this goes from 0 to 1.
+  final Animation<double>? ghost;
 
   @override
   Widget build(BuildContext context) {
@@ -563,9 +585,13 @@ class _QueueSlot extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: HopGlow(
                       active: selected,
-                      child: IdleSway(
-                        seed: resident.id,
-                        builder: (context, blink) => ResidentFigure.of(resident, height: figure, blink: blink),
+                      child: _Dissolve(
+                        ghost: ghost,
+                        height: figure,
+                        child: IdleSway(
+                          seed: resident.id,
+                          builder: (context, blink) => ResidentFigure.of(resident, height: figure, blink: blink),
+                        ),
                       ),
                     ),
                   ),
@@ -579,31 +605,148 @@ class _QueueSlot extends StatelessWidget {
   }
 }
 
-/// Scales a person in when they have just been revealed (an unknown person
-/// reaching the front). No motion under reduced motion, and no effect for
-/// anyone else.
-class _Pop extends StatelessWidget {
-  const _Pop({required this.pop, required this.child});
+/// An unknown person who has just reached the front is revealed: the figure
+/// pops in on a soft spring ([RevealMotion]), the unknown ghost over it
+/// dissolves (see [_Dissolve]) and a flash of light crosses the slot. The same
+/// for everyone, and nothing at all for anyone else or under reduced motion.
+class _Pop extends StatefulWidget {
+  const _Pop({required this.pop, required this.builder});
 
   final bool pop;
+
+  /// Builds the slot; [ghost] runs 0 to 1 while the ghost dissolves (null
+  /// when there is no reveal).
+  final Widget Function(BuildContext context, Animation<double>? ghost) builder;
+
+  @override
+  State<_Pop> createState() => _PopState();
+}
+
+class _PopState extends State<_Pop> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: RevealMotion.flash);
+  late final CurvedAnimation _ghost = CurvedAnimation(parent: _c, curve: Interval(0, _ghostEnd, curve: Curves.easeIn));
+  bool _started = false;
+
+  /// Where the ghost's dissolve ends, as a share of the whole reveal.
+  static double get _ghostEnd => RevealMotion.ghost.inMicroseconds / RevealMotion.flash.inMicroseconds;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (widget.pop && !reduceMotion(context)) {
+      _c.forward(from: 0);
+    } else {
+      _c.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ghost.dispose();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final popEnd = RevealMotion.pop.inMicroseconds / RevealMotion.flash.inMicroseconds;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final v = _c.value >= 1 ? 1.0 : MotionCurves.pop.transform((_c.value / popEnd).clamp(0, 1).toDouble());
+        final scale = RevealMotion.popFrom + (1 - RevealMotion.popFrom) * v;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Transform.scale(
+              scale: scale,
+              alignment: Alignment.bottomCenter,
+              child: widget.builder(context, _c.value >= 1 ? null : _ghost),
+            ),
+            if (_c.value < 1)
+              Positioned.fill(
+                child: IgnorePointer(child: CustomPaint(painter: _FlashPainter(_c.value))),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The light that crosses a freshly revealed person: a soft white disc that
+/// swells from the middle of the slot and fades.
+class _FlashPainter extends CustomPainter {
+  const _FlashPainter(this.t);
+
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final out = Curves.easeOutCubic.transform(t);
+    final r = size.shortestSide * RevealMotion.flashRadius * (0.35 + 0.65 * out);
+    final alpha = RevealMotion.flashAlpha * math.pow(1 - t, 1.6).toDouble();
+    final center = size.center(Offset.zero);
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [LL.revealFlash.withValues(alpha: alpha), LL.revealFlash.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: center, radius: r)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FlashPainter old) => old.t != t;
+}
+
+/// The unknown ghost laid over a figure, fading out as [ghost] runs to 1, so
+/// the shadow dissolves into the real person. With no reveal it is the figure.
+class _Dissolve extends StatelessWidget {
+  const _Dissolve({required this.ghost, required this.height, required this.child});
+
+  final Animation<double>? ghost;
+  final double height;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-        tween: Tween(begin: pop ? 0.55 : 1, end: 1),
-        duration: motionMs(context, 320),
-        curve: Curves.easeOutBack,
-        builder: (context, v, child) => Transform.scale(scale: v, alignment: Alignment.bottomCenter, child: child),
-        child: child,
-      );
+  Widget build(BuildContext context) {
+    final g = ghost;
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        if (g != null)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: FadeTransition(
+                opacity: ReverseAnimation(g),
+                child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.bottomCenter,
+                    child: ResidentFigure.unknown(height: height)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
-/// Slides a lane slot into place when its resident moves up the queue (or
-/// first comes into view), instead of snapping. Still under reduced motion.
+/// Moves a lane slot into place with a soft spring when its resident steps up
+/// the queue (the nearest the front first, [BoardMotion.stepStagger] ms
+/// apart), or when someone first comes into view at the back; and, while the
+/// level entrance runs, rises into place in its turn ([EntranceMotion.person]).
+/// Still under reduced motion.
 class _StepIn extends StatefulWidget {
-  const _StepIn({super.key, required this.depth, required this.child});
+  const _StepIn({super.key, required this.lane, required this.depth, required this.entrance, required this.child});
 
-  final int depth;
+  final int lane, depth;
+  final Animation<double>? entrance;
   final Widget child;
 
   @override
@@ -611,7 +754,7 @@ class _StepIn extends StatefulWidget {
 }
 
 class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
+  late final AnimationController _c = AnimationController(vsync: this);
 
   /// Slots to travel, in units of this slot's own height (positive = from below).
   double _from = 0;
@@ -623,15 +766,29 @@ class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    // Someone new appearing at the back of the visible queue walks in.
-    if (widget.depth > 0 && !reduceMotion(context)) {
+    // The entrance carries everyone in at the start of a level; later,
+    // someone new appearing at the back of the visible queue walks in.
+    final entering = (widget.entrance?.value ?? 1) < 1;
+    if (widget.depth > 0 && !entering && !reduceMotion(context)) {
       _from = 0.6;
       _fadeIn = true;
-      _c.forward(from: 0);
+      _play(widget.depth);
     } else {
       _c.value = 1;
     }
   }
+
+  /// One spring, started [BoardMotion.stepStagger] * [depth] ms late.
+  void _play(int depth) {
+    final delay = BoardMotion.stepStagger * depth;
+    final total = BoardMotion.stepMs + delay;
+    _c
+      ..duration = Duration(milliseconds: total)
+      ..forward(from: 0);
+    _curve = Interval(delay / total, 1, curve: MotionCurves.soft);
+  }
+
+  Curve _curve = MotionCurves.soft;
 
   @override
   void didUpdateWidget(_StepIn old) {
@@ -639,7 +796,7 @@ class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
     if (widget.depth < old.depth && !reduceMotion(context)) {
       _from = (old.depth - widget.depth).toDouble();
       _fadeIn = false;
-      _c.forward(from: 0);
+      _play(widget.depth);
     }
   }
 
@@ -650,17 +807,26 @@ class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _c,
-        child: widget.child,
-        builder: (context, child) {
-          final t = Curves.easeOutCubic.transform(_c.value);
-          return Opacity(
-            opacity: _fadeIn ? t : 1,
+  Widget build(BuildContext context) {
+    final entrance = widget.entrance;
+    final rise = EntranceMotion.personRise * Metrics.of(context).scale;
+    final turn = EntranceMotion.person(widget.lane, widget.depth);
+    return AnimatedBuilder(
+      animation: entrance == null ? _c : Listenable.merge([_c, entrance]),
+      child: widget.child,
+      builder: (context, child) {
+        final t = _curve.transform(_c.value);
+        final e = entrance == null ? 1.0 : turn.transform(entrance.value);
+        return Opacity(
+          opacity: ((_fadeIn ? t : 1.0) * e).clamp(0, 1).toDouble(),
+          child: Transform.translate(
+            offset: Offset(0, rise * (1 - e)),
             child: FractionalTranslation(translation: Offset(0, _from * (1 - t)), child: child),
-          );
-        },
-      );
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// An unknown person waiting behind the front of a lane: the same ghost shape for

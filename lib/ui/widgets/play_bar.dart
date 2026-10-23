@@ -2,11 +2,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../game/engine.dart';
 import '../game_controller.dart';
 import '../layout.dart';
+import '../motion.dart';
 import '../theme.dart';
-import 'power_dock.dart';
 import 'glossy.dart';
+import 'glow_pulse.dart';
+import 'power_dock.dart';
 
 /// The bottom bar of the play screen: the power dock and Send. Right-handed
 /// play puts the dock on the left and Send at the right edge, where the thumb
@@ -38,7 +41,12 @@ class PlayBottomBar extends StatelessWidget {
             math.min(dock == null ? m.sendWidthSolo : m.sendWidth, room),
             Metrics.minTouch,
           );
-          final send = SendButton(enabled: c.game.canSend, onPressed: c.send, width: sendWidth);
+          final send = SendButton(
+            enabled: c.game.canSend,
+            ready: SendButton.readyFor(c.game),
+            onPressed: c.send,
+            width: sendWidth,
+          );
           // Right-handed: dock, then Send. Left-handed: the mirror image.
           final children = <Widget>[
             if (dock != null) dock,
@@ -57,13 +65,25 @@ class PlayBottomBar extends StatelessWidget {
 
 /// The mint glossy key that sends the lift (style frame): an up arrow and
 /// the word. With nobody aboard it turns to flat slate, so it never reads as
-/// live.
+/// live. With the load aboard in the green zone or better (the zone the gauge
+/// already shows) it swells gently on a mint glow, as a nudge to send; never
+/// before anyone has boarded, never for what is only previewed.
 class SendButton extends StatelessWidget {
-  const SendButton({super.key, required this.enabled, required this.onPressed, required this.width});
+  const SendButton(
+      {super.key, required this.enabled, required this.onPressed, required this.width, this.ready = false});
 
   final bool enabled;
   final VoidCallback onPressed;
   final double width;
+
+  /// The load aboard is good to send ([readyFor]); it only matters while enabled.
+  final bool ready;
+
+  /// Send is live and the gauge reads green or better.
+  static bool readyFor(LiftGame g) => g.canSend && (g.zone == LoadZone.green || g.zone == LoadZone.limit);
+
+  /// Finds the ready pulse in tests.
+  static const Key pulseKey = ValueKey('send-pulse');
 
   /// Finds the button in tests.
   static const Key buttonKey = ValueKey('send');
@@ -72,6 +92,21 @@ class SendButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
     final surface = enabled ? SurfaceStyle.mint : SurfaceStyle.off;
+    return GlowPulse(
+      key: pulseKey,
+      active: enabled && ready,
+      color: LL.readyGlow,
+      radius: m.buttonRadius,
+      period: ButtonMotion.readyPeriod,
+      scale: ButtonMotion.readyScale,
+      blur: ButtonMotion.readyBlur,
+      spread: ButtonMotion.readySpread,
+      glow: ButtonMotion.readyGlow,
+      child: _button(m, surface),
+    );
+  }
+
+  Widget _button(Metrics m, SurfaceStyle surface) {
     return GlossyButton(
       key: buttonKey,
       style: SurfaceStyle.mint,

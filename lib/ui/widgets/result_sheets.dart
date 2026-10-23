@@ -9,21 +9,59 @@ import '../art_assets.dart';
 import '../game_controller.dart';
 import '../layout.dart';
 import '../theme.dart';
+import '../motion.dart';
 import 'art_icon.dart';
+import 'count_up.dart';
 import 'glossy.dart';
 import 'tester_sheets.dart';
 
-/// Dimmed full-screen layer with a centred card.
-class _Overlay extends StatelessWidget {
+/// Dimmed full-screen layer with a centred card. The scrim fades in, the card
+/// springs in, and the parts of the sheet (each wrapped in a [_Stage]) appear
+/// one after another ([SheetMotion]). Everything is there at once under
+/// reduced motion, and a touch is never held back: the parts are only drawn
+/// late, not disabled.
+class _Overlay extends StatefulWidget {
   const _Overlay({required this.children, required this.label});
 
   final List<Widget> children;
   final String label;
 
   @override
-  Widget build(BuildContext context) => Positioned.fill(
-        child: ColoredBox(
-          color: const Color(0xC20C0B1E),
+  State<_Overlay> createState() => _OverlayState();
+}
+
+class _OverlayState extends State<_Overlay> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: SheetMotion.total);
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (reduceMotion(context)) {
+      _c.value = 1;
+    } else {
+      _c.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  static const Color _scrim = Color(0xC20C0B1E);
+
+  @override
+  Widget build(BuildContext context) {
+    final cardEnd = SheetMotion.card.inMicroseconds / SheetMotion.total.inMicroseconds;
+    return _SheetClock(
+      clock: _c,
+      child: Positioned.fill(
+        child: AnimatedBuilder(
+          animation: _c,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(22),
@@ -31,25 +69,79 @@ class _Overlay extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Semantics(
                   container: true,
-                  label: label,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.7, end: 1),
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutBack,
-                    builder: (context, s, child) => Transform.scale(scale: s, child: child),
+                  label: widget.label,
+                  child: AnimatedBuilder(
+                    animation: _c,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
                       decoration: BoxDecoration(color: LL.cream, borderRadius: BorderRadius.circular(26)),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: widget.children),
                     ),
+                    builder: (context, card) {
+                      final t = MotionCurves.pop.transform((_c.value / cardEnd).clamp(0, 1).toDouble());
+                      return Transform.scale(scale: SheetMotion.cardFrom + (1 - SheetMotion.cardFrom) * t, child: card);
+                    },
                   ),
                 ),
               ),
             ),
           ),
+          builder: (context, card) => ColoredBox(
+            color: _scrim.withValues(
+                alpha: _scrim.a * Curves.easeOut.transform((_c.value / cardEnd).clamp(0, 1).toDouble())),
+            child: card,
+          ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+/// Hands the sheet's clock to its [_Stage]s.
+class _SheetClock extends InheritedWidget {
+  const _SheetClock({required this.clock, required super.child});
+
+  final Animation<double> clock;
+
+  static Animation<double> of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SheetClock>()?.clock ?? const AlwaysStoppedAnimation(1);
+
+  @override
+  bool updateShouldNotify(_SheetClock old) => old.clock != clock;
+}
+
+/// One part of a sheet: it rises and fades in at stage [index]
+/// ([SheetMotion.startOf]); with [pop] it also springs up from
+/// [SheetMotion.titleFrom] (the badge and the title).
+class _Stage extends StatelessWidget {
+  const _Stage(this.index, {this.pop = false, required this.child});
+
+  final int index;
+  final bool pop;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final clock = _SheetClock.of(context);
+    final curve = SheetMotion.part(index, pop ? MotionCurves.pop : Curves.easeOutCubic);
+    return AnimatedBuilder(
+      animation: clock,
+      child: child,
+      builder: (context, child) {
+        final t = curve.transform(clock.value);
+        final scale = pop ? SheetMotion.titleFrom + (1 - SheetMotion.titleFrom) * t : 1.0;
+        return Opacity(
+          opacity: t.clamp(0, 1).toDouble(),
+          alwaysIncludeSemantics: true,
+          child: Transform.translate(
+            offset: Offset(0, SheetMotion.partRise * (1 - t)),
+            child: Transform.scale(scale: scale, child: child),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// Watch an ad: the mint glossy button with the play icon. Slate while it
@@ -189,39 +281,59 @@ class FailSheet extends StatelessWidget {
     return _Overlay(
       label: title,
       children: [
-        _Badge(icon: icon, color: tint),
+        _Stage(0, pop: true, child: _Badge(icon: icon, color: tint)),
         const SizedBox(height: 10),
-        Text(title, textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
+        _Stage(
+          1,
+          pop: true,
+          child: Text(title, textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
+        ),
         const SizedBox(height: 12),
-        Text(body, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, height: 1.4, color: LL.inkSoft)),
+        _Stage(
+          2,
+          child: Text(body,
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, height: 1.4, color: LL.inkSoft)),
+        ),
         const SizedBox(height: 14),
         if (c.askCrashFair) ...[
-          CrashFairRow(c: c),
+          _Stage(2, child: CrashFairRow(c: c)),
           const SizedBox(height: 12),
         ],
         if (c.canContinueWithAd) ...[
-          RewardedButton(
-              label: c.adInFlight ? 'Loading ad…' : adLabel, onPressed: c.adInFlight ? null : c.continueWithAd),
-          const SizedBox(height: Metrics.sheetButtonGap),
-        ],
-        if (c.canContinueWithCoins) ...[
-          SheetButton(
-            style: SurfaceStyle.plum,
-            icon: GameIcon.coin,
-            label: '${Formulas.coinContinuePrice} coins · same fix',
-            onPressed: c.adInFlight ? null : c.continueWithCoins,
+          _Stage(
+            3,
+            child: RewardedButton(
+                label: c.adInFlight ? 'Loading ad…' : adLabel, onPressed: c.adInFlight ? null : c.continueWithAd),
           ),
           const SizedBox(height: Metrics.sheetButtonGap),
         ],
-        _QuietButton(
-          icon: GameIcon.restart,
-          label: 'Retry · uses 1 life',
-          onPressed: c.adInFlight ? null : c.retry,
+        if (c.canContinueWithCoins) ...[
+          _Stage(
+            3,
+            child: SheetButton(
+              style: SurfaceStyle.plum,
+              icon: GameIcon.coin,
+              label: '${Formulas.coinContinuePrice} coins · same fix',
+              onPressed: c.adInFlight ? null : c.continueWithCoins,
+            ),
+          ),
+          const SizedBox(height: Metrics.sheetButtonGap),
+        ],
+        _Stage(
+          4,
+          child: _QuietButton(
+            icon: GameIcon.restart,
+            label: 'Retry · uses 1 life',
+            onPressed: c.adInFlight ? null : c.retry,
+          ),
         ),
         const SizedBox(height: 6),
-        TextButton(
-          onPressed: c.adInFlight ? null : onHome,
-          child: const Text('Back to the tower', style: TextStyle(color: LL.inkSoft, fontWeight: FontWeight.w700)),
+        _Stage(
+          4,
+          child: TextButton(
+            onPressed: c.adInFlight ? null : onHome,
+            child: const Text('Back to the tower', style: TextStyle(color: LL.inkSoft, fontWeight: FontWeight.w700)),
+          ),
         ),
       ],
     );
@@ -240,77 +352,103 @@ class WinSheet extends StatelessWidget {
     return _Overlay(
       label: 'Tower delivered',
       children: [
-        const _Badge(icon: GameIcon.trophy, color: LL.brass),
+        const _Stage(0, pop: true, child: _Badge(icon: GameIcon.trophy, color: LL.brass)),
         const SizedBox(height: 10),
-        Text('LEVEL ${g.level.number} CLEAR', style: LL.label.copyWith(color: LL.inkSoft)),
+        _Stage(1, child: Text('LEVEL ${g.level.number} CLEAR', style: LL.label.copyWith(color: LL.inkSoft))),
         const SizedBox(height: 8),
-        Text('Tower delivered!', textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
+        _Stage(
+          1,
+          pop: true,
+          child: Text('Tower delivered!',
+              textAlign: TextAlign.center, style: LL.display.copyWith(fontSize: 34, color: LL.ink)),
+        ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ArtIcon(GameIcon.star, size: Metrics.sheetStar),
-            const SizedBox(width: Metrics.sheetButtonGap / 3),
-            Flexible(
-              child: Text('${g.tripsUsed} trips · ${g.perfects} perfect loads',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: LL.inkSoft)),
-            ),
-          ],
+        _Stage(
+          2,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArtIcon(GameIcon.star, size: Metrics.sheetStar),
+              const SizedBox(width: Metrics.sheetButtonGap / 3),
+              Flexible(
+                child: Text('${g.tripsUsed} trips · ${g.perfects} perfect loads',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: LL.inkSoft)),
+              ),
+            ],
+          ),
         ),
         if (g.level.number == g.level.venue.lastLevel) ...[
           const SizedBox(height: 12),
-          _BuildingComplete(venue: g.level.venue),
+          _Stage(3, child: _BuildingComplete(venue: g.level.venue)),
         ],
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(color: LL.ink, borderRadius: BorderRadius.circular(999)),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ArtIcon(GameIcon.coin, size: Metrics.sheetButtonIcon),
-                const SizedBox(width: 6),
-                // Counts up to the award; settles, so tests stay deterministic.
-                TweenAnimationBuilder<int>(
-                  tween: IntTween(begin: 0, end: c.tripleClaimed ? g.levelCoins * 3 : g.levelCoins),
-                  duration: Duration(milliseconds: (MediaQuery.maybeDisableAnimationsOf(context) ?? false) ? 0 : 700),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, v, _) =>
-                      Text('+$v coins', style: LL.display.copyWith(fontSize: 24, color: LL.cream)),
-                ),
-              ],
+        _Stage(
+          3,
+          pop: true,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(color: LL.ink, borderRadius: BorderRadius.circular(999)),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ArtIcon(GameIcon.coin, size: Metrics.sheetButtonIcon),
+                  const SizedBox(width: 6),
+                  // Counts up to the award once the pill is in, with a tick;
+                  // settles at once under reduced motion.
+                  CountUp(
+                    from: 0,
+                    value: c.tripleClaimed ? g.levelCoins * 3 : g.levelCoins,
+                    delay: Duration(milliseconds: SheetMotion.startOf(3) + SheetMotion.countAfter),
+                    onTick: c.countTick,
+                    builder: (context, v, widest) => StableText(
+                      '+$v coins',
+                      widest: '+$widest coins',
+                      style: LL.display.copyWith(fontSize: 24, color: LL.cream),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
         const SizedBox(height: 14),
         if (c.canTriple) ...[
-          RewardedButton(
-            label: c.adInFlight ? 'Loading ad…' : 'Watch ad · ×3 = ${g.levelCoins * 3} coins',
-            onPressed: c.adInFlight ? null : c.claimTriple,
+          _Stage(
+            4,
+            child: RewardedButton(
+              label: c.adInFlight ? 'Loading ad…' : 'Watch ad · ×3 = ${g.levelCoins * 3} coins',
+              onPressed: c.adInFlight ? null : c.claimTriple,
+            ),
           ),
           const SizedBox(height: Metrics.sheetButtonGap),
         ],
         if (c.askHeavyTypes) ...[
-          HeavyTypesCard(c: c),
+          _Stage(4, child: HeavyTypesCard(c: c)),
           const SizedBox(height: 12),
         ],
         if (c.testComplete) ...[
-          const Text(
-            "That's the whole test. Thank you for playing!",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: LL.ink),
+          const _Stage(
+            5,
+            child: Text(
+              "That's the whole test. Thank you for playing!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: LL.ink),
+            ),
           ),
           const SizedBox(height: 10),
-          PrimaryButton(label: 'Send results', onPressed: () => showResultsSheet(context, c)),
+          _Stage(5, child: PrimaryButton(label: 'Send results', onPressed: () => showResultsSheet(context, c))),
           const SizedBox(height: 6),
-          TextButton(
-            onPressed: onHome,
-            child: const Text('Back to the tower', style: TextStyle(color: LL.inkSoft, fontWeight: FontWeight.w700)),
+          _Stage(
+            5,
+            child: TextButton(
+              onPressed: onHome,
+              child: const Text('Back to the tower', style: TextStyle(color: LL.inkSoft, fontWeight: FontWeight.w700)),
+            ),
           ),
         ] else
-          PrimaryButton(label: 'Continue', onPressed: c.adInFlight ? null : c.nextLevel),
+          _Stage(5, child: PrimaryButton(label: 'Continue', onPressed: c.adInFlight ? null : c.nextLevel)),
       ],
     );
   }

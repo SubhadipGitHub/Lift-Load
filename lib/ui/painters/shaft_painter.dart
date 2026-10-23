@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../art_assets.dart';
+import '../motion.dart';
 import '../theme.dart';
 
 class ShaftPainter extends CustomPainter {
@@ -20,6 +21,9 @@ class ShaftPainter extends CustomPainter {
     this.art,
     this.floorY = 0,
     this.channel = 6,
+    this.rideDy = 0,
+    this.rideTravel = 1,
+    this.scale = 1,
   });
 
   final VenueStyle style;
@@ -36,6 +40,13 @@ class ShaftPainter extends CustomPainter {
 
   /// The channel either side of the cabin, where the rails run.
   final double channel;
+
+  /// The cabin's offset from its stop while it rides (negative is up), the
+  /// distance of a full ride, and the screen's design scale, all in logical
+  /// pixels. At 0 the shaft is still; otherwise the backdrop slides against the
+  /// ride ([RideMotion.parallax]), the rail brackets run past and faint
+  /// streaks fall beside the cabin. Only the cabin's own offset drives it.
+  final double rideDy, rideTravel, scale;
 
   /// How much wider than the cabin column (plus its channels) the doorway may
   /// grow, so the cabin can stand in the middle of it when the column sits
@@ -71,7 +82,10 @@ class ShaftPainter extends CustomPainter {
     final image = art;
     if (image != null) {
       final src = Size(image.width.toDouble(), image.height.toDouble());
-      final at = placement(src, size, railLeft: railLeft, railRight: railRight, floorY: floorY, channel: channel);
+      final home = placement(src, size, railLeft: railLeft, railRight: railRight, floorY: floorY, channel: channel);
+      // The backdrop slides down as the cabin rises, only as far as the image
+      // reaches above the panel.
+      final at = home.shift(Offset(0, _slide(spare: -home.top)));
       final paint = Paint()..filterQuality = FilterQuality.medium;
       canvas.drawImageRect(image, Offset.zero & src, at, paint);
       // The floor runs on under the cabin: the image's last row, repeated.
@@ -101,7 +115,11 @@ class ShaftPainter extends CustomPainter {
             stops: const [0, 0.45, 1],
           ).createShader(rect),
       );
+      canvas
+        ..save()
+        ..translate(0, _slide(spare: motifSlack * scale));
       _motif(canvas, size);
+      canvas.restore();
 
       // The shaft itself: a darker channel behind the cabin (the backdrop
       // has its own doorway).
@@ -118,11 +136,14 @@ class ShaftPainter extends CustomPainter {
       canvas
         ..drawLine(Offset(x, 0), Offset(x, h), rail)
         ..drawLine(Offset(x - 1, 0), Offset(x - 1, h), shine);
-      // Rail brackets.
-      for (var y = 18.0; y < h; y += 46) {
+      // Rail brackets: they run past as the cabin rides (the whole travel,
+      // the nearest layer).
+      final run = -rideDy % bracketGap;
+      for (var y = 18.0 + run - bracketGap; y < h; y += bracketGap) {
         canvas.drawRect(Rect.fromCenter(center: Offset(x, y), width: 9, height: 3), rail);
       }
     }
+    _streaks(canvas, size);
     // Soft vignette at the bottom so the panel sits on the lobby.
     canvas.drawRect(
       Rect.fromLTWH(0, h * 0.7, w, h * 0.3),
@@ -133,6 +154,46 @@ class ShaftPainter extends CustomPainter {
           colors: [Color(0x00000000), Color(0x33000000)],
         ).createShader(Rect.fromLTWH(0, h * 0.7, w, h * 0.3)),
     );
+  }
+
+  /// Spacing of the rail brackets, and the room a painted wall's motif may
+  /// slide into (design units).
+  static const double bracketGap = 46;
+  static const double motifSlack = 14;
+
+  /// How far the backdrop has slid for this ride (0 at rest), no further
+  /// than [spare] where the image or motif has room.
+  double _slide({required double spare}) => (-rideDy * RideMotion.parallax).clamp(0, math.max(0, spare)).toDouble();
+
+  /// Faint streaks falling down the doorway as the cabin rises: positions are
+  /// fixed, they move with the cabin's offset and fade with how far it is
+  /// from its stop, so they stop when it does.
+  void _streaks(Canvas canvas, Size size) {
+    if (rideDy == 0 || rideTravel <= 0) return;
+    final alpha = RideMotion.streakAlpha *
+        Curves.easeOut.transform((rideDy.abs() / (rideTravel * RideMotion.streakFull)).clamp(0, 1).toDouble());
+    if (alpha <= 0) return;
+    final left = railLeft - channel, width = railRight + channel - left;
+    for (var i = 0; i < RideMotion.streaks; i++) {
+      final x = left + width * ((i * 0.618034) % 1);
+      final length = RideMotion.streakLength * scale * (0.55 + 0.9 * ((i * 0.381966) % 1));
+      final pace = 1 + 1.3 * ((i * 0.7548776) % 1);
+      final cycle = size.height + length;
+      final y = (((i * 0.37) % 1) * cycle - rideDy * pace) % cycle - length;
+      final box = Rect.fromLTWH(x, y, 0, length);
+      canvas.drawLine(
+        box.topCenter,
+        box.bottomCenter,
+        Paint()
+          ..strokeWidth = RideMotion.streakWidth * scale
+          ..strokeCap = StrokeCap.round
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [LL.streak.withValues(alpha: 0), LL.streak.withValues(alpha: alpha)],
+          ).createShader(Rect.fromLTWH(x - 1, y, 2, length)),
+      );
+    }
   }
 
   void _motif(Canvas canvas, Size size) {
@@ -211,5 +272,8 @@ class ShaftPainter extends CustomPainter {
       old.railRight != railRight ||
       old.art != art ||
       old.floorY != floorY ||
-      old.channel != channel;
+      old.channel != channel ||
+      old.rideDy != rideDy ||
+      old.rideTravel != rideTravel ||
+      old.scale != scale;
 }

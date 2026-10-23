@@ -126,6 +126,20 @@ abstract final class LL {
   static const hopGlowMid = Color(0x66F5B83D);
   static const hopGlowEdge = Color(0x00F5B83D);
 
+  /// Premium motion (slice B): the gloss sweep across a released button, the
+  /// glow under Send when the load is good to send and under Play at home,
+  /// the ring of light where a resident arrives, the chime light on a
+  /// lift's top, the flash when an unknown person is revealed, the ride's
+  /// speed streaks and a twinkling window.
+  static const sweepLight = Color(0xA6FFFFFF);
+  static const readyGlow = Color(0xFF3DDC97);
+  static const playGlow = Color(0xFFF5B83D);
+  static const ringLight = Color(0xFFFFF4E2);
+  static const chimeLight = Color(0xFFFFE9B0);
+  static const revealFlash = Color(0xFFFFF8E0);
+  static const streak = Color(0xFFDCD8FF);
+  static const twinkle = Color(0xFFFFF3C4);
+
   /// The score slam: brass-hi coins with a dark brown outline, a drop and a
   /// brass glow; the rating line in white outlined in deep mint, or lilac
   /// outlined in plum for a half-empty trip (no coins).

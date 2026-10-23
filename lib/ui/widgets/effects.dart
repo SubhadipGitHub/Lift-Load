@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import '../motion.dart';
 import '../theme.dart';
 
-enum BurstKind { sparks, coins, confetti, sparkle }
+enum BurstKind { sparks, coins, confetti, sparkle, ring }
 
 /// A burst at [origin] (screen coordinates inside the effects layer). Coins
 /// fly toward [target]; confetti falls across the whole layer.
@@ -27,6 +27,9 @@ class Burst {
     this.sprite,
     this.spriteSize = 0,
     this.onDone,
+    this.delay = Duration.zero,
+    this.radius = 0,
+    this.stroke = 0,
   });
 
   final BurstKind kind;
@@ -44,6 +47,13 @@ class Burst {
 
   /// Called once the burst has played out (the coins have landed).
   final VoidCallback? onDone;
+
+  /// Waits this long before it starts (the ring under a walker's target
+  /// begins as they near it).
+  final Duration delay;
+
+  /// A ring's reach and line width, in logical pixels.
+  final double radius, stroke;
 
   final int seed = _seeds++;
   static int _seeds = 1;
@@ -98,19 +108,26 @@ class _BurstView extends StatefulWidget {
 }
 
 class _BurstViewState extends State<_BurstView> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: Duration(
-      milliseconds: switch (widget.burst.kind) {
-        BurstKind.sparks => 650,
-        BurstKind.coins => PunchMotion.coinFly.inMilliseconds,
-        BurstKind.confetti => 2200,
-        BurstKind.sparkle => 520,
-      },
-    ),
-  )..forward().whenComplete(() {
+  /// How long the burst itself plays, after its delay.
+  late final Duration _play = Duration(
+    milliseconds: switch (widget.burst.kind) {
+      BurstKind.sparks => 650,
+      BurstKind.coins => PunchMotion.coinFly.inMilliseconds,
+      BurstKind.confetti => 2200,
+      BurstKind.sparkle => 520,
+      BurstKind.ring => BoardMotion.ring.inMilliseconds,
+    },
+  );
+
+  late final AnimationController _c = AnimationController(vsync: this, duration: widget.burst.delay + _play)
+    ..forward().whenComplete(() {
       if (mounted) widget.onDone();
     });
+
+  /// 0 to 1 over the burst proper, 0 while it waits.
+  double get _t => ((_c.value * _c.duration!.inMicroseconds - widget.burst.delay.inMicroseconds) / _play.inMicroseconds)
+      .clamp(0, 1)
+      .toDouble();
 
   @override
   void dispose() {
@@ -123,14 +140,14 @@ class _BurstViewState extends State<_BurstView> with SingleTickerProviderStateMi
         animation: _c,
         builder: (context, _) => Stack(
           children: [
-            Positioned.fill(child: CustomPaint(painter: _BurstPainter(widget.burst, _c.value))),
+            Positioned.fill(child: CustomPaint(painter: _BurstPainter(widget.burst, _t))),
             if (widget.burst.label != null)
               Positioned(
                 left: widget.burst.origin.dx - 40,
-                top: widget.burst.origin.dy - 30 - 40 * Curves.easeOut.transform(_c.value),
+                top: widget.burst.origin.dy - 30 - 40 * Curves.easeOut.transform(_t),
                 width: 80,
                 child: Opacity(
-                  opacity: (1 - _c.value).clamp(0, 1),
+                  opacity: (1 - _t).clamp(0, 1),
                   child: Text(
                     widget.burst.label!,
                     textAlign: TextAlign.center,
@@ -159,7 +176,31 @@ class _BurstPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rng = math.Random(b.seed);
+    if (t <= 0 && b.delay > Duration.zero) return;
     switch (b.kind) {
+      case BurstKind.ring:
+        // A flat ring of light on the floor where a walker is arriving: it
+        // widens and fades, with a faint disc inside it.
+        final out = Curves.easeOutCubic.transform(t);
+        final rx = b.radius * (0.4 + 0.6 * out);
+        final ry = rx * BoardMotion.ringFlat;
+        final fade = math.pow(1 - t, 1.5).toDouble();
+        final oval = Rect.fromCenter(center: b.origin, width: rx * 2, height: ry * 2);
+        canvas
+          ..drawOval(
+            oval,
+            Paint()
+              ..shader = RadialGradient(
+                colors: [LL.ringLight.withValues(alpha: 0.28 * fade), LL.ringLight.withValues(alpha: 0)],
+              ).createShader(oval),
+          )
+          ..drawOval(
+            oval,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = b.stroke
+              ..color = LL.ringLight.withValues(alpha: 0.7 * fade),
+          );
       case BurstKind.sparks:
         for (var i = 0; i < b.count; i++) {
           final a = -math.pi * (0.1 + 0.8 * rng.nextDouble());
