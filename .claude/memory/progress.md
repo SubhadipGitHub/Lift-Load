@@ -3,6 +3,25 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-23 · App icon and cover art (branch art-icon-cover)
+
+**Done**
+- Owner sent the app icon, cover art portrait and cover art landscape. Processed with `gemini_art.py process`, approved
+  into `docs/art/approved/` as `app_icon.webp` (1024), `home_skyline_portrait.webp` (1080x1920), `home_skyline_landscape.webp`
+  (1920x1080), 44 + 91 + 92 KB. Not shipped in `assets/` yet.
+- `_remove_sparkle` left a faint diamond outline on dark smooth art; it now refills the sparkle footprint from its ring
+  when the ring is flat (std < 6), else keeps the exact un-blend. Checked contrast-stretched: no trace on all three.
+- `make_icons.py` cuts the web icons (192/512, maskable, favicon) from the approved icon when it exists, PIL cabin is the
+  fallback. The lift sits inside the middle 62% of the frame, so the full-bleed file is maskable-safe as is.
+
+**Open**
+- Cover art is not wired into the game. The Home skyline is a progress map (lit windows per level) and the cover art
+  would not replace it; candidate uses are boot splash, tablet/wide backdrop, Play feature graphic (1024x500 crop of
+  the landscape). Needs the owner's pick (a PRD note before building).
+- The hotel tower sign in both covers carries garbled lettering ("TAGLOIDAT"); tiny at phone size, but a tell on a store
+  graphic. Reroll or paint over before it goes on the store listing.
+- Android launcher icons come with M3 (`android/` is generated then): foreground/background split from this icon.
+
 ## 2026-10-23 · PRD v1.7 polish pass, slice A: layout and clean-up (branch polish-layout)
 
 **Done**
