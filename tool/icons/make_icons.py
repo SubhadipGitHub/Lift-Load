@@ -2,8 +2,9 @@
 
     python3 tool/icons/make_icons.py          # writes web/favicon.png and web/icons/*
 
-Everything is drawn with PIL at 4x and downsampled, so the output is the same on
-every machine. Colours come from lib/ui/theme.dart (LL.night, LL.brass, ...).
+When the approved art icon (docs/art/approved/app_icon.webp) exists the icons are cut from it; the PIL-drawn
+cabin below is the fallback. Everything else is drawn with PIL at 4x and downsampled, so the output is the same
+on every machine. Colours come from lib/ui/theme.dart (LL.night, LL.brass, ...).
 The maskable icons are full-bleed with the cabin inside the 80% safe circle;
 the plain icons sit on a rounded square with transparent corners.
 """
@@ -97,7 +98,25 @@ def render(size, maskable):
     return img.resize((size, size), Image.LANCZOS)
 
 
+ART_ICON = Path(__file__).resolve().parents[2] / "docs" / "art" / "approved" / "app_icon.webp"
+
+
+def render_art(size, maskable):
+    """The approved icon is full-bleed with the lift inside the middle 62%, so it is already maskable-safe. The
+    plain icons round the corners like render() does."""
+    img = Image.open(ART_ICON).convert("RGBA").resize((size, size), Image.LANCZOS)
+    if not maskable:
+        mask = Image.new("L", (size * SS, size * SS), 0)
+        ImageDraw.Draw(mask).rounded_rectangle([0, 0, size * SS - 1, size * SS - 1], radius=round(size * SS * 0.22),
+                                               fill=255)
+        img.putalpha(mask.resize((size, size), Image.LANCZOS))
+    return img
+
+
 def main():
+    if ART_ICON.exists():
+        global render
+        render = render_art
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("web")
     (out / "icons").mkdir(parents=True, exist_ok=True)
     render(192, False).save(out / "icons" / "Icon-192.png")

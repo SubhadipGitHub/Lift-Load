@@ -310,8 +310,31 @@ def _remove_sparkle(img):
         tv = np.abs(np.diff(grey, axis=0)).sum() + np.abs(np.diff(grey, axis=1)).sum()
         if best is None or tv < best[0]:
             best = (tv, fixed)
-    rgb[y0:y0 + h, x0:x0 + w] = best[1]
-    return Image.fromarray(rgb.astype(np.uint8))
+    patch = best[1]
+    # The un-blend leaves a faint outline on dark, smooth artwork (the overlay's edge is not exactly the measured one).
+    # Where the ring around the sparkle is flat, refill the sparkle's footprint from that ring; on busy artwork the
+    # exact un-blend stands.
+    foot = alpha[..., 0] > 0.02
+    for _ in range(4):
+        g = foot.copy()
+        g[1:, :] |= foot[:-1, :]
+        g[:-1, :] |= foot[1:, :]
+        g[:, 1:] |= foot[:, :-1]
+        g[:, :-1] |= foot[:, 1:]
+        foot = g
+    ring = ~foot
+    ring[:6, :] = ring[-6:, :] = False
+    ring[:, :6] = ring[:, -6:] = False
+    ring_px = patch[ring]
+    if ring_px.std(axis=0).max() < 6.0:
+        fill = patch.copy()
+        fill[foot] = ring_px.mean(axis=0)
+        for _ in range(600):  # diffuse the ring inward until the footprint is a smooth continuation of it
+            nb = (np.roll(fill, 1, 0) + np.roll(fill, -1, 0) + np.roll(fill, 1, 1) + np.roll(fill, -1, 1)) / 4.0
+            fill[foot] = nb[foot]
+        patch = fill
+    rgb[y0:y0 + h, x0:x0 + w] = patch
+    return Image.fromarray(rgb.clip(0, 255).astype(np.uint8))
 
 
 def _key_out_distance(img):
