@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
@@ -15,7 +16,10 @@ import '../motion.dart';
 import '../painters/sky_painter.dart';
 import '../theme.dart';
 import '../widgets/art_icon.dart';
+import '../widgets/count_up.dart';
+import '../widgets/entrance.dart';
 import '../widgets/glossy.dart';
+import '../widgets/glow_pulse.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 import '../widgets/settings_sheet.dart';
@@ -31,8 +35,17 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   Timer? _tick;
+
+  /// The home screen's entrance: its parts rise in one after another
+  /// ([HomeMotion]); instant under reduced motion, and never in the way of a tap.
+  late final AnimationController _enter = AnimationController(vsync: this, duration: HomeMotion.total);
+  bool _entered = false;
+
+  /// The coins shown while a level is open on top of this screen, so the
+  /// total counts up in view when the player comes back.
+  int? _holdCoins;
 
   GameController get c => widget.controller;
 
@@ -48,8 +61,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_entered) return;
+    _entered = true;
+    if (reduceMotion(context)) {
+      _enter.value = 1;
+    } else {
+      _enter.forward();
+    }
+  }
+
+  @override
   void dispose() {
     _tick?.cancel();
+    _enter.dispose();
     c.removeListener(_onChange);
     super.dispose();
   }
@@ -60,8 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _play() async {
     c.startLevel();
+    _holdCoins = c.profile.coins;
     await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PlayScreen(controller: c)));
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _holdCoins = null);
   }
 
   String _countdown(Duration d) =>
@@ -85,7 +112,12 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: m.font(12), color: LL.lilac, fontWeight: FontWeight.w700),
           ),
         ),
-        _Stat(icon: GameIcon.coin, label: 'Coins', text: '${p.coins}'),
+        CountUp(
+          value: _holdCoins ?? p.coins,
+          delay: HomeMotion.coinsAfter,
+          builder: (context, shown, widest) =>
+              _Stat(icon: GameIcon.coin, label: 'Coins', text: '$shown', widest: '$widest', spoken: '${p.coins}'),
+        ),
         SizedBox(width: 6 * m.scale),
         _Stat(icon: GameIcon.scale, label: 'Scales', text: '${p.scales}'),
         SizedBox(width: 6 * m.scale),
@@ -145,8 +177,14 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => showResultsSheet(context, c),
           )
         else
-          _Pulse(
+          GlowPulse(
             active: hasLives,
+            color: LL.playGlow,
+            radius: Metrics.sheetButtonRadius,
+            period: HomeMotion.playPeriod,
+            scale: HomeMotion.playScale,
+            blur: HomeMotion.playBlur,
+            glow: HomeMotion.playGlow,
             child: PrimaryButton(
               icon: hasLives ? GameIcon.play : null,
               label: hasLives ? 'Play · Level ${p.level}' : 'Out of lives',
@@ -177,6 +215,18 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
     final map = _VenueMap(level: p.level);
+    // The parts rise in one after another (the title pops).
+    Widget enter(Widget part, int stage, {double scaleFrom = 1, Curve curve = Curves.easeOutCubic}) => Entrance(
+          animation: _enter,
+          curve: HomeMotion.part(stage, curve),
+          dy: HomeMotion.partRise,
+          scaleFrom: scaleFrom,
+          child: part,
+        );
+    final statsIn = enter(stats, 0);
+    final titleIn = enter(title, 1, scaleFrom: HomeMotion.titleFrom, curve: MotionCurves.pop);
+    final mapIn = enter(map, 2);
+    final actionsIn = enter(actions, 3);
 
     final Widget body;
     if (m.twoPane) {
@@ -189,17 +239,17 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    stats,
+                    statsIn,
                     const Spacer(),
-                    title,
+                    titleIn,
                     SizedBox(height: 24 * m.scale),
-                    actions,
+                    actionsIn,
                     const Spacer(),
                   ],
                 ),
               ),
               SizedBox(width: 24 * m.scale),
-              Expanded(child: map),
+              Expanded(child: mapIn),
             ],
           ),
         ),
@@ -212,11 +262,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               SizedBox(height: 12 * m.scale),
-              stats,
+              statsIn,
               SizedBox(height: 18 * m.scale),
-              title,
-              Expanded(child: map),
-              actions,
+              titleIn,
+              Expanded(child: mapIn),
+              actionsIn,
               SizedBox(height: 20 * m.scale),
             ],
           ),
@@ -284,39 +334,23 @@ String _scenarioName(Scenario s) => switch (s) {
       Scenario.rushHour => 'rush hour',
     };
 
-/// A slow breathing scale that invites a tap. Still under reduced motion.
-class _Pulse extends StatelessWidget {
-  const _Pulse({required this.child, required this.active});
-
-  final Widget child;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final clock = active ? IdleClock.of(context) : null;
-    if (clock == null) return child;
-    return ValueListenableBuilder<double>(
-      valueListenable: clock,
-      child: child,
-      builder: (context, t, child) =>
-          Transform.scale(scale: 1 + 0.025 * (0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.8)), child: child),
-    );
-  }
-}
-
 /// A dark glossy pill on the home screen: an approved icon and a number.
 class _Stat extends StatelessWidget {
-  const _Stat({required this.icon, required this.label, required this.text});
+  const _Stat({required this.icon, required this.label, required this.text, this.widest, this.spoken});
 
   final GameIcon icon;
   final String label;
   final String text;
 
+  /// A counting number's widest text (the pill keeps that width), and what a
+  /// screen reader says instead of the number on its way.
+  final String? widest, spoken;
+
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
     return Semantics(
-      label: '$label $text',
+      label: '$label ${spoken ?? text}',
       child: ExcludeSemantics(
         child: Glossy(
           style: SurfaceStyle.chip,
@@ -328,7 +362,10 @@ class _Stat extends StatelessWidget {
             children: [
               ArtIcon(icon, size: m.statIcon, color: ArtIcon.onDark(icon)),
               SizedBox(width: m.hudChipGap * 2),
-              Text(text, style: LL.display.copyWith(fontSize: m.font(15), color: LL.cream)),
+              if (widest case final w?)
+                StableText(text, widest: w, style: LL.display.copyWith(fontSize: m.font(15), color: LL.cream))
+              else
+                Text(text, style: LL.display.copyWith(fontSize: m.font(15), color: LL.cream)),
             ],
           ),
         ),
@@ -430,46 +467,108 @@ class _Building extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = VenueStyle.of(venue);
     const rows = Venue.levelsPerVenue ~/ 2;
+    final clock = IdleClock.of(context);
     return Semantics(
       label: '${venue.displayName}: $cleared of ${Venue.levelsPerVenue} levels cleared',
-      child: Container(
-        height: height,
-        padding: const EdgeInsets.fromLTRB(5, 8, 5, 5),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [style.wallTop, style.wall, style.wallBottom],
-          ),
-          boxShadow: current ? [BoxShadow(color: style.accent.withValues(alpha: 0.35), blurRadius: 14)] : null,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-          border: Border.all(color: current ? style.accent : LL.rule, width: current ? 2.5 : 1),
+      child: CustomPaint(
+        foregroundPainter: _TwinklePainter(
+          clock: clock,
+          cleared: cleared,
+          rows: rows,
+          inset: const EdgeInsets.fromLTRB(5, 8, 5, 5) + EdgeInsets.all(current ? 2.5 : 1),
         ),
-        child: Column(
-          verticalDirection: VerticalDirection.up,
-          children: [
-            for (var r = 0; r < rows; r++)
-              Expanded(
-                child: Row(
-                  children: [
-                    for (var c = 0; c < 2; c++)
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.all(1.5),
-                          decoration: BoxDecoration(
-                            color: r * 2 + c < cleared ? const Color(0xFFFFD98A) : LL.deep.withValues(alpha: 0.6),
-                            boxShadow:
-                                r * 2 + c < cleared ? const [BoxShadow(color: Color(0x66FFD98A), blurRadius: 3)] : null,
-                            borderRadius: BorderRadius.circular(2),
+        child: Container(
+          height: height,
+          padding: const EdgeInsets.fromLTRB(5, 8, 5, 5),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [style.wallTop, style.wall, style.wallBottom],
+            ),
+            boxShadow: current ? [BoxShadow(color: style.accent.withValues(alpha: 0.35), blurRadius: 14)] : null,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            border: Border.all(color: current ? style.accent : LL.rule, width: current ? 2.5 : 1),
+          ),
+          child: Column(
+            verticalDirection: VerticalDirection.up,
+            children: [
+              for (var r = 0; r < rows; r++)
+                Expanded(
+                  child: Row(
+                    children: [
+                      for (var c = 0; c < 2; c++)
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.all(1.5),
+                            decoration: BoxDecoration(
+                              color: r * 2 + c < cleared ? const Color(0xFFFFD98A) : LL.deep.withValues(alpha: 0.6),
+                              boxShadow: r * 2 + c < cleared
+                                  ? const [BoxShadow(color: Color(0x66FFD98A), blurRadius: 3)]
+                                  : null,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// Cleared windows twinkle: now and then a lit window brightens and fades,
+/// de-synced by its index, on the shared idle clock. Painted over the
+/// building in one pass (a repaint per frame, no rebuilds); nothing under
+/// reduced motion.
+class _TwinklePainter extends CustomPainter {
+  _TwinklePainter({required this.clock, required this.cleared, required this.rows, required this.inset})
+      : super(repaint: clock);
+
+  final ValueListenable<double>? clock;
+  final int cleared, rows;
+
+  /// Padding plus border: where the grid of windows starts inside the building.
+  final EdgeInsets inset;
+
+  /// The windows' margin, as laid out by the grid.
+  static const double margin = 1.5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final t = clock?.value;
+    if (t == null || cleared <= 0) return;
+    final grid = inset.deflateRect(Offset.zero & size);
+    final cell = Size(grid.width / 2, grid.height / rows);
+    for (var k = 0; k < cleared && k < rows * 2; k++) {
+      final local = (t / HomeMotion.twinklePeriod + (k * 0.618034) % 1) % 1;
+      if (local >= HomeMotion.twinkleShare) continue;
+      final glow = math.sin(math.pi * local / HomeMotion.twinkleShare);
+      // Rows fill from the bottom.
+      final r = k ~/ 2, col = k % 2;
+      final window = Rect.fromLTWH(
+        grid.left + col * cell.width,
+        grid.bottom - (r + 1) * cell.height,
+        cell.width,
+        cell.height,
+      ).deflate(margin);
+      canvas
+        ..drawRRect(
+          RRect.fromRectAndRadius(window.inflate(1.5), const Radius.circular(3)),
+          Paint()..color = LL.twinkle.withValues(alpha: 0.22 * glow),
+        )
+        ..drawRRect(
+          RRect.fromRectAndRadius(window, const Radius.circular(2)),
+          Paint()..color = LL.twinkle.withValues(alpha: 0.75 * glow),
+        );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TwinklePainter old) =>
+      old.clock != clock || old.cleared != cleared || old.rows != rows || old.inset != inset;
 }

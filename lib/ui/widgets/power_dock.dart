@@ -185,83 +185,87 @@ class _PowerButton extends StatelessWidget {
           onTap: () => _tap(context),
           child: Pressable(
             enabled: _playing,
-            builder: (context, down) => SizedBox(
-              width: d,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: d,
-                    height: d,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Opacity(
-                          opacity: opacity,
-                          child: Glossy(
-                            style: armed ? SurfaceStyle.brass : SurfaceStyle.cream,
-                            // Outset keeps the face round; its edge paints into the label gap.
-                            inset: false,
-                            pressed: down,
-                            glow: armed ? LL.pickGlow : null,
-                            width: d,
-                            height: d,
-                            child: Center(child: PowerIcon(power, size: d * Metrics.dockIconShare, color: LL.ink)),
+            builder: (context, down) => PressSpring(
+              down: down,
+              builder: (context, squeeze) => SizedBox(
+                width: d,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: d,
+                      height: d,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Opacity(
+                            opacity: opacity,
+                            child: Glossy(
+                              style: armed ? SurfaceStyle.brass : SurfaceStyle.cream,
+                              // Outset keeps the face round; its edge paints into the label gap.
+                              inset: false,
+                              pressed: down,
+                              squeeze: squeeze,
+                              glow: armed ? LL.pickGlow : null,
+                              width: d,
+                              height: d,
+                              child: Center(child: PowerIcon(power, size: d * Metrics.dockIconShare, color: LL.ink)),
+                            ),
                           ),
-                        ),
-                        Positioned(
-                          right: -m.dockBadgeOffset,
-                          top: -m.dockBadgeOffset,
-                          child: empty
-                              ? Container(
-                                  constraints: badgeBox,
-                                  padding: EdgeInsets.symmetric(horizontal: m.dockBadgePad),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: LL.deep,
-                                    borderRadius: BorderRadius.circular(m.dockBadge),
-                                    border: Border.all(color: LL.lilac, width: Metrics.gaugePlateRim),
-                                  ),
-                                  child: badgeText,
-                                )
-                              : Glossy(
-                                  style: SurfaceStyle.brass,
-                                  depth: SurfaceDepth.tag,
-                                  inset: false,
-                                  child: Container(
+                          Positioned(
+                            right: -m.dockBadgeOffset,
+                            top: -m.dockBadgeOffset,
+                            child: empty
+                                ? Container(
                                     constraints: badgeBox,
                                     padding: EdgeInsets.symmetric(horizontal: m.dockBadgePad),
                                     alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: LL.deep,
+                                      borderRadius: BorderRadius.circular(m.dockBadge),
+                                      border: Border.all(color: LL.lilac, width: Metrics.gaugePlateRim),
+                                    ),
                                     child: badgeText,
+                                  )
+                                : Glossy(
+                                    style: SurfaceStyle.brass,
+                                    depth: SurfaceDepth.tag,
+                                    inset: false,
+                                    child: Container(
+                                      constraints: badgeBox,
+                                      padding: EdgeInsets.symmetric(horizontal: m.dockBadgePad),
+                                      alignment: Alignment.center,
+                                      child: badgeText,
+                                    ),
                                   ),
-                                ),
-                        ),
-                        // Used up on this level: a lock, whatever stock is left.
-                        if (state == _State.capped)
-                          Positioned(
-                            left: -m.dockBadgeOffset,
-                            bottom: -m.dockBadgeOffset,
-                            child: ArtIcon(GameIcon.lock, size: m.dockLock),
                           ),
-                      ],
-                    ),
-                  ),
-                  if (m.dockLabels) SizedBox(height: m.dockLabelGap),
-                  if (m.dockLabels)
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        power.dockLabel,
-                        maxLines: 1,
-                        style: TextStyle(
-                          fontSize: m.font(10),
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
-                          color: armed ? LL.brass : LL.lilac,
-                        ),
+                          // Used up on this level: a lock, whatever stock is left.
+                          if (state == _State.capped)
+                            Positioned(
+                              left: -m.dockBadgeOffset,
+                              bottom: -m.dockBadgeOffset,
+                              child: ArtIcon(GameIcon.lock, size: m.dockLock),
+                            ),
+                        ],
                       ),
                     ),
-                ],
+                    if (m.dockLabels) SizedBox(height: m.dockLabelGap),
+                    if (m.dockLabels)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          power.dockLabel,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: m.font(10),
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                            color: armed ? LL.brass : LL.lilac,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

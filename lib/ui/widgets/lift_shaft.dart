@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../game/cast.dart';
@@ -16,6 +17,7 @@ import '../painters/lobby_painter.dart';
 import '../painters/shaft_painter.dart';
 import '../theme.dart';
 import 'art_icon.dart';
+import 'entrance.dart';
 import 'glossy.dart';
 import 'load_gauge.dart';
 import 'resident_figure.dart';
@@ -35,6 +37,7 @@ class LiftShaft extends StatelessWidget {
     required this.scaleReady,
     this.doorOpen = 1,
     this.cabinBump = 0,
+    this.chime = 0,
     this.cabinKey,
     this.hiddenIds = const {},
     this.footer,
@@ -56,6 +59,10 @@ class LiftShaft extends StatelessWidget {
 
   /// The bump once the doors shut, 0 to 1 ([PunchMotion.bumpAt]); 0 at rest.
   final double cabinBump;
+
+  /// The chime light as a lift arrives, 0 (none) to 1 (gone): the display and
+  /// the top of the cabin flash once ([FloorMotion.chime]).
+  final double chime;
 
   /// Marks the cabin interior, where walking residents land.
   final Key? cabinKey;
@@ -96,6 +103,9 @@ class LiftShaft extends StatelessWidget {
             art: art,
             floorY: m.cabinTop + m.cabinHeight,
             channel: m.shaftChannel,
+            rideDy: cabinDy,
+            rideTravel: CabinMotion.riseDistance * s,
+            scale: s,
           ),
           child: content,
         );
@@ -188,7 +198,12 @@ class LiftShaft extends StatelessWidget {
                             right: 0,
                             top: 2 * s,
                             child: Center(
-                                child: _FloorDisplay(key: floorDisplayKey, floors: game.liftFloors, alarm: crashed)),
+                                child: _FloorDisplay(
+                              key: floorDisplayKey,
+                              floors: game.liftFloors,
+                              alarm: crashed,
+                              chime: chime,
+                            )),
                           ),
                           Positioned(
                             left: 0,
@@ -210,6 +225,7 @@ class LiftShaft extends StatelessWidget {
                                     doorOpen: doorOpen,
                                     interiorKey: cabinKey,
                                     hiddenIds: hiddenIds,
+                                    chime: chime,
                                     onTap: onTapLift,
                                   ),
                                 ),
@@ -281,51 +297,142 @@ class _ShaftWall extends StatelessWidget {
 /// The lit indicator above the cabin: an arrow and the floor(s) this lift
 /// serves, like the panel over a real lift door. It is the only place the
 /// lift here shows its floors; each label is lit in its floor's colour, so
-/// it matches the tags on the people waiting.
-class _FloorDisplay extends StatelessWidget {
-  const _FloorDisplay({super.key, required this.floors, required this.alarm});
+/// it matches the tags on the people waiting. When the lift changes the old
+/// floors slide up and out as the new ones slide in ([FloorMotion.roll]), and
+/// when it arrives the lamp flashes once ([chime], 0 to 1).
+class _FloorDisplay extends StatefulWidget {
+  const _FloorDisplay({super.key, required this.floors, required this.alarm, this.chime = 0});
 
   final List<Floor> floors;
   final bool alarm;
+  final double chime;
+
+  @override
+  State<_FloorDisplay> createState() => _FloorDisplayState();
+}
+
+class _FloorDisplayState extends State<_FloorDisplay> with SingleTickerProviderStateMixin {
+  late final AnimationController _roll = AnimationController(vsync: this, duration: FloorMotion.roll, value: 1);
+
+  /// The floors that were showing before the last change.
+  List<Floor> _was = const [];
+
+  @override
+  void didUpdateWidget(_FloorDisplay old) {
+    super.didUpdateWidget(old);
+    if (!listEquals(old.floors, widget.floors) && !reduceMotion(context)) {
+      _was = old.floors;
+      _roll.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _roll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
+    final alarm = widget.alarm;
     final led = alarm ? LL.alarmSoft : LL.led;
+    final size = m.font(Metrics.floorDisplayFont);
     TextStyle lit(Color c) => TextStyle(
           fontFamily: LL.displayFont,
-          fontSize: m.font(Metrics.floorDisplayFont),
+          fontSize: size,
           fontWeight: FontWeight.w800,
           height: 1,
           letterSpacing: 1,
           color: c,
           shadows: [Shadow(color: c.withValues(alpha: 0.8), blurRadius: 6)],
         );
+    final flash = widget.chime <= 0 || widget.chime >= 1 ? 0.0 : math.sin(math.pi * widget.chime);
     return ExcludeSemantics(
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 9 * m.scale, vertical: 3 * m.scale),
-        decoration: BoxDecoration(
-          color: LL.displayBed,
-          borderRadius: BorderRadius.circular(m.displayRadius),
-          border: Border.all(color: LL.displayRim, width: Metrics.displayRim),
-        ),
-        child: Text.rich(
-          alarm
-              ? TextSpan(text: '! !', style: lit(led))
-              : TextSpan(
-                  style: lit(led),
-                  children: [
-                    const TextSpan(text: '\u25B2 '),
-                    for (var i = 0; i < floors.length; i++) ...[
-                      if (i > 0) const TextSpan(text: '\u00B7'),
-                      TextSpan(text: floors[i].label, style: lit(FloorStyle.of(floors[i]).light)),
-                    ],
+      child: Transform.scale(
+        scale: 1 + FloorMotion.chimePop * flash,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 9 * m.scale, vertical: 3 * m.scale),
+          decoration: BoxDecoration(
+            color: LL.displayBed,
+            borderRadius: BorderRadius.circular(m.displayRadius),
+            border: Border.all(color: LL.displayRim, width: Metrics.displayRim),
+            boxShadow: flash == 0
+                ? null
+                : [
+                    BoxShadow(
+                      color: LL.chimeLight.withValues(alpha: FloorMotion.chimeGlow * flash),
+                      blurRadius: FloorMotion.chimeBlur * m.scale,
+                    ),
                   ],
+          ),
+          child: alarm
+              ? Text.rich(TextSpan(text: '! !', style: lit(led)))
+              : AnimatedBuilder(
+                  animation: _roll,
+                  builder: (context, _) {
+                    // At rest it is one line of text; rolling, the arrow stays
+                    // and the floors slide.
+                    if (_roll.value >= 1) {
+                      return Text.rich(
+                        TextSpan(
+                          style: lit(led),
+                          children: [
+                            const TextSpan(text: '\u25B2 '),
+                            ..._floorSpans(widget.floors, lit, led),
+                          ],
+                        ),
+                      );
+                    }
+                    final t = Curves.easeInOutCubic.transform(_roll.value);
+                    final travel = size * FloorMotion.rollTravel;
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text.rich(TextSpan(text: '\u25B2 ', style: lit(led))),
+                        // Old floors up and out, new ones up from below.
+                        ClipRect(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Opacity(
+                                opacity: t,
+                                child: Transform.translate(
+                                  offset: Offset(0, travel * (1 - t)),
+                                  child: Text.rich(TextSpan(children: _floorSpans(widget.floors, lit, led))),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Opacity(
+                                  opacity: 1 - t,
+                                  child: Transform.translate(
+                                    offset: Offset(0, -travel * t),
+                                    child: OverflowBox(
+                                      maxWidth: double.infinity,
+                                      child: Text.rich(TextSpan(children: _floorSpans(_was, lit, led))),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
         ),
       ),
     );
   }
+
+  /// The floors' labels, each lit in its own colour, a dot between them.
+  List<InlineSpan> _floorSpans(List<Floor> floors, TextStyle Function(Color) lit, Color led) => [
+        for (var i = 0; i < floors.length; i++) ...[
+          if (i > 0) const TextSpan(text: '\u00B7'),
+          TextSpan(text: floors[i].label, style: lit(FloorStyle.of(floors[i]).light)),
+        ],
+      ];
 }
 
 /// The dark plate behind the load gauge (style frame, `.gauge`).
@@ -455,6 +562,7 @@ class _Cabin extends StatelessWidget {
     required this.interiorKey,
     required this.hiddenIds,
     required this.onTap,
+    this.chime = 0,
   });
 
   final LiftGame game;
@@ -464,6 +572,9 @@ class _Cabin extends StatelessWidget {
   final Key? interiorKey;
   final Set<int> hiddenIds;
   final VoidCallback onTap;
+
+  /// The chime light as this lift arrives (0 none to 1 gone).
+  final double chime;
 
   /// How long the hint glow and the crash colours take to change.
   static const Duration _chromeFade = Duration(milliseconds: 180);
@@ -509,15 +620,43 @@ class _Cabin extends StatelessWidget {
                   widthFactor: 0.68,
                   child: Opacity(
                     opacity: hiddenIds.contains(r.id) ? 0 : 1,
-                    child: IdleSway(
-                      seed: r.id,
-                      amplitude: 0.5,
-                      builder: (context, blink) => ResidentFigure.of(r, height: m.cabinFigure, blink: blink),
+                    child: LandSettle(
+                      hidden: hiddenIds.contains(r.id),
+                      child: IdleSway(
+                        seed: r.id,
+                        amplitude: 0.5,
+                        builder: (context, blink) => ResidentFigure.of(r, height: m.cabinFigure, blink: blink),
+                      ),
                     ),
                   ),
                 ),
             ],
           ),
+        ),
+      );
+
+  /// The chime light as the lift stops: a soft wash falling from the top of
+  /// the cabin, brightest as the lamp above flashes.
+  Widget _wash() => Positioned.fill(
+        child: IgnorePointer(
+          child: chime <= 0 || chime >= 1
+              ? const SizedBox.shrink()
+              : FractionallySizedBox(
+                  alignment: Alignment.topCenter,
+                  heightFactor: FloorMotion.chimeWashDepth,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          LL.chimeLight.withValues(alpha: FloorMotion.chimeWash * math.sin(math.pi * chime)),
+                          LL.chimeLight.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
         ),
       );
 
@@ -609,6 +748,7 @@ class _Cabin extends StatelessWidget {
               ),
             _riders(m, m.cabinFeetInset),
             if (doorOpen < 1) _dim(),
+            _wash(),
             if (crashed) const IgnorePointer(child: ColoredBox(color: LL.crashTint)),
             if (doorOpen < 1)
               CustomPaint(
@@ -700,6 +840,7 @@ class _Cabin extends StatelessWidget {
                     // This stack sits inside the cabin's padding.
                     _riders(m, m.cabinFeetInset - m.cabinPadding),
                     if (doorOpen < 1) Positioned.fill(child: _dim()),
+                    _wash(),
                   ],
                 ),
               ),

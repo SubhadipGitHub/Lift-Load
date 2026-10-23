@@ -1,14 +1,20 @@
+import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
+
+import '../motion.dart';
 
 /// Tracks whether a finger is down on its child and hands that to [builder],
 /// so a surface can show itself pressed (a glossy button sinks onto its
 /// bottom edge). It only listens to pointers; the child keeps its own taps.
 /// [down] is always false under reduced motion, so nothing moves.
 class Pressable extends StatefulWidget {
-  const Pressable({super.key, required this.builder, this.enabled = true});
+  const Pressable({super.key, required this.builder, this.enabled = true, this.onRelease});
 
   final Widget Function(BuildContext context, bool down) builder;
   final bool enabled;
+
+  /// A finger that went down on this is lifted (or cancelled).
+  final VoidCallback? onRelease;
 
   @override
   State<Pressable> createState() => _PressableState();
@@ -18,7 +24,10 @@ class _PressableState extends State<Pressable> {
   bool _down = false;
 
   void _set(bool down) {
-    if (_down != down && mounted) setState(() => _down = down);
+    if (_down == down || !mounted) return;
+    final released = _down && !down;
+    setState(() => _down = down);
+    if (released && widget.enabled) widget.onRelease?.call();
   }
 
   @override
@@ -48,16 +57,62 @@ class PressScale extends StatelessWidget {
   final bool enabled;
 
   /// How fast a pressed control goes down and comes back.
-  static const Duration pressDuration = Duration(milliseconds: 90);
+  static const Duration pressDuration = ButtonMotion.pressIn;
 
   @override
   Widget build(BuildContext context) => Pressable(
         enabled: enabled,
         builder: (context, down) => AnimatedScale(
-          scale: down ? 0.95 : 1,
+          scale: down ? ButtonMotion.pressedScale : 1,
           duration: pressDuration,
           curve: Curves.easeOut,
           child: child,
         ),
+      );
+}
+
+/// The springy press: while [down] the scale handed to [builder] goes to
+/// [ButtonMotion.pressedScale] and, let go, springs back past 1 and rests.
+/// The caller applies it to a face, so a label on top stays where it is and
+/// the touch target and the layout never change. With [down] always false
+/// (reduced motion) it holds at 1.
+class PressSpring extends StatefulWidget {
+  const PressSpring({super.key, required this.down, required this.builder});
+
+  final bool down;
+  final Widget Function(BuildContext context, double scale) builder;
+
+  @override
+  State<PressSpring> createState() => _PressSpringState();
+}
+
+class _PressSpringState extends State<PressSpring> with SingleTickerProviderStateMixin {
+  /// 1 pressed, 0 at rest; below 0 is the overshoot.
+  late final AnimationController _c = AnimationController.unbounded(vsync: this, value: widget.down ? 1 : 0);
+
+  @override
+  void didUpdateWidget(PressSpring old) {
+    super.didUpdateWidget(old);
+    if (old.down == widget.down) return;
+    if (widget.down) {
+      _c.animateTo(1, duration: ButtonMotion.pressIn, curve: Curves.easeOut);
+    } else {
+      _c.animateWith(SpringSimulation(ButtonMotion.release, _c.value, 0, 0)).whenComplete(() {
+        // Rest is exactly 1, not merely within the spring's tolerance.
+        if (mounted && !widget.down) _c.value = 0;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) => widget.builder(context, 1 - (1 - ButtonMotion.pressedScale) * _c.value),
       );
 }

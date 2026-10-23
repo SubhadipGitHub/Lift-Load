@@ -13,7 +13,9 @@ import '../motion.dart';
 import '../painters/resident_painter.dart';
 import '../theme.dart';
 import '../widgets/art_icon.dart';
+import '../widgets/count_up.dart';
 import '../widgets/effects.dart';
+import '../widgets/entrance.dart';
 import '../widgets/glossy.dart';
 import '../widgets/lane_scroller.dart';
 import '../widgets/lift_shaft.dart';
@@ -42,6 +44,14 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   late final AnimationController _shake = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
   late final AnimationController _bump = AnimationController(vsync: this, duration: PunchMotion.bump);
   late final AnimationController _slam = AnimationController(vsync: this, duration: PunchMotion.slam);
+
+  /// The level entrance (0 to 1 over [EntranceMotion.total]); at 1 the screen
+  /// is as laid out. A touch jumps it to the end, so it never holds up play.
+  late final AnimationController _entrance = AnimationController(vsync: this, duration: EntranceMotion.total);
+  LiftGame? _entranceGame;
+
+  /// The chime light when a lift stops (0 to 1 over [FloorMotion.chime]).
+  late final AnimationController _chime = AnimationController(vsync: this, duration: FloorMotion.chime);
   Animation<double> _dy = const AlwaysStoppedAnimation(0);
   Animation<double> _tilt = const AlwaysStoppedAnimation(0);
   Phase? _lastPhase;
@@ -80,9 +90,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   GameController get c => widget.controller;
   bool get _still => reduceMotion(context);
 
-  /// Walk duration: the same for every resident (weights stay hidden).
-  static const int flightMs = 260;
-
   /// Sparkles in the burst when an unknown person is revealed.
   static const int revealSparkles = 8;
 
@@ -91,6 +98,42 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     super.initState();
     _lastPhase = c.game.phase;
     c.addListener(_onChange);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The first level on this screen enters; later ones start in _onChange.
+    if (_entranceGame == null) _beginEntrance();
+  }
+
+  /// A level has started on this screen: it comes in (at once under reduced
+  /// motion), once the screen itself has finished arriving.
+  void _beginEntrance() {
+    _entranceGame = c.game;
+    _routeWait?.removeStatusListener(_routeStatus);
+    _routeWait = null;
+    if (_still) {
+      _entrance.value = 1;
+      return;
+    }
+    _entrance.value = 0;
+    final arriving = ModalRoute.of(context)?.animation;
+    if (arriving == null || arriving.status == AnimationStatus.completed) {
+      _entrance.forward(from: 0);
+    } else {
+      _routeWait = arriving..addStatusListener(_routeStatus);
+    }
+  }
+
+  /// The route animation the entrance is waiting on, if any.
+  Animation<double>? _routeWait;
+
+  void _routeStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _routeWait?.removeStatusListener(_routeStatus);
+    _routeWait = null;
+    if (mounted && _entrance.value == 0) _entrance.forward(from: 0);
   }
 
   @override
@@ -111,6 +154,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _flights.clear();
       _hidden.clear();
       c.addListener(_onChange);
+      _beginEntrance();
     }
   }
 
@@ -123,6 +167,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _shake.dispose();
     _bump.dispose();
     _slam.dispose();
+    _routeWait?.removeStatusListener(_routeStatus);
+    _entrance.dispose();
+    _chime.dispose();
     super.dispose();
   }
 
@@ -152,9 +199,30 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final motions = c.takeMotions();
     final reward = c.takeReward();
     if (!mounted) return;
+    final phase = c.hasGame ? c.game.phase : null;
+    // A new level (next, retry, restart): everything starts afresh and comes
+    // in, with no lift springing back from the last one.
+    if (c.hasGame && !identical(c.game, _entranceGame)) {
+      _seq++;
+      _lastPhase = phase;
+      _snapHome();
+      _slam
+        ..stop()
+        ..value = 0;
+      _chime
+        ..stop()
+        ..value = 0;
+      _sentRating = null;
+      _slamRating = null;
+      _flights.clear();
+      _hidden.clear();
+      _playReveal();
+      _beginEntrance();
+      setState(() {});
+      return;
+    }
     if (!_still) _startFlights(motions);
     _playReveal();
-    final phase = c.hasGame ? c.game.phase : null;
     final was = _lastPhase;
     _lastPhase = phase;
     if (phase == was) {
@@ -196,7 +264,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   /// moves on to the next lift. [GameController.finishSend] runs once, only
   /// after all of that; the slam and the coins play on over the arrival.
   Future<void> _depart(int seq) async {
-    if (_flights.isNotEmpty) await Future<void>.delayed(const Duration(milliseconds: flightMs));
+    if (_flights.isNotEmpty) await Future<void>.delayed(BoardMotion.flight);
     if (!_live(seq)) return;
     await _closeDoors();
     if (!_live(seq)) return;
@@ -227,7 +295,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   /// runs without waiting, so no timer is left pending. The doors stay as
   /// they are: nothing delays the crash.
   Future<void> _fall(int seq) async {
-    if (!_still) await Future<void>.delayed(const Duration(milliseconds: flightMs));
+    if (!_still) await Future<void>.delayed(BoardMotion.flight);
     if (!_live(seq)) return;
     _crashEffects();
     await _run(
@@ -244,7 +312,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Future<void> _arrive(int seq) async {
     _doors.value = 0;
     await _run(from: -CabinMotion.riseDistance, to: 0, duration: CabinMotion.dropIn, curve: Curves.easeOutBack);
-    if (_live(seq)) await _doorsTo(1, CabinMotion.doorOpen);
+    if (!_live(seq)) return;
+    // The lift has stopped: the chime light flashes as its doors open.
+    if (!_still) _chime.forward(from: 0);
+    await _doorsTo(1, CabinMotion.doorOpen);
   }
 
   /// The leaves travel to the seam, then settle: they bounce back
@@ -305,6 +376,16 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             : to.bottomCenter - Offset(0, m.cabinFeetInset - toHeight * ResidentFigure.belowFeet),
         fromHeight: fromHeight,
         toHeight: toHeight,
+      ));
+      // A ring of light on the floor where they are arriving, the same for
+      // everyone.
+      final feet = _flights.last.to;
+      _effects.currentState?.add(Burst(
+        kind: BurstKind.ring,
+        origin: feet,
+        delay: BoardMotion.flight * BoardMotion.ringAt,
+        radius: BoardMotion.ringRadius * m.scale,
+        stroke: BoardMotion.ringStroke * m.scale,
       ));
     }
   }
@@ -414,8 +495,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         child: AnimatedSwitcher(
           duration: Duration(milliseconds: still ? 0 : 220),
           switchInCurve: Curves.easeOutBack,
+          // The old line is gone by the half-way point and the new one starts
+          // there, so two messages are never readable on top of each other.
           transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
+            opacity: _HalfwayFade(anim),
             child: SlideTransition(
               position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(anim),
               child: child,
@@ -447,13 +530,14 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     );
     final shaft = AnimatedBuilder(
       key: _shaftKey,
-      animation: Listenable.merge([_anim, _doors, _bump]),
+      animation: Listenable.merge([_anim, _doors, _bump, _chime]),
       builder: (context, _) => LiftShaft(
         game: g,
         cabinDy: _dy.value * m.scale,
         cabinTilt: _tilt.value,
         doorOpen: _doors.value,
         cabinBump: _bump.value,
+        chime: _chime.isAnimating ? _chime.value : 0,
         cabinKey: _cabinKey,
         hiddenIds: _hidden,
         onTapLift: c.tapLift,
@@ -463,15 +547,40 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         footer: message,
       ),
     );
-    final hud = _Hud(c: c, onBack: _leave, coinKey: _coinKey, coinPulse: _coinPulse);
+    // The level entrance: each part comes in over its slice of one clock.
+    Widget enter(Widget part, int start, int ms, {double dy = 0, double scaleFrom = 1}) => Entrance(
+          animation: _entrance,
+          curve: EntranceMotion.span(start, ms),
+          dy: dy,
+          scaleFrom: scaleFrom,
+          child: part,
+        );
+    final hud = enter(
+      _Hud(c: c, onBack: _leave, coinKey: _coinKey, coinPulse: _coinPulse),
+      EntranceMotion.hudStart,
+      EntranceMotion.hudMs,
+      dy: -EntranceMotion.hudDrop,
+    );
+    final shaftIn = enter(
+      shaft,
+      EntranceMotion.shaftStart,
+      EntranceMotion.shaftMs,
+      dy: EntranceMotion.shaftRise,
+      scaleFrom: EntranceMotion.shaftFrom,
+    );
     final refused = c.refusedSpot;
-    final bench = BenchRow(
-      game: g,
-      onTapSeat: c.tapBench,
-      seatKeys: [for (var i = 0; i < g.bench.length; i++) _seatKey(i)],
-      hiddenIds: _hidden,
-      shakeSerial: refused?.fromBench == true ? c.refuseSerial : 0,
-      shakeSeat: refused?.fromBench == true ? refused!.index : null,
+    final bench = enter(
+      BenchRow(
+        game: g,
+        onTapSeat: c.tapBench,
+        seatKeys: [for (var i = 0; i < g.bench.length; i++) _seatKey(i)],
+        hiddenIds: _hidden,
+        shakeSerial: refused?.fromBench == true ? c.refuseSerial : 0,
+        shakeSeat: refused?.fromBench == true ? refused!.index : null,
+      ),
+      EntranceMotion.benchStart,
+      EntranceMotion.benchMs,
+      dy: EntranceMotion.benchRise,
     );
     Widget lanes(bool paintFloor) => QueueLanes(
           game: g,
@@ -485,6 +594,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           swapping: c.armedPower == Power.swap,
           swapFirst: c.swapFirstLane,
           revealedId: _revealedId,
+          entrance: _entrance,
         );
     // The lobby floor always reaches the bottom of its area, and scrolls when
     // the queues are longer than the screen (touch, mouse drag, wheel,
@@ -493,7 +603,12 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       venue: g.level.venue,
       builder: (context, paintFloor) => LaneScroller(child: lanes(paintFloor)),
     );
-    final bottomBar = PlayBottomBar(c: c);
+    final bottomBar = enter(
+      PlayBottomBar(c: c),
+      EntranceMotion.barStart,
+      EntranceMotion.barMs,
+      dy: EntranceMotion.barRise,
+    );
 
     final Widget body;
     if (m.twoPane) {
@@ -517,7 +632,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             constraints: BoxConstraints(minHeight: box.maxHeight),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [shaft, bench],
+                              children: [shaftIn, bench],
                             ),
                           ),
                         ),
@@ -544,7 +659,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           child: Column(
             children: [
               hud,
-              shaft,
+              shaftIn,
               bench,
               Expanded(child: lanesArea),
               bottomBar,
@@ -561,51 +676,58 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       child: Scaffold(
         body: SafeArea(
           child: IdleClockScope(
-            child: Stack(
-              key: _stackKey,
-              children: [
-                Positioned.fill(
-                  child: AnimatedBuilder(
-                    animation: _shake,
-                    builder: (context, child) {
-                      final v = _shake.value;
-                      final dx = _shake.isAnimating ? math.sin(v * 38) * 9 * (1 - v) : 0.0;
-                      return Transform.translate(offset: Offset(dx, dx.abs() * 0.3), child: child);
-                    },
-                    child: ScrollConfiguration(behavior: const PlayScrollBehavior(), child: body),
-                  ),
-                ),
-                for (final f in _flights) _FlightView(key: ObjectKey(f), flight: f, onDone: () => _landed(f)),
-                if (g.phase == Phase.failed)
-                  FailSheet(
-                    c: c,
-                    onHome: () {
-                      c.quitToHome();
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                if (g.phase == Phase.won)
-                  WinSheet(
-                    c: c,
-                    onHome: () {
-                      c.quitToHome();
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                Positioned.fill(child: EffectsLayer(key: _effects)),
-                // The trip's score over the shaft, above the coins flying out
-                // of it (style frame), until a result sheet comes up.
-                if (slamRating != null && slamRect != null && g.phase != Phase.won && g.phase != Phase.failed)
-                  Positioned.fromRect(
-                    rect: slamRect,
+            // A touch finishes the entrance at once: it never holds up play.
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) {
+                if (_entrance.isAnimating) _entrance.value = 1;
+              },
+              child: Stack(
+                key: _stackKey,
+                children: [
+                  Positioned.fill(
                     child: AnimatedBuilder(
-                      animation: _slam,
-                      builder: (context, _) => _slam.isAnimating
-                          ? ScoreSlam(rating: slamRating, coins: _slamCoins, progress: _slam.value)
-                          : const SizedBox.shrink(),
+                      animation: _shake,
+                      builder: (context, child) {
+                        final v = _shake.value;
+                        final dx = _shake.isAnimating ? math.sin(v * 38) * 9 * (1 - v) : 0.0;
+                        return Transform.translate(offset: Offset(dx, dx.abs() * 0.3), child: child);
+                      },
+                      child: ScrollConfiguration(behavior: const PlayScrollBehavior(), child: body),
                     ),
                   ),
-              ],
+                  for (final f in _flights) _FlightView(key: ObjectKey(f), flight: f, onDone: () => _landed(f)),
+                  if (g.phase == Phase.failed)
+                    FailSheet(
+                      c: c,
+                      onHome: () {
+                        c.quitToHome();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  if (g.phase == Phase.won)
+                    WinSheet(
+                      c: c,
+                      onHome: () {
+                        c.quitToHome();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  Positioned.fill(child: EffectsLayer(key: _effects)),
+                  // The trip's score over the shaft, above the coins flying out
+                  // of it (style frame), until a result sheet comes up.
+                  if (slamRating != null && slamRect != null && g.phase != Phase.won && g.phase != Phase.failed)
+                    Positioned.fromRect(
+                      rect: slamRect,
+                      child: AnimatedBuilder(
+                        animation: _slam,
+                        builder: (context, _) => _slam.isAnimating
+                            ? ScoreSlam(rating: slamRating, coins: _slamCoins, progress: _slam.value)
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -638,10 +760,8 @@ class _FlightView extends StatefulWidget {
 }
 
 class _FlightViewState extends State<_FlightView> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: _PlayScreenState.flightMs),
-  )..forward().whenComplete(widget.onDone);
+  late final AnimationController _c = AnimationController(vsync: this, duration: BoardMotion.flight)
+    ..forward().whenComplete(widget.onDone);
 
   @override
   void dispose() {
@@ -650,22 +770,26 @@ class _FlightViewState extends State<_FlightView> with SingleTickerProviderState
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _c,
-        builder: (context, _) {
-          final f = widget.flight;
-          final t = Curves.easeInOut.transform(_c.value);
-          final h = f.fromHeight + (f.toHeight - f.fromHeight) * t;
-          final feet = Offset.lerp(f.from, f.to, t)! -
-              Offset(0, 26 * math.sin(math.pi * t) + 2.5 * math.sin(t * math.pi * 6).abs());
-          final w = h / designHeight * ResidentLook.designWidth(f.resident.type, f.resident.cargo);
-          return Positioned(
-            left: feet.dx - w / 2,
-            top: feet.dy - h,
-            child: IgnorePointer(child: ResidentFigure.of(f.resident, height: h)),
-          );
-        },
-      );
+  Widget build(BuildContext context) {
+    final scale = Metrics.of(context).scale;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final f = widget.flight;
+        // Ease out into the spot with a hair of overshoot, over a low arc
+        // and little step bobs: one walk, identical for every resident.
+        final t = MotionCurves.walk.transform(_c.value);
+        final h = f.fromHeight + (f.toHeight - f.fromHeight) * t;
+        final feet = Offset.lerp(f.from, f.to, t)! - Offset(0, scale * BoardMotion.riseAt(_c.value));
+        final w = h / designHeight * ResidentLook.designWidth(f.resident.type, f.resident.cargo);
+        return Positioned(
+          left: feet.dx - w / 2,
+          top: feet.dy - h,
+          child: IgnorePointer(child: ResidentFigure.of(f.resident, height: h)),
+        );
+      },
+    );
+  }
 }
 
 class _Hud extends StatelessWidget {
@@ -753,7 +877,12 @@ class _Hud extends StatelessWidget {
                       child: ExcludeSemantics(
                         child: Pulse(
                           serial: coinPulse,
-                          child: _Chip(key: coinKey, icon: GameIcon.coin, text: '${c.profile.coins}'),
+                          // Counts to a new total and bounces as it lands.
+                          child: CountUp(
+                            value: c.profile.coins,
+                            builder: (context, shown, widest) =>
+                                _Chip(key: coinKey, icon: GameIcon.coin, text: '$shown', widest: '$widest'),
+                          ),
                         ),
                       ),
                     ),
@@ -772,14 +901,18 @@ class _Hud extends StatelessWidget {
 
 /// A dark HUD pill: an approved icon and a number.
 class _Chip extends StatelessWidget {
-  const _Chip({super.key, required this.icon, required this.text});
+  const _Chip({super.key, required this.icon, required this.text, this.widest});
 
   final GameIcon icon;
   final String text;
 
+  /// The widest the text gets (a counting number): the chip keeps that width.
+  final String? widest;
+
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
+    final style = LL.display.copyWith(fontSize: m.font(15), height: 1, color: LL.cream);
     return Glossy(
       style: SurfaceStyle.chip,
       depth: SurfaceDepth.chip,
@@ -792,9 +925,22 @@ class _Chip extends StatelessWidget {
           // An ink fallback would vanish on the dark pill.
           ArtIcon(icon, size: m.hudChipIcon, color: ArtIcon.onDark(icon)),
           SizedBox(width: m.hudChipGap),
-          Text(text, style: LL.display.copyWith(fontSize: m.font(15), height: 1, color: LL.cream)),
+          if (widest case final w?) StableText(text, widest: w, style: style) else Text(text, style: style),
         ],
       ),
     );
   }
+}
+
+/// [parent] squeezed into its second half: 0 until it is half-way, then 0 to 1.
+/// The incoming message eases up in that half; the outgoing one, running the
+/// same animation backwards, has faded out by the half-way point.
+class _HalfwayFade extends Animation<double> with AnimationWithParentMixin<double> {
+  _HalfwayFade(this.parent);
+
+  @override
+  final Animation<double> parent;
+
+  @override
+  double get value => ((parent.value - 0.5) * 2).clamp(0.0, 1.0).toDouble();
 }

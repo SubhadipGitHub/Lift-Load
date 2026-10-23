@@ -77,6 +77,10 @@ class FeedbackService {
     }
   }
 
+  /// One step of a counting-up number (the coins on the win sheet): the tick
+  /// cue, no haptic.
+  void countTick() => _sfx.play(Sfx.tick);
+
   /// A plain UI tap (buttons, toggles).
   void tap() {
     _haptic(HapticFeedback.selectionClick);

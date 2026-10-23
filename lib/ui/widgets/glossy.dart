@@ -15,6 +15,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../layout.dart';
+import '../motion.dart';
 import '../theme.dart';
 import 'pressable.dart';
 
@@ -30,6 +31,8 @@ class Glossy extends StatelessWidget {
     this.pressed = false,
     this.faceGradient,
     this.glow,
+    this.sweep,
+    this.squeeze = 1,
     this.width,
     this.height,
     this.padding = EdgeInsets.zero,
@@ -54,6 +57,14 @@ class Glossy extends StatelessWidget {
 
   /// A soft glow around the outline (a picked seat).
   final Color? glow;
+
+  /// A band of light crossing the face, 0 (not yet in) to 1 (gone): the
+  /// gloss sweep when a button is let go. Null draws none.
+  final double? sweep;
+
+  /// The whole face drawn at this scale about its middle (the springy press);
+  /// the label on it does not move.
+  final double squeeze;
 
   final double? width, height;
   final EdgeInsetsGeometry padding;
@@ -83,15 +94,16 @@ class Glossy extends StatelessWidget {
           faceGradient: faceGradient,
           glow: glow,
           glowBlur: m.seatGlow,
+          sweep: sweep,
+          squeeze: squeeze,
         ),
         child: SizedBox(
           width: width,
           height: height,
           child: Padding(
             padding: GlossyPainter.faceInsets(size, inset: inset).add(padding),
-            child: t == 0 || child == null
-                ? child
-                : Transform.translate(offset: Offset(0, size.press * t), child: child),
+            child:
+                t == 0 || child == null ? child : Transform.translate(offset: Offset(0, size.press * t), child: child),
           ),
         ),
       ),
@@ -110,6 +122,8 @@ class GlossyPainter extends CustomPainter {
     this.faceGradient,
     this.glow,
     this.glowBlur = 0,
+    this.sweep,
+    this.squeeze = 1,
   });
 
   final SurfaceStyle style;
@@ -123,6 +137,10 @@ class GlossyPainter extends CustomPainter {
   final Color? glow;
   final double glowBlur;
 
+  /// See [Glossy.sweep] and [Glossy.squeeze].
+  final double? sweep;
+  final double squeeze;
+
   /// Where the face sits inside the box at rest: inset by the outline and,
   /// below, the edge and drop; outset, the box is the face.
   static EdgeInsets faceInsets(SurfaceSize s, {required bool inset}) =>
@@ -135,6 +153,17 @@ class GlossyPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size box) {
+    if (squeeze == 1) return _paintFace(canvas, box);
+    canvas
+      ..save()
+      ..translate(box.width / 2, box.height / 2)
+      ..scale(squeeze)
+      ..translate(-box.width / 2, -box.height / 2);
+    _paintFace(canvas, box);
+    canvas.restore();
+  }
+
+  void _paintFace(Canvas canvas, Size box) {
     final face = faceRect(box, size, press, inset: inset);
     if (face.isEmpty) return;
     final r = math.min(radius ?? double.infinity, face.shortestSide / 2);
@@ -189,6 +218,34 @@ class GlossyPainter extends CustomPainter {
           colors: [fade(LL.surfaceGlossTop), fade(LL.surfaceGlossBottom)],
         ).createShader(band),
     );
+    _sweep(canvas, face, faceR);
+  }
+
+  /// The gloss sweep: a slanted band of light, soft at both sides, crossing
+  /// the face from left to right, clipped to it.
+  void _sweep(Canvas canvas, Rect face, RRect faceR) {
+    final t = sweep;
+    if (t == null || t <= 0 || t >= 1) return;
+    final band = face.width * ButtonMotion.sweepWidth;
+    final slant = face.height * ButtonMotion.sweepSlant;
+    final x = face.left - band - slant + (face.width + 2 * band + slant) * Curves.easeInOut.transform(t);
+    final box = Rect.fromLTRB(x, face.top, x + band + slant, face.bottom);
+    canvas
+      ..save()
+      ..clipRRect(faceR)
+      ..drawPath(
+        Path()
+          ..moveTo(box.left + slant, box.top)
+          ..lineTo(box.right, box.top)
+          ..lineTo(box.right - slant, box.bottom)
+          ..lineTo(box.left, box.bottom)
+          ..close(),
+        Paint()
+          ..shader = LinearGradient(
+            colors: [LL.sweepLight.withValues(alpha: 0), LL.sweepLight, LL.sweepLight.withValues(alpha: 0)],
+          ).createShader(box),
+      )
+      ..restore();
   }
 
   @override
@@ -200,14 +257,16 @@ class GlossyPainter extends CustomPainter {
       old.inset != inset ||
       old.faceGradient != faceGradient ||
       old.glow != glow ||
-      old.glowBlur != glowBlur;
+      old.glowBlur != glowBlur ||
+      old.sweep != sweep ||
+      old.squeeze != squeeze;
 }
 
 /// A tappable [Glossy]: it sinks while pressed, and with no [onPressed] it
 /// turns to the flat slate [SurfaceStyle.off] so it never reads as live.
 /// The whole box is the touch target, at least [Metrics.minTouch] square
 /// when [touch] is set (a small round HUD button inside a full target).
-class GlossyButton extends StatelessWidget {
+class GlossyButton extends StatefulWidget {
   const GlossyButton({
     super.key,
     required this.style,
@@ -254,40 +313,68 @@ class GlossyButton extends StatelessWidget {
   SurfaceStyle get surface => enabled ? style : disabledStyle;
 
   @override
+  State<GlossyButton> createState() => _GlossyButtonState();
+}
+
+class _GlossyButtonState extends State<GlossyButton> with SingleTickerProviderStateMixin {
+  /// The gloss sweep, once each time a finger is lifted off the button.
+  late final AnimationController _sweep = AnimationController(vsync: this, duration: ButtonMotion.sweep);
+
+  @override
+  void dispose() {
+    _sweep.dispose();
+    super.dispose();
+  }
+
+  void _released() {
+    if (!reduceMotion(context) && mounted) _sweep.forward(from: 0);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    Widget face(bool down) => Glossy(
-          style: surface,
-          depth: depth,
-          radius: radius,
-          inset: inset,
-          pressed: down,
-          width: width,
-          height: height,
-          padding: padding,
-          child: Center(child: child),
+    final w = widget;
+    Widget face(bool down, double squeeze) => AnimatedBuilder(
+          animation: _sweep,
+          builder: (context, _) => Glossy(
+            style: w.surface,
+            depth: w.depth,
+            radius: w.radius,
+            inset: w.inset,
+            pressed: down,
+            sweep: _sweep.isAnimating ? _sweep.value : null,
+            squeeze: squeeze,
+            width: w.width,
+            height: w.height,
+            padding: w.padding,
+            child: Center(child: w.child),
+          ),
         );
     Widget body = Pressable(
-      enabled: enabled,
-      builder: (context, down) => touch
-          ? SizedBox(
-              width: math.max(width ?? 0, Metrics.minTouch),
-              height: math.max(height ?? 0, Metrics.minTouch),
-              child: Center(child: face(down)),
-            )
-          : face(down),
+      enabled: w.enabled,
+      onRelease: _released,
+      builder: (context, down) => PressSpring(
+        down: down,
+        builder: (context, squeeze) => w.touch
+            ? SizedBox(
+                width: math.max(w.width ?? 0, Metrics.minTouch),
+                height: math.max(w.height ?? 0, Metrics.minTouch),
+                child: Center(child: face(down, squeeze)),
+              )
+            : face(down, squeeze),
+      ),
     );
-    body = GestureDetector(behavior: HitTestBehavior.opaque, onTap: onPressed, child: body);
-    if (semanticsLabel != null) body = ExcludeSemantics(child: body);
+    body = GestureDetector(behavior: HitTestBehavior.opaque, onTap: w.onPressed, child: body);
+    if (w.semanticsLabel != null) body = ExcludeSemantics(child: body);
     body = Semantics(
       container: true,
       button: true,
-      enabled: enabled,
-      selected: selected,
-      label: semanticsLabel,
-      onTap: semanticsLabel != null ? onPressed : null,
+      enabled: w.enabled,
+      selected: w.selected,
+      label: w.semanticsLabel,
+      onTap: w.semanticsLabel != null ? w.onPressed : null,
       child: body,
     );
-    return tooltip == null ? body : Tooltip(message: tooltip, child: body);
+    return w.tooltip == null ? body : Tooltip(message: w.tooltip, child: body);
   }
 }
 

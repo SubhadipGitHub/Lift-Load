@@ -140,6 +140,9 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// One step of a number counting up (win sheet coins).
+  void countTick() => feedback.countTick();
+
   void startLevel() {
     if (testComplete) return;
     _motions.clear();
