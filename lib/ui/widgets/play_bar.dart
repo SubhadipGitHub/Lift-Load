@@ -25,7 +25,7 @@ class PlayBottomBar extends StatelessWidget {
     final dockWidth = powers == 0 ? 0.0 : powers * m.dockButton + (powers - 1) * m.dockGap;
     return Container(
       height: m.bottomBarHeight,
-      padding: EdgeInsets.fromLTRB(m.barPadding, 6 * m.scale, m.barPadding, 0),
+      padding: EdgeInsets.fromLTRB(m.gap, m.barTop, m.gap, 0),
       decoration: BoxDecoration(
         color: LL.deep,
         borderRadius: BorderRadius.vertical(top: Radius.circular(m.radius)),

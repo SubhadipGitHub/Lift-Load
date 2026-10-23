@@ -42,8 +42,9 @@ class Metrics {
     }
     final double scale = switch (form) {
       // The left pane carries the fixed-height stack (HUD to toolbar), about
-      // 600 design units tall; the lanes take the full height on the right.
-      FormFactor.twoPane => (math.min(_paneWidth(w) / _designWidth, h / 600)).clamp(0.6, 1.5).toDouble(),
+      // [_paneStackHeight] design units tall; the lanes take the full height
+      // on the right.
+      FormFactor.twoPane => (math.min(_paneWidth(w) / _designWidth, h / _paneStackHeight)).clamp(0.6, 1.5).toDouble(),
       FormFactor.tabletPortrait =>
         (math.min(math.min(w, tabletColumn) / _designWidth, h / _designHeight) * 1.05).clamp(1.0, 1.5).toDouble(),
       FormFactor.compactPhone ||
@@ -58,6 +59,7 @@ class Metrics {
 
   static const double _designWidth = 390;
   static const double _designHeight = 844;
+  static const double _paneStackHeight = 600;
 
   /// Tablets: the shortest side, in logical pixels, from which a device may
   /// rotate and gets tablet layouts.
@@ -91,11 +93,21 @@ class Metrics {
   double get textScale => scale.clamp(0.9, 1.25).toDouble();
   double font(double base) => base * textScale;
 
+  /// The one gutter: the HUD, the shaft panel, the bench, the lobby floor and
+  /// the bottom bar's buttons all stop this far from the screen's edges.
   double get gap => 12 * scale;
+
+  /// Corner radius of the big panels (shaft, lobby floor, bottom bar) and of
+  /// everything set inside them (seats, chips, the gauge plate, lane cards).
   double get radius => 22 * scale;
-  double get hudHeight => math.max(50 * scale, minTouch);
-  double get messageHeight => 32 * textScale;
+  double get innerRadius => 14 * scale;
+  double get hudHeight => math.max(48 * scale, minTouch);
+
+  /// The message line lives in a strip along the foot of the shaft panel,
+  /// under the cabin, so it costs the lanes no height of their own.
+  double get messageHeight => 24 * textScale;
   static const double messageRim = 1.5;
+  double get messagePillPad => 1.5 * scale;
 
   /// The bottom bar: the power dock and Send (mirrored for left-handed play).
   /// Tall enough for a 48 px button and its label at the largest text size.
@@ -104,28 +116,53 @@ class Metrics {
   /// sheets lay their buttons side by side.
   bool get shortLandscape => twoPane && size.height < 700;
   bool get dockLabels => !shortLandscape;
-  double get bottomBarHeight => dockLabels ? math.max(88 * scale, 80) : 56;
-  double get barPadding => 14 * scale;
-  double get dockButton => math.max(52 * scale, minTouch);
+  double get bottomBarHeight => dockLabels ? math.max(80 * scale, 78) : 56;
+  double get dockButton => math.max(50 * scale, minTouch);
   double get dockGap => 7 * scale;
 
-  /// Send beside a dock, and Send on its own before any power unlocks.
-  double get sendWidth => 118 * scale;
-  double get sendWidthSolo => 224 * scale;
-  double get sendHeight => math.max(62 * scale, minTouch);
+  /// The bar's room above the buttons (the stock badges hang off their
+  /// corners into it).
+  double get barTop => 4 * scale;
 
-  double get shaftHeight => 262 * scale;
-  double get nextColumn => 44 * scale;
-  double get nextChip => 42 * scale;
-  double get cabinWidth => 196 * scale;
-  double get cabinHeight => 214 * scale;
+  /// Send beside a dock, and Send on its own before any power unlocks. Send
+  /// is as tall as a dock button, so the two share a top and a baseline.
+  double get sendWidth => 128 * scale;
+  double get sendWidthSolo => 224 * scale;
+  double get sendHeight => dockButton;
+
+  /// The shaft panel: the floor display, the cabin, and the message strip.
+  double get shaftHeight => cabinTop + cabinHeight + messageHeight;
+
+  /// The shaft panel's three columns: NEXT, the cabin and the gauge, with
+  /// [shaftColGap] between them and [shaftPad] either side. The gauge column
+  /// keeps [gaugeColumn] and the NEXT column takes what a wide panel has to
+  /// spare (never less than 44), so the cabin stands near the panel's middle.
+  double get shaftPad => 10 * scale;
+  double get shaftColGap => 8 * scale;
+  double get gaugeColumn => 118 * scale;
+  double get nextColumn => math.max(
+        44 * scale,
+        columnWidth - 2 * gap - 2 * shaftPad - cabinWidth - 2 * shaftColGap - gaugeColumn,
+      );
+
+  /// The columns beside the cabin start this far from the panel's top; the
+  /// NEXT chips are [nextGap] apart, and the venue's prop stands under them.
+  double get shaftTop => 10 * scale;
+  double get nextGap => 5 * scale;
+  static const Size propSize = Size(34, 48);
+  double get nextChip => 40 * scale;
+
+  /// The cabin keeps the proportions of its art (196 x 214 design units).
+  static const double cabinAspect = 196 / 214;
+  double get cabinHeight => 190 * scale;
+  double get cabinWidth => cabinHeight * cabinAspect;
   double get cabinPadding => 7 * scale;
   double get cabinFigure => 128 * scale;
   double get gaugeWidth => 92 * scale;
 
   /// The cabin's top in the shaft, below the floor display; its bottom is
   /// where a backdrop's doorway meets the floor.
-  double get cabinTop => 30 * scale;
+  double get cabinTop => 31 * scale;
 
   /// The darker channel either side of the cabin, where the rails run; a
   /// backdrop's doorway is fitted to the cabin plus this on each side.
@@ -147,7 +184,7 @@ class Metrics {
   double get doorSeam => 7 * scale;
 
   /// The cabin's corner radius, and the rim around the art.
-  double get cabinRadius => 16 * scale;
+  double get cabinRadius => innerRadius;
   double get cabinRim => 2.5 * scale;
 
   /// Scale button on the gauge plate.
@@ -191,6 +228,16 @@ class Metrics {
   double get hudChipIcon => 24 * scale;
   double get hudChipGap => 3 * scale;
 
+  /// The pills are as tall as the round buttons' faces; the gap between HUD
+  /// items; and the round buttons' margin inside their touch target, which
+  /// the row's edge padding and the gap after them make up for, so every
+  /// visible edge lands on the gutter.
+  double get hudPill => hudRound;
+  double get hudGap => 8 * scale;
+  double get hudButtonMargin => (math.max(hudRound, minTouch) - hudRound) / 2;
+  double get hudEdge => math.max(gap - hudButtonMargin, 0);
+  double get hudButtonGap => math.max(hudGap - hudButtonMargin, 0);
+
   /// The icon on a dock button, as a share of the button.
   static const double dockIconShare = 0.62;
 
@@ -203,10 +250,18 @@ class Metrics {
   double get dockBadge => 22 * scale;
   double get dockBadgeOffset => 4 * scale;
   double get dockBadgePad => 4 * scale;
-  double get dockLabelGap => 11 * scale;
+  double get dockLabelGap => 7 * scale;
 
   /// The Scale button's icon.
   double get scaleIcon => 24 * scale;
+
+  /// The floor display over the cabin, and the labels on a NEXT chip (an
+  /// express prints two floors, so its label is smaller).
+  double get displayRadius => 6 * scale;
+  static const double displayRim = 1.5;
+  static const double floorDisplayFont = 16;
+  static const double nextFont = 14;
+  static const double nextExpressFont = 11;
 
   /// A lift kind's badge on the corner of a NEXT chip, and on the cabin.
   double get kindBadge => 22 * scale;
@@ -215,13 +270,13 @@ class Metrics {
   /// The corner radius of a NEXT chip; the lifts after the next one sit
   /// back at this opacity and scale; a kind's art fills this share of its
   /// badge's disc.
-  double get nextChipRadius => 14 * scale;
+  double get nextChipRadius => innerRadius;
   static const double nextDimOpacity = 0.62;
   static const double nextDimScale = 0.88;
   static const double kindBadgeArt = 0.92;
 
   /// The load gauge's plate: corner, padding and rim.
-  double get gaugePlateRadius => 16 * scale;
+  double get gaugePlateRadius => innerRadius;
   double get gaugePlatePadding => 6 * scale;
   static const double gaugePlateRim = 2;
   double get gaugeLabelGlow => 10 * scale;
@@ -232,7 +287,7 @@ class Metrics {
   /// Bench seats: their corner radius, and the glow around a picked seat or
   /// one that can take the selected resident (it swells to [seatGlowBreath]
   /// as the seat breathes).
-  double get seatRadius => 14 * scale;
+  double get seatRadius => innerRadius;
   double get seatGlow => 14 * scale;
   double get seatGlowBreath => 22 * scale;
 
@@ -291,7 +346,7 @@ class Metrics {
 
   /// The bench is capped at this share of the lane figure, so its taller seats
   /// do not push the lanes off the screen (owner, 2026-10-22).
-  static const double benchToLane = 0.7;
+  static const double benchToLane = 0.68;
   double get benchFigure => laneFigure * benchToLane;
   double get _laneFigureFloor => 54 * scale;
   double get _benchFigureFloor => 52 * scale;
@@ -320,6 +375,14 @@ class Metrics {
   // Lobby lanes: the floor's inset and padding, and each slot's padding and
   // thickest border (Swap targeting), which share a lane's width.
   double get lanePadding => 6 * scale;
+
+  /// The lane area's scroll cue: the bar's thickness and margin, how deep the
+  /// edge fades reach, and how far from an edge the content must be before a
+  /// fade shows.
+  double get scrollBar => 4 * scale;
+  double get scrollBarMargin => 4 * scale;
+  double get scrollFade => 26 * scale;
+  static const double scrollCueEdge = 1;
 
   /// The lobby floor's room above the lanes, and how far a selected front
   /// rises; the rise plus its hop ([PunchMotion.hopHeight]) fits in that
@@ -352,22 +415,31 @@ class Metrics {
   static const int benchRowMax = 5;
   static int benchPerRow(int seats) => seats <= benchRowMax ? seats : (seats + 1) ~/ 2;
 
-  double get benchInset => gap + 2 * scale;
+  /// The bench shares the gutter with everything else; its label row sits
+  /// [benchTop] under the shaft and [benchLabelGap] above the seats.
+  double get benchInset => gap;
+  double get benchTop => 4 * scale;
+  double get benchLabelGap => 4 * scale;
+  double get benchBottom => 6 * scale;
   double get seatGap => 8 * scale;
   static const double seatBorder = 2;
 
-  /// Room in a seat above the figure: its floor tag and border.
-  double get _seatChrome => (compactTagHeight + 4) * scale + 2 * seatBorder;
+  /// A seat's floor tag: its inset from the seat's top and left.
+  double get seatTag => 4 * scale;
 
-  /// Figure height on a bench of [seats] seats.
+  /// Every seat is this tall, empty or not, so seating someone never moves
+  /// the lanes. The floor tag sits in the seat's top corner, beside the
+  /// figure rather than above it.
+  double get seatHeight => math.max(64 * scale, minTouch);
+
+  /// Figure height on a bench of [seats] seats: the +60% size where the seat
+  /// is wide and tall enough, shrunk to fit its width, never below the v1.6
+  /// size.
   double benchFigureFor(int seats) {
     final perRow = math.max(benchPerRow(seats), 1);
     final seat = (columnWidth - 2 * benchInset - (perRow - 1) * seatGap) / perRow;
-    return _fit(benchFigure, _benchFigureFloor, seat - 2 * seatBorder);
+    return math.min(_fit(benchFigure, _benchFigureFloor, seat - 2 * seatBorder), seatHeight - 2 * seatBorder);
   }
-
-  /// A seat tall enough for a [figure]-high resident and their floor tag.
-  double seatHeightFor(double figure) => math.max(figure + _seatChrome, minTouch);
 
   /// Residents drawn per lane before the rest are counted.
   int get visibleDepth => switch (form) {

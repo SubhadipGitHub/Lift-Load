@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../game/cast.dart';
 import '../art_assets.dart';
 import '../layout.dart';
-import '../painters/floor_shape_painter.dart';
 import '../painters/resident_painter.dart';
 import '../painters/sprite_painter.dart';
 import '../theme.dart';
@@ -16,8 +15,7 @@ class SpriteArtScope extends InheritedWidget {
 
   final bool enabled;
 
-  static bool of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<SpriteArtScope>()?.enabled ?? true;
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<SpriteArtScope>()?.enabled ?? true;
 
   @override
   bool updateShouldNotify(SpriteArtScope old) => old.enabled != enabled;
@@ -91,7 +89,7 @@ class ResidentFigure extends StatelessWidget {
 }
 
 /// The floor tag shown above a waiting resident: a glossy pill in the
-/// floor's colour with its white shape and its label (style frame, `.tag`).
+/// floor's colour with its label (style frame, `.tag`).
 /// The outline and edge paint around the tag, so its layout height is the
 /// same as before the restyle.
 class FloorTag extends StatelessWidget {
@@ -105,27 +103,16 @@ class FloorTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = FloorStyle.of(floor);
     final k = scale;
     return Glossy(
       style: SurfaceStyle.floor(floor),
       depth: SurfaceDepth.tag,
       inset: false,
       height: (compact ? Metrics.compactTagHeight : Metrics.tagHeight) * k,
-      padding: EdgeInsets.symmetric(horizontal: (compact ? 5 : 8) * k),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox.square(
-            dimension: (compact ? 8 : 11) * k,
-            child: CustomPaint(painter: FloorShapePainter(style.shape, LL.creamHi, shadow: LL.surfaceShade)),
-          ),
-          SizedBox(width: (compact ? 2 : 3) * k),
-          Text(
-            floor.label,
-            style: TextStyle(fontSize: (compact ? 9 : 12) * k, fontWeight: FontWeight.w800, color: LL.ink, height: 1),
-          ),
-        ],
+      padding: EdgeInsets.symmetric(horizontal: (compact ? 6 : 9) * k),
+      child: Text(
+        floor.label,
+        style: TextStyle(fontSize: (compact ? 10 : 12) * k, fontWeight: FontWeight.w800, color: LL.ink, height: 1),
       ),
     );
   }

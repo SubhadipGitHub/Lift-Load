@@ -129,3 +129,25 @@ next starts.
 ## Open questions
 
 None beyond the three decisions above.
+
+## Polish pass (owner request 2026-10-22, after slice 4)
+
+The owner played the build and asked for: better alignment and natural component sizes; the queue to scroll; the
+floor shapes and the duplicate lift-floor indicators removed; and a more premium feel with better animations. Built
+in two slices, each its own PR.
+
+**Slice A, layout and clean-up.** The lanes get more of the screen (shorter bench seats, a tighter shaft and message
+line, one set of gutters and radii from the HUD down to the bottom bar). The queue scrolls with touch, mouse drag, wheel
+and trackpad, with a visible scroll cue. The shape glyph inside every floor tag, chip and pill is dropped: the floor
+keeps its colour and its "2F" label, which is what tells floors apart (the glyph was a second cue). The lift's floor
+is shown once, in the display above the cabin; the pill inside the cabin and any other repeat go. The kind signs
+("Old lift", "Express, two stops") stay, because they carry rules.
+
+**Slice B, premium motion.** Screen entrance, springy buttons with a gloss sweep, boarding and seating with arc and
+landing settle, gauge zone pulse, a ready pulse on Send in the green zone, a floor-display roll, parallax shaft
+during the ride, win and fail sequences, coin count-up, a better reveal for unknown people. Every animation is the
+same for every resident (no weight cue), sits in `lib/ui/motion.dart`, and is still under reduce-motion.
+
+**Open question for the owner.** Lanes draw at most 3 to 5 people (`Metrics.visibleDepth`). That was chosen so the
+length of a queue never shows, as signed off in PRD v1.6. If the whole queue should scroll into view, a player can
+count people by lane length, which reopens that rule.

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import '../game_controller.dart';
 import '../layout.dart';
 import '../motion.dart';
 import '../painters/cabin_painter.dart';
-import '../painters/floor_shape_painter.dart';
 import '../painters/lobby_painter.dart';
 import '../painters/shaft_painter.dart';
 import '../theme.dart';
@@ -37,6 +37,7 @@ class LiftShaft extends StatelessWidget {
     this.cabinBump = 0,
     this.cabinKey,
     this.hiddenIds = const {},
+    this.footer,
   });
 
   final LiftGame game;
@@ -62,6 +63,15 @@ class LiftShaft extends StatelessWidget {
   /// Riders still walking in: drawn invisible until they land.
   final Set<int> hiddenIds;
 
+  /// The message line, in a strip along the foot of the panel under the
+  /// cabin ([Metrics.messageHeight] tall).
+  final Widget? footer;
+
+  /// Finds the display over the cabin, the one place the lift here shows its
+  /// floors, and the strip of NEXT chips, in tests.
+  static const Key floorDisplayKey = ValueKey('floor-display');
+  static const Key nextStripKey = ValueKey('next-strip');
+
   @override
   Widget build(BuildContext context) {
     final crashed = game.phase == Phase.falling || (game.phase == Phase.failed && game.failKind == FailKind.crash);
@@ -73,8 +83,8 @@ class LiftShaft extends StatelessWidget {
     final s = m.scale;
     final label = LL.label.copyWith(fontSize: m.font(11));
 
-    final pad = 10 * s;
-    final railLeft = pad + m.nextColumn + 8 * s;
+    final pad = m.shaftPad;
+    final railLeft = pad + m.nextColumn + m.shaftColGap;
     final bump = PunchMotion.bumpAt(cabinBump);
     // The wall: Sunrise Towers' backdrop for this storey band once loaded
     // (and sprite art is on), otherwise the painted wall.
@@ -101,117 +111,147 @@ class LiftShaft extends StatelessWidget {
       child: _ShaftWall(
         level: game.level,
         builder: wall,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: pad),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: m.nextColumn,
-                child: Padding(
-                  padding: EdgeInsets.only(top: 14 * s),
-                  child: Column(
-                    children: [
-                      FittedBox(fit: BoxFit.scaleDown, child: Text('NEXT', style: label)),
-                      SizedBox(height: 7 * s),
-                      for (var i = 0; i < upcoming.length; i++) ...[
-                        // The lifts after the next one sit back, smaller and fainter.
-                        Opacity(
-                          opacity: i == 0 ? 1 : Metrics.nextDimOpacity,
-                          child: Transform.scale(
-                            scale: i == 0 ? 1 : Metrics.nextDimScale,
-                            child: _NextChip(stop: upcoming[i]),
-                          ),
-                        ),
-                        SizedBox(height: 7 * s),
-                      ],
-                      const Spacer(),
-                      SizedBox(width: 34 * s, height: 48 * s, child: CustomPaint(painter: VenuePropPainter(venue))),
-                      SizedBox(height: 10 * s),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 8 * s),
-              SizedBox(
-                width: m.cabinWidth,
-                child: Stack(
-                  clipBehavior: Clip.none,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.only(left: pad, right: pad, bottom: m.messageHeight),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Twin hoist cables: snapped and swinging after an overload.
-                    for (final dx in [-9.0, 7.0])
-                      Positioned(
-                        left: m.cabinWidth / 2 + dx * s,
-                        top: 0,
-                        child: Transform.rotate(
-                          angle: crashed ? (dx < 0 ? 0.35 : -0.25) : 0,
-                          alignment: Alignment.topCenter,
-                          child: Container(
-                            width: 2.4 * s,
-                            height: (crashed ? 12 : 30) * s,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [Color(0xFF6E6A9E), Color(0xFFB3AFE0)]),
-                              borderRadius: BorderRadius.circular(2),
+                    SizedBox(
+                      width: m.nextColumn,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: m.shaftTop),
+                        child: Column(
+                          children: [
+                            FittedBox(fit: BoxFit.scaleDown, child: Text('NEXT', style: label)),
+                            SizedBox(height: m.nextGap),
+                            for (var i = 0; i < upcoming.length; i++) ...[
+                              // The lifts after the next one sit back, smaller and fainter.
+                              Opacity(
+                                opacity: i == 0 ? 1 : Metrics.nextDimOpacity,
+                                child: Transform.scale(
+                                  scale: i == 0 ? 1 : Metrics.nextDimScale,
+                                  child: _NextChip(stop: upcoming[i]),
+                                ),
+                              ),
+                              SizedBox(height: m.nextGap),
+                            ],
+                            // The venue's prop stands in whatever room the chips leave.
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Padding(
+                                  padding: EdgeInsets.only(bottom: m.nextGap),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: SizedBox(
+                                      width: Metrics.propSize.width * s,
+                                      height: Metrics.propSize.height * s,
+                                      child: CustomPaint(painter: VenuePropPainter(venue)),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 3 * s,
-                      child: Center(child: _FloorDisplay(floors: game.liftFloors, alarm: crashed)),
                     ),
-                    Positioned(
-                      left: 0,
-                      top: m.cabinTop,
-                      child: Transform.translate(
-                        offset: Offset(0, cabinDy),
-                        child: Transform.rotate(
-                          angle: cabinTilt,
-                          // The bump: down and squashed on its floor, then back.
-                          child: Transform(
-                            alignment: Alignment.bottomCenter,
-                            transform: Matrix4.identity()
-                              ..translateByDouble(0, bump.dy * s, 0, 1)
-                              ..scaleByDouble(bump.sx, bump.sy, 1, 1),
-                            child: _Cabin(
-                              game: game,
-                              crashed: crashed,
-                              hint: hint,
-                              doorOpen: doorOpen,
-                              interiorKey: cabinKey,
-                              hiddenIds: hiddenIds,
-                              onTap: onTapLift,
+                    SizedBox(width: m.shaftColGap),
+                    SizedBox(
+                      width: m.cabinWidth,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Twin hoist cables: snapped and swinging after an overload.
+                          for (final dx in [-9.0, 7.0])
+                            Positioned(
+                              left: m.cabinWidth / 2 + dx * s,
+                              top: 0,
+                              child: Transform.rotate(
+                                angle: crashed ? (dx < 0 ? 0.35 : -0.25) : 0,
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  width: 2.4 * s,
+                                  height: (crashed ? 12 : 30) * s,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(colors: [Color(0xFF6E6A9E), Color(0xFFB3AFE0)]),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: 2 * s,
+                            child: Center(
+                                child: _FloorDisplay(key: floorDisplayKey, floors: game.liftFloors, alarm: crashed)),
+                          ),
+                          Positioned(
+                            left: 0,
+                            top: m.cabinTop,
+                            child: Transform.translate(
+                              offset: Offset(0, cabinDy),
+                              child: Transform.rotate(
+                                angle: cabinTilt,
+                                // The bump: down and squashed on its floor, then back.
+                                child: Transform(
+                                  alignment: Alignment.bottomCenter,
+                                  transform: Matrix4.identity()
+                                    ..translateByDouble(0, bump.dy * s, 0, 1)
+                                    ..scaleByDouble(bump.sx, bump.sy, 1, 1),
+                                  child: _Cabin(
+                                    game: game,
+                                    crashed: crashed,
+                                    hint: hint,
+                                    doorOpen: doorOpen,
+                                    interiorKey: cabinKey,
+                                    hiddenIds: hiddenIds,
+                                    onTap: onTapLift,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: m.shaftColGap),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: m.shaftTop),
+                        child: Column(
+                          children: [
+                            // On a short panel the gauge shrinks before the Scale button does.
+                            Flexible(
+                              child: _GaugePlate(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: LoadGauge(
+                                    fraction: game.loadFraction,
+                                    zone: game.zone,
+                                    ghost: game.ghostLoad == null ? null : game.ghostLoad! / game.capacity,
+                                    width: m.gaugeWidth,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: m.nextGap * 2),
+                            _ScaleButton(left: scaleLeft, ready: scaleReady, onPressed: onScale),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 14 * s),
-                  child: Column(
-                    children: [
-                      _GaugePlate(
-                        child: LoadGauge(
-                          fraction: game.loadFraction,
-                          zone: game.zone,
-                          ghost: game.ghostLoad == null ? null : game.ghostLoad! / game.capacity,
-                          width: m.gaugeWidth,
-                        ),
-                      ),
-                      SizedBox(height: 10 * s),
-                      _ScaleButton(left: scaleLeft, ready: scaleReady, onPressed: onScale),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            if (footer != null)
+              Positioned(left: m.gap, right: m.gap, bottom: 0, height: m.messageHeight, child: footer!),
+          ],
         ),
       ),
     );
@@ -238,10 +278,12 @@ class _ShaftWall extends StatelessWidget {
       : builder(null, child);
 }
 
-/// The lit indicator above the shaft: an arrow and the floor(s) this lift
-/// serves, like the panel over a real lift door.
+/// The lit indicator above the cabin: an arrow and the floor(s) this lift
+/// serves, like the panel over a real lift door. It is the only place the
+/// lift here shows its floors; each label is lit in its floor's colour, so
+/// it matches the tags on the people waiting.
 class _FloorDisplay extends StatelessWidget {
-  const _FloorDisplay({required this.floors, required this.alarm});
+  const _FloorDisplay({super.key, required this.floors, required this.alarm});
 
   final List<Floor> floors;
   final bool alarm;
@@ -249,26 +291,37 @@ class _FloorDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = Metrics.of(context);
-    final led = alarm ? LL.alarmSoft : const Color(0xFFFFC46B);
+    final led = alarm ? LL.alarmSoft : LL.led;
+    TextStyle lit(Color c) => TextStyle(
+          fontFamily: LL.displayFont,
+          fontSize: m.font(Metrics.floorDisplayFont),
+          fontWeight: FontWeight.w800,
+          height: 1,
+          letterSpacing: 1,
+          color: c,
+          shadows: [Shadow(color: c.withValues(alpha: 0.8), blurRadius: 6)],
+        );
     return ExcludeSemantics(
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 8 * m.scale, vertical: 4 * m.scale),
+        padding: EdgeInsets.symmetric(horizontal: 9 * m.scale, vertical: 3 * m.scale),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0C22),
-          borderRadius: BorderRadius.circular(6 * m.scale),
-          border: Border.all(color: const Color(0xFF3A3670), width: 1.5),
+          color: LL.displayBed,
+          borderRadius: BorderRadius.circular(m.displayRadius),
+          border: Border.all(color: LL.displayRim, width: Metrics.displayRim),
         ),
-        child: Text(
-          alarm ? '! !' : '▲ ${floors.map((f) => f.label).join('·')}',
-          style: TextStyle(
-            fontFamily: LL.displayFont,
-            fontSize: m.font(13),
-            fontWeight: FontWeight.w800,
-            height: 1,
-            letterSpacing: 1,
-            color: led,
-            shadows: [Shadow(color: led.withValues(alpha: 0.8), blurRadius: 6)],
-          ),
+        child: Text.rich(
+          alarm
+              ? TextSpan(text: '! !', style: lit(led))
+              : TextSpan(
+                  style: lit(led),
+                  children: [
+                    const TextSpan(text: '\u25B2 '),
+                    for (var i = 0; i < floors.length; i++) ...[
+                      if (i > 0) const TextSpan(text: '\u00B7'),
+                      TextSpan(text: floors[i].label, style: lit(FloorStyle.of(floors[i]).light)),
+                    ],
+                  ],
+                ),
         ),
       ),
     );
@@ -307,8 +360,9 @@ class _GaugePlate extends StatelessWidget {
 }
 
 /// One upcoming lift: a glossy chip in its floor's colour with the floor's
-/// shape and label, and a badge on the corner for its kind. An express is
-/// split between its two floors.
+/// label, and a badge on the corner for its kind. An express is split
+/// between its two floors. [LiftGame.upcomingLifts] starts after the lift
+/// that is here, so the first chip is the next lift, never this one.
 class _NextChip extends StatelessWidget {
   const _NextChip({required this.stop});
   final LiftStop stop;
@@ -340,23 +394,20 @@ class _NextChip extends StatelessWidget {
                       stops: const [0, 0.5, 0.5, 1],
                     )
                   : null,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox.square(
-                    dimension: 13 * m.scale,
-                    child: CustomPaint(painter: FloorShapePainter(first.shape, LL.creamHi, shadow: LL.surfaceShade)),
-                  ),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      stop.floors.map((f) => f.label).join(' '),
-                      maxLines: 1,
-                      style:
-                          TextStyle(fontSize: (express ? 9 : 11) * m.scale, fontWeight: FontWeight.w800, color: LL.ink),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    stop.floors.map((f) => f.label).join(' '),
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: m.font(express ? Metrics.nextExpressFont : Metrics.nextFont),
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                      color: LL.ink,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
             if (stop.kind != LiftKind.normal)
@@ -475,24 +526,38 @@ class _Cabin extends StatelessWidget {
         child: ColoredBox(color: LL.doorShade.withValues(alpha: CabinMotion.closedDim * (1 - doorOpen.clamp(0, 1)))),
       );
 
-  /// The destination: the kind's badge and one pill per floor. The badge
-  /// sits on a dark disc, so it reads on a dark wood interior too.
-  Widget _floorRow(Metrics m) => FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (game.liftKind != LiftKind.normal) ...[
-              _KindBadge(kind: game.liftKind, size: m.cabinKindBadge),
-              SizedBox(width: 4 * m.scale),
-            ],
-            for (var i = 0; i < game.liftFloors.length; i++) ...[
-              if (i > 0) SizedBox(width: 4 * m.scale),
-              _FloorPill(floor: game.liftFloors[i], prefix: game.liftFloors.length == 1 ? 'Up to ' : ''),
-            ],
-          ],
-        ),
-      );
+  /// What sets this lift apart: the kind's badge beside its sign, on dark
+  /// plates so it reads on any interior. Null for a normal lift, whose
+  /// ("Mind the load") is decoration the art replaces. The floors this lift
+  /// serves are not repeated here: the display above the cabin shows them.
+  Widget? _kindRow(Metrics m, {required bool plated}) {
+    if (game.liftKind == LiftKind.normal) return null;
+    final kind = LiftKindStyle.of(game.liftKind);
+    final s = m.scale;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _KindBadge(kind: game.liftKind, size: m.cabinKindBadge),
+          SizedBox(width: 4 * s),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 7 * s, vertical: 2 * s),
+            decoration: plated ? BoxDecoration(color: LL.cabinPlate, borderRadius: BorderRadius.circular(999)) : null,
+            child: Text(
+              kind.sign,
+              style: TextStyle(
+                fontSize: 10 * m.textScale,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+                color: plated ? LL.cream : const Color(0xFF5B6270),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   String get _emptyText => hint ? 'Tap to board' : 'Empty';
 
@@ -557,37 +622,8 @@ class _Cabin extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              left: m.cabinChromeTop,
-              right: m.cabinChromeTop,
-              top: m.cabinChromeTop,
-              child: Column(
-                children: [
-                  _floorRow(m),
-                  // The kind's sign says how this lift differs; a normal
-                  // lift's ("Mind the load") is decoration the art replaces.
-                  if (game.liftKind != LiftKind.normal) ...[
-                    SizedBox(height: 4 * s),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 7 * s, vertical: 2 * s),
-                        decoration: plate,
-                        child: Text(
-                          kind.sign,
-                          style: TextStyle(
-                            fontSize: 10 * m.textScale,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                            color: LL.cream,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            if (_kindRow(m, plated: true) case final row?)
+              Positioned(left: m.cabinChromeTop, right: m.cabinChromeTop, top: m.cabinChromeTop, child: row),
           ],
         ),
       ),
@@ -621,8 +657,6 @@ class _Cabin extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _floorRow(m),
-          SizedBox(height: 5 * s),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10 * s),
@@ -635,19 +669,22 @@ class _Cabin extends StatelessWidget {
                       left: 4 * s,
                       right: 4 * s,
                       top: 8 * s,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          kind.sign,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10 * m.textScale,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                            color: const Color(0xFF5B6270),
+                      // A normal lift's own sign ("Mind the load") is plain
+                      // lettering on the painted wall.
+                      child: _kindRow(m, plated: false) ??
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              kind.sign,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10 * m.textScale,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1,
+                                color: const Color(0xFF5B6270),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
                     ),
                     if (game.riders.isEmpty)
                       Center(
@@ -674,39 +711,6 @@ class _Cabin extends StatelessWidget {
   }
 }
 
-class _FloorPill extends StatelessWidget {
-  const _FloorPill({required this.floor, required this.prefix});
-
-  final Floor floor;
-  final String prefix;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = FloorStyle.of(floor);
-    final m = Metrics.of(context);
-    return Glossy(
-      style: SurfaceStyle.floor(floor),
-      depth: SurfaceDepth.tag,
-      inset: false,
-      padding: EdgeInsets.fromLTRB(6 * m.scale, 2 * m.scale, 10 * m.scale, 2 * m.scale),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox.square(
-            dimension: 12 * m.scale,
-            child: CustomPaint(painter: FloorShapePainter(style.shape, LL.creamHi, shadow: LL.surfaceShade)),
-          ),
-          SizedBox(width: 5 * m.scale),
-          Text(
-            '$prefix${floor.label}',
-            style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.ink),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Scale: previews the selected resident as a dashed needle on the gauge.
 /// A cream glossy pill with the approved scale icon and the uses left.
 class _ScaleButton extends StatelessWidget {
@@ -724,34 +728,37 @@ class _ScaleButton extends StatelessWidget {
     final m = Metrics.of(context);
     final size = m.scaleButton;
     final usable = onPressed != null && ready && left > 0;
-    return Opacity(
-      opacity: usable ? 1 : idleOpacity,
-      child: GlossyButton(
-        key: const ValueKey('scale'),
-        style: SurfaceStyle.cream,
-        disabledStyle: SurfaceStyle.cream,
-        onPressed: onPressed,
-        semanticsLabel: 'Scale: preview where the selected resident would put the needle, $left left',
-        width: size.width,
-        height: size.height,
-        padding: EdgeInsets.symmetric(horizontal: 4 * m.scale),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ArtIcon(GameIcon.scale, size: m.scaleIcon),
-              SizedBox(width: 3 * m.scale),
-              Text('Scale', style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.ink)),
-              SizedBox(width: 4 * m.scale),
-              Glossy(
-                style: SurfaceStyle.brass,
-                depth: SurfaceDepth.tag,
-                inset: false,
-                padding: EdgeInsets.symmetric(horizontal: 6 * m.scale, vertical: 1),
-                child: Text('$left', style: LL.display.copyWith(fontSize: m.font(12), color: LL.ink)),
-              ),
-            ],
+    // As wide as the gauge plate above it.
+    return LayoutBuilder(
+      builder: (context, box) => Opacity(
+        opacity: usable ? 1 : idleOpacity,
+        child: GlossyButton(
+          key: const ValueKey('scale'),
+          style: SurfaceStyle.cream,
+          disabledStyle: SurfaceStyle.cream,
+          onPressed: onPressed,
+          semanticsLabel: 'Scale: preview where the selected resident would put the needle, $left left',
+          width: box.hasBoundedWidth ? math.max(size.width, box.maxWidth) : size.width,
+          height: size.height,
+          padding: EdgeInsets.symmetric(horizontal: 4 * m.scale),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ArtIcon(GameIcon.scale, size: m.scaleIcon),
+                SizedBox(width: 3 * m.scale),
+                Text('Scale', style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.ink)),
+                SizedBox(width: 4 * m.scale),
+                Glossy(
+                  style: SurfaceStyle.brass,
+                  depth: SurfaceDepth.tag,
+                  inset: false,
+                  padding: EdgeInsets.symmetric(horizontal: 6 * m.scale, vertical: 1),
+                  child: Text('$left', style: LL.display.copyWith(fontSize: m.font(12), color: LL.ink)),
+                ),
+              ],
+            ),
           ),
         ),
       ),

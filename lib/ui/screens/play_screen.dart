@@ -15,6 +15,7 @@ import '../theme.dart';
 import '../widgets/art_icon.dart';
 import '../widgets/effects.dart';
 import '../widgets/glossy.dart';
+import '../widgets/lane_scroller.dart';
 import '../widgets/lift_shaft.dart';
 import '../widgets/lobby.dart';
 import '../widgets/play_bar.dart';
@@ -404,6 +405,46 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final m = Metrics.of(context);
     final slamRating = _slamRating;
     final slamRect = _slamRect;
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    // The message line, in the strip under the cabin: a pill that slides up
+    // and fades in on each change.
+    final message = Center(
+      child: Semantics(
+        liveRegion: true,
+        child: AnimatedSwitcher(
+          duration: Duration(milliseconds: still ? 0 : 220),
+          switchInCurve: Curves.easeOutBack,
+          transitionBuilder: (child, anim) => FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(anim),
+              child: child,
+            ),
+          ),
+          child: Container(
+            key: ValueKey(c.message),
+            padding: EdgeInsets.symmetric(horizontal: 12 * m.scale, vertical: m.messagePillPad),
+            decoration: c.message.isEmpty
+                ? null
+                : BoxDecoration(
+                    color: LL.messagePill,
+                    borderRadius: BorderRadius.circular(m.messageHeight),
+                    border: Border.all(color: LL.messageRim, width: Metrics.messageRim),
+                  ),
+            // A long line shrinks to fit rather than losing its end.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                c.message,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: TextStyle(fontSize: m.font(12), fontWeight: FontWeight.w800, color: LL.brass),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
     final shaft = AnimatedBuilder(
       key: _shaftKey,
       animation: Listenable.merge([_anim, _doors, _bump]),
@@ -419,48 +460,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         onScale: g.phase == Phase.playing ? c.useScale : null,
         scaleLeft: c.profile.scales,
         scaleReady: c.canUseScale,
-      ),
-    );
-    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    // The message line: a pill that slides up and fades in on each change.
-    final message = SizedBox(
-      height: m.messageHeight,
-      child: Center(
-        child: Semantics(
-          liveRegion: true,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: m.gap),
-            child: AnimatedSwitcher(
-              duration: Duration(milliseconds: still ? 0 : 220),
-              switchInCurve: Curves.easeOutBack,
-              transitionBuilder: (child, anim) => FadeTransition(
-                opacity: anim,
-                child: SlideTransition(
-                  position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(anim),
-                  child: child,
-                ),
-              ),
-              child: Container(
-                key: ValueKey(c.message),
-                padding: EdgeInsets.symmetric(horizontal: 12 * m.scale, vertical: 3 * m.scale),
-                decoration: c.message.isEmpty
-                    ? null
-                    : BoxDecoration(
-                        color: LL.messagePill,
-                        borderRadius: BorderRadius.circular(m.messageHeight),
-                        border: Border.all(color: LL.messageRim, width: Metrics.messageRim),
-                      ),
-                child: Text(
-                  c.message,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: m.font(13), fontWeight: FontWeight.w800, color: LL.brass),
-                ),
-              ),
-            ),
-          ),
-        ),
+        footer: message,
       ),
     );
     final hud = _Hud(c: c, onBack: _leave, coinKey: _coinKey, coinPulse: _coinPulse);
@@ -487,14 +487,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           revealedId: _revealedId,
         );
     // The lobby floor always reaches the bottom of its area, and scrolls when
-    // the queues are longer than the screen; a painted floor stays put under them.
+    // the queues are longer than the screen (touch, mouse drag, wheel,
+    // trackpad); a painted floor stays put under them.
     final lanesArea = LobbyFloor(
       venue: g.level.venue,
-      builder: (context, paintFloor) => LayoutBuilder(
-        builder: (context, box) => SingleChildScrollView(
-          child: ConstrainedBox(constraints: BoxConstraints(minHeight: box.maxHeight), child: lanes(paintFloor)),
-        ),
-      ),
+      builder: (context, paintFloor) => LaneScroller(child: lanes(paintFloor)),
     );
     final bottomBar = PlayBottomBar(c: c);
 
@@ -520,7 +517,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             constraints: BoxConstraints(minHeight: box.maxHeight),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [shaft, message, bench],
+                              children: [shaft, bench],
                             ),
                           ),
                         ),
@@ -548,7 +545,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             children: [
               hud,
               shaft,
-              message,
               bench,
               Expanded(child: lanesArea),
               bottomBar,
@@ -576,7 +572,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       final dx = _shake.isAnimating ? math.sin(v * 38) * 9 * (1 - v) : 0.0;
                       return Transform.translate(offset: Offset(dx, dx.abs() * 0.3), child: child);
                     },
-                    child: body,
+                    child: ScrollConfiguration(behavior: const PlayScrollBehavior(), child: body),
                   ),
                 ),
                 for (final f in _flights) _FlightView(key: ObjectKey(f), flight: f, onDone: () => _landed(f)),
@@ -687,26 +683,31 @@ class _Hud extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = c.game;
     final m = Metrics.of(context);
-    final chipGap = SizedBox(width: m.hudChipGap * 2);
+    final gapBetween = SizedBox(width: m.hudGap);
+    Widget round(IconData icon, String label, VoidCallback onPressed) => GlossyButton(
+          style: SurfaceStyle.plum,
+          onPressed: onPressed,
+          tooltip: label,
+          semanticsLabel: label,
+          width: m.hudRound,
+          height: m.hudRound,
+          inset: false,
+          touch: true,
+          child: Icon(icon, size: m.hudRoundIcon, color: LL.cream),
+        );
+    // Back and settings are the corners; level and trips stay on the left, lives and
+    // coins on the right. The round buttons sit in a full touch target, so
+    // the row's edge padding is the gutter less that margin: their faces,
+    // like every panel below, stop at the gutter.
     return SizedBox(
       height: m.hudHeight,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: m.hudChipGap * 2),
+        padding: EdgeInsets.symmetric(horizontal: m.hudEdge),
         child: Row(
           children: [
-            GlossyButton(
-              style: SurfaceStyle.plum,
-              onPressed: onBack,
-              tooltip: 'Back to the tower',
-              semanticsLabel: 'Back to the tower',
-              width: m.hudRound,
-              height: m.hudRound,
-              inset: false,
-              touch: true,
-              child: Icon(Icons.arrow_back_rounded, size: m.hudRoundIcon, color: LL.cream),
-            ),
-            // Level and trips, then lives and coins: each group shrinks before
-            // it overflows on the narrowest phones.
+            round(Icons.arrow_back_rounded, 'Back to the tower', onBack),
+            SizedBox(width: m.hudButtonGap),
+            // Each group shrinks before it overflows on the narrowest phones.
             Expanded(
               child: Align(
                 alignment: Alignment.centerLeft,
@@ -718,11 +719,14 @@ class _Hud extends StatelessWidget {
                       Glossy(
                         style: SurfaceStyle.brass,
                         inset: false,
-                        padding: EdgeInsets.symmetric(horizontal: m.gap, vertical: m.hudChipGap),
-                        child: Text('Lv ${g.level.number}',
-                            style: LL.display.copyWith(fontSize: m.font(19), color: LL.ink)),
+                        height: m.hudPill,
+                        padding: EdgeInsets.symmetric(horizontal: m.gap),
+                        child: Center(
+                          child: Text('Lv ${g.level.number}',
+                              style: LL.display.copyWith(fontSize: m.font(19), height: 1, color: LL.ink)),
+                        ),
                       ),
-                      chipGap,
+                      gapBetween,
                       Semantics(
                         label: 'Trips left ${g.tripsLeft}',
                         child: ExcludeSemantics(child: _Chip(icon: GameIcon.trip, text: '${g.tripsLeft}')),
@@ -732,18 +736,7 @@ class _Hud extends StatelessWidget {
                 ),
               ),
             ),
-            GlossyButton(
-              style: SurfaceStyle.plum,
-              onPressed: () => showSettingsSheet(context, c, inLevel: true),
-              tooltip: 'Settings',
-              semanticsLabel: 'Settings',
-              width: m.hudRound,
-              height: m.hudRound,
-              inset: false,
-              touch: true,
-              child: Icon(Icons.settings_rounded, size: m.hudRoundIcon, color: LL.cream),
-            ),
-            Flexible(
+            Expanded(
               child: FittedBox(
                 alignment: Alignment.centerRight,
                 fit: BoxFit.scaleDown,
@@ -754,7 +747,7 @@ class _Hud extends StatelessWidget {
                       label: 'Lives ${c.profile.lives}',
                       child: ExcludeSemantics(child: _Chip(icon: GameIcon.heart, text: '${c.profile.lives}')),
                     ),
-                    chipGap,
+                    gapBetween,
                     Semantics(
                       label: 'Coins ${c.profile.coins}',
                       child: ExcludeSemantics(
@@ -768,6 +761,8 @@ class _Hud extends StatelessWidget {
                 ),
               ),
             ),
+            SizedBox(width: m.hudButtonGap),
+            round(Icons.settings_rounded, 'Settings', () => showSettingsSheet(context, c, inLevel: true)),
           ],
         ),
       ),
@@ -789,14 +784,15 @@ class _Chip extends StatelessWidget {
       style: SurfaceStyle.chip,
       depth: SurfaceDepth.chip,
       inset: false,
-      padding: EdgeInsets.fromLTRB(m.hudChipGap, m.hudChipGap, m.hudChipGap * 3, m.hudChipGap),
+      height: m.hudPill,
+      padding: EdgeInsets.fromLTRB(m.hudChipGap, 0, m.hudChipGap * 3, 0),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           // An ink fallback would vanish on the dark pill.
           ArtIcon(icon, size: m.hudChipIcon, color: ArtIcon.onDark(icon)),
           SizedBox(width: m.hudChipGap),
-          Text(text, style: LL.display.copyWith(fontSize: m.font(15), color: LL.cream)),
+          Text(text, style: LL.display.copyWith(fontSize: m.font(15), height: 1, color: LL.cream)),
         ],
       ),
     );
