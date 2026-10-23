@@ -495,8 +495,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         child: AnimatedSwitcher(
           duration: Duration(milliseconds: still ? 0 : 220),
           switchInCurve: Curves.easeOutBack,
+          // The old line is gone by the half-way point and the new one starts
+          // there, so two messages are never readable on top of each other.
           transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
+            opacity: _HalfwayFade(anim),
             child: SlideTransition(
               position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(anim),
               child: child,
@@ -928,4 +930,17 @@ class _Chip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [parent] squeezed into its second half: 0 until it is half-way, then 0 to 1.
+/// The incoming message eases up in that half; the outgoing one, running the
+/// same animation backwards, has faded out by the half-way point.
+class _HalfwayFade extends Animation<double> with AnimationWithParentMixin<double> {
+  _HalfwayFade(this.parent);
+
+  @override
+  final Animation<double> parent;
+
+  @override
+  double get value => ((parent.value - 0.5) * 2).clamp(0.0, 1.0).toDouble();
 }
