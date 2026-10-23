@@ -192,7 +192,7 @@ abstract final class MotionCurves {
   static const SpringCurve pop = SpringCurve(rate: 7, frequency: 12);
 
   /// A walk: quick start, eases into the spot with a hair of overshoot.
-  static const Curve walk = Cubic(0.22, 0.85, 0.3, 1.12);
+  static const Curve walk = Cubic(0.3, 0.55, 0.35, 1.22);
 }
 
 /// Screen entrance when a level starts (PRD v1.7 polish pass, slice B): the
@@ -273,6 +273,12 @@ abstract final class BoardMotion {
   static const double arc = 26;
   static const double bob = 2.5;
   static const int steps = 6;
+
+  /// How high the walker is above the straight line at [t] (0 to 1 of the
+  /// walk), in design units: one low arc and the little step bobs, nothing at
+  /// either end.
+  static double riseAt(double t) =>
+      arc * math.sin(math.pi * t) + bob * math.sin(t * math.pi * steps).abs();
 
   /// On landing the figure squashes by [landSquash] (and widens by
   /// [landStretch]) and springs back, over [land].

@@ -74,7 +74,9 @@ class _CountUpState extends State<CountUp> with TickerProviderStateMixin {
   void didUpdateWidget(CountUp old) {
     super.didUpdateWidget(old);
     if (old.value == widget.value) return;
-    _start = _shown;
+    // Where the number was showing when the new value came: that is where it
+    // counts on from.
+    _start = (_start + (old.value - _start) * Curves.easeOutCubic.transform(_progress)).round();
     _go();
   }
 
@@ -158,6 +160,6 @@ class StableText extends StatelessWidget {
     )..layout();
     final width = painter.width;
     painter.dispose();
-    return SizedBox(width: width, child: Align(alignment: align, child: Text(text, style: style, maxLines: 1)));
+    return SizedBox(width: width, child: Align(alignment: align, child: Text(text, style: style, maxLines: 1, softWrap: false)));
   }
 }

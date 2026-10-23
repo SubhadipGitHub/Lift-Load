@@ -32,6 +32,7 @@ class Glossy extends StatelessWidget {
     this.faceGradient,
     this.glow,
     this.sweep,
+    this.squeeze = 1,
     this.width,
     this.height,
     this.padding = EdgeInsets.zero,
@@ -60,6 +61,10 @@ class Glossy extends StatelessWidget {
   /// A band of light crossing the face, 0 (not yet in) to 1 (gone): the
   /// gloss sweep when a button is let go. Null draws none.
   final double? sweep;
+
+  /// The whole face drawn at this scale about its middle (the springy press);
+  /// the label on it does not move.
+  final double squeeze;
 
   final double? width, height;
   final EdgeInsetsGeometry padding;
@@ -90,6 +95,7 @@ class Glossy extends StatelessWidget {
           glow: glow,
           glowBlur: m.seatGlow,
           sweep: sweep,
+          squeeze: squeeze,
         ),
         child: SizedBox(
           width: width,
@@ -117,6 +123,7 @@ class GlossyPainter extends CustomPainter {
     this.glow,
     this.glowBlur = 0,
     this.sweep,
+    this.squeeze = 1,
   });
 
   final SurfaceStyle style;
@@ -130,8 +137,9 @@ class GlossyPainter extends CustomPainter {
   final Color? glow;
   final double glowBlur;
 
-  /// See [Glossy.sweep].
+  /// See [Glossy.sweep] and [Glossy.squeeze].
   final double? sweep;
+  final double squeeze;
 
   /// Where the face sits inside the box at rest: inset by the outline and,
   /// below, the edge and drop; outset, the box is the face.
@@ -145,6 +153,17 @@ class GlossyPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size box) {
+    if (squeeze == 1) return _paintFace(canvas, box);
+    canvas
+      ..save()
+      ..translate(box.width / 2, box.height / 2)
+      ..scale(squeeze)
+      ..translate(-box.width / 2, -box.height / 2);
+    _paintFace(canvas, box);
+    canvas.restore();
+  }
+
+  void _paintFace(Canvas canvas, Size box) {
     final face = faceRect(box, size, press, inset: inset);
     if (face.isEmpty) return;
     final r = math.min(radius ?? double.infinity, face.shortestSide / 2);
@@ -239,7 +258,8 @@ class GlossyPainter extends CustomPainter {
       old.faceGradient != faceGradient ||
       old.glow != glow ||
       old.glowBlur != glowBlur ||
-      old.sweep != sweep;
+      old.sweep != sweep ||
+      old.squeeze != squeeze;
 }
 
 /// A tappable [Glossy]: it sinks while pressed, and with no [onPressed] it
@@ -313,7 +333,7 @@ class _GlossyButtonState extends State<GlossyButton> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final w = widget;
-    Widget face(bool down) => AnimatedBuilder(
+    Widget face(bool down, double squeeze) => AnimatedBuilder(
           animation: _sweep,
           builder: (context, _) => Glossy(
             style: w.surface,
@@ -322,6 +342,7 @@ class _GlossyButtonState extends State<GlossyButton> with SingleTickerProviderSt
             inset: w.inset,
             pressed: down,
             sweep: _sweep.isAnimating ? _sweep.value : null,
+            squeeze: squeeze,
             width: w.width,
             height: w.height,
             padding: w.padding,
@@ -333,13 +354,13 @@ class _GlossyButtonState extends State<GlossyButton> with SingleTickerProviderSt
       onRelease: _released,
       builder: (context, down) => PressSpring(
         down: down,
-        child: w.touch
+        builder: (context, squeeze) => w.touch
             ? SizedBox(
                 width: math.max(w.width ?? 0, Metrics.minTouch),
                 height: math.max(w.height ?? 0, Metrics.minTouch),
-                child: Center(child: face(down)),
+                child: Center(child: face(down, squeeze)),
               )
-            : face(down),
+            : face(down, squeeze),
       ),
     );
     body = GestureDetector(behavior: HitTestBehavior.opaque, onTap: w.onPressed, child: body);

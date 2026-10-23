@@ -553,11 +553,13 @@ class _QueueSlot extends StatelessWidget {
             transform: Matrix4.translationValues(0, selected ? -m.selectedLift : 0, 0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(m.innerRadius),
+              // Clear is white at no alpha, not black, so the card fades in
+              // through white rather than a grey.
               color: selected || picked
                   ? LL.cream
                   : front
                       ? Colors.white.withValues(alpha: 0.7)
-                      : Colors.transparent,
+                      : Colors.white.withValues(alpha: 0),
               // Swap targeting: a mint frame says "pick me", a thick brass one "picked".
               border: Border.all(
                 color: selected || picked
@@ -566,7 +568,7 @@ class _QueueSlot extends StatelessWidget {
                         ? LL.mintDark
                         : front
                             ? const Color(0xFFD9C29A)
-                            : Colors.transparent,
+                            : const Color(0x00D9C29A),
                 width: selected || picked || pickable ? Metrics.slotBorder : Metrics.slotBorderThin,
               ),
               boxShadow: [
@@ -819,6 +821,7 @@ class _StepInState extends State<_StepIn> with SingleTickerProviderStateMixin {
         final e = entrance == null ? 1.0 : turn.transform(entrance.value);
         return Opacity(
           opacity: ((_fadeIn ? t : 1.0) * e).clamp(0, 1).toDouble(),
+          alwaysIncludeSemantics: true,
           child: Transform.translate(
             offset: Offset(0, rise * (1 - e)),
             child: FractionalTranslation(translation: Offset(0, _from * (1 - t)), child: child),

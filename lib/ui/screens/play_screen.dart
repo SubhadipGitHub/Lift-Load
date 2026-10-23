@@ -108,14 +108,32 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   /// A level has started on this screen: it comes in (at once under reduced
-  /// motion).
+  /// motion), once the screen itself has finished arriving.
   void _beginEntrance() {
     _entranceGame = c.game;
+    _routeWait?.removeStatusListener(_routeStatus);
+    _routeWait = null;
     if (_still) {
       _entrance.value = 1;
-    } else {
-      _entrance.forward(from: 0);
+      return;
     }
+    _entrance.value = 0;
+    final arriving = ModalRoute.of(context)?.animation;
+    if (arriving == null || arriving.status == AnimationStatus.completed) {
+      _entrance.forward(from: 0);
+    } else {
+      _routeWait = arriving..addStatusListener(_routeStatus);
+    }
+  }
+
+  /// The route animation the entrance is waiting on, if any.
+  Animation<double>? _routeWait;
+
+  void _routeStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _routeWait?.removeStatusListener(_routeStatus);
+    _routeWait = null;
+    if (mounted && _entrance.value == 0) _entrance.forward(from: 0);
   }
 
   @override
@@ -149,6 +167,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _shake.dispose();
     _bump.dispose();
     _slam.dispose();
+    _routeWait?.removeStatusListener(_routeStatus);
     _entrance.dispose();
     _chime.dispose();
     super.dispose();
@@ -759,13 +778,7 @@ class _FlightViewState extends State<_FlightView> with SingleTickerProviderState
         // and little step bobs: one walk, identical for every resident.
         final t = MotionCurves.walk.transform(_c.value);
         final h = f.fromHeight + (f.toHeight - f.fromHeight) * t;
-        final feet = Offset.lerp(f.from, f.to, t)! -
-            Offset(
-              0,
-              scale *
-                  (BoardMotion.arc * math.sin(math.pi * _c.value) +
-                      BoardMotion.bob * math.sin(_c.value * math.pi * BoardMotion.steps).abs()),
-            );
+        final feet = Offset.lerp(f.from, f.to, t)! - Offset(0, scale * BoardMotion.riseAt(_c.value));
         final w = h / designHeight * ResidentLook.designWidth(f.resident.type, f.resident.cargo);
         return Positioned(
           left: feet.dx - w / 2,

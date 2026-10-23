@@ -57,13 +57,13 @@ class PressScale extends StatelessWidget {
   final bool enabled;
 
   /// How fast a pressed control goes down and comes back.
-  static const Duration pressDuration = Duration(milliseconds: 90);
+  static const Duration pressDuration = ButtonMotion.pressIn;
 
   @override
   Widget build(BuildContext context) => Pressable(
         enabled: enabled,
         builder: (context, down) => AnimatedScale(
-          scale: down ? 0.95 : 1,
+          scale: down ? ButtonMotion.pressedScale : 1,
           duration: pressDuration,
           curve: Curves.easeOut,
           child: child,
@@ -71,15 +71,16 @@ class PressScale extends StatelessWidget {
       );
 }
 
-/// The springy press: while [down] the child shrinks to
-/// [ButtonMotion.pressedScale] and, let go, springs back past 1 and rests. A
-/// transform only, so the touch target and the layout never change. With
-/// [down] always false (reduced motion) it holds still at 1.
+/// The springy press: while [down] the scale handed to [builder] goes to
+/// [ButtonMotion.pressedScale] and, let go, springs back past 1 and rests.
+/// The caller applies it to a face, so a label on top stays where it is and
+/// the touch target and the layout never change. With [down] always false
+/// (reduced motion) it holds at 1.
 class PressSpring extends StatefulWidget {
-  const PressSpring({super.key, required this.down, required this.child});
+  const PressSpring({super.key, required this.down, required this.builder});
 
   final bool down;
-  final Widget child;
+  final Widget Function(BuildContext context, double scale) builder;
 
   @override
   State<PressSpring> createState() => _PressSpringState();
@@ -96,7 +97,10 @@ class _PressSpringState extends State<PressSpring> with SingleTickerProviderStat
     if (widget.down) {
       _c.animateTo(1, duration: ButtonMotion.pressIn, curve: Curves.easeOut);
     } else {
-      _c.animateWith(SpringSimulation(ButtonMotion.release, _c.value, 0, 0));
+      _c.animateWith(SpringSimulation(ButtonMotion.release, _c.value, 0, 0)).whenComplete(() {
+        // Rest is exactly 1, not merely within the spring's tolerance.
+        if (mounted && !widget.down) _c.value = 0;
+      });
     }
   }
 
@@ -109,8 +113,6 @@ class _PressSpringState extends State<PressSpring> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: _c,
-        child: widget.child,
-        builder: (context, child) =>
-            Transform.scale(scale: 1 - (1 - ButtonMotion.pressedScale) * _c.value, child: child),
+        builder: (context, _) => widget.builder(context, 1 - (1 - ButtonMotion.pressedScale) * _c.value),
       );
 }

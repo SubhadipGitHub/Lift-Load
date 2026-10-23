@@ -347,16 +347,6 @@ class _FloorDisplayState extends State<_FloorDisplay> with SingleTickerProviderS
           color: c,
           shadows: [Shadow(color: c.withValues(alpha: 0.8), blurRadius: 6)],
         );
-    Widget floorsText(List<Floor> floors) => Text.rich(
-          TextSpan(
-            children: [
-              for (var i = 0; i < floors.length; i++) ...[
-                if (i > 0) TextSpan(text: '\u00B7', style: lit(led)),
-                TextSpan(text: floors[i].label, style: lit(FloorStyle.of(floors[i]).light)),
-              ],
-            ],
-          ),
-        );
     final flash = widget.chime <= 0 || widget.chime >= 1 ? 0.0 : math.sin(math.pi * widget.chime);
     return ExcludeSemantics(
       child: Transform.scale(
@@ -378,25 +368,39 @@ class _FloorDisplayState extends State<_FloorDisplay> with SingleTickerProviderS
           ),
           child: alarm
               ? Text.rich(TextSpan(text: '! !', style: lit(led)))
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text.rich(TextSpan(text: '\u25B2 ', style: lit(led))),
-                    AnimatedBuilder(
-                      animation: _roll,
-                      builder: (context, _) {
-                        final now = floorsText(widget.floors);
-                        if (_roll.value >= 1) return now;
+              : AnimatedBuilder(
+                  animation: _roll,
+                  builder: (context, _) {
+                    // At rest it is one line of text; rolling, the arrow stays
+                    // and the floors slide.
+                    if (_roll.value >= 1) {
+                      return Text.rich(
+                        TextSpan(
+                          style: lit(led),
+                          children: [
+                            const TextSpan(text: '\u25B2 '),
+                            ..._floorSpans(widget.floors, lit, led),
+                          ],
+                        ),
+                      );
+                    }
+                    final t = Curves.easeInOutCubic.transform(_roll.value);
+                    final travel = size * FloorMotion.rollTravel;
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text.rich(TextSpan(text: '\u25B2 ', style: lit(led))),
                         // Old floors up and out, new ones up from below.
-                        final t = Curves.easeInOutCubic.transform(_roll.value);
-                        final travel = size * FloorMotion.rollTravel;
-                        return ClipRect(
+                        ClipRect(
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
                               Opacity(
                                 opacity: t,
-                                child: Transform.translate(offset: Offset(0, travel * (1 - t)), child: now),
+                                child: Transform.translate(
+                                  offset: Offset(0, travel * (1 - t)),
+                                  child: Text.rich(TextSpan(children: _floorSpans(widget.floors, lit, led))),
+                                ),
                               ),
                               Positioned.fill(
                                 child: Opacity(
@@ -405,22 +409,30 @@ class _FloorDisplayState extends State<_FloorDisplay> with SingleTickerProviderS
                                     offset: Offset(0, -travel * t),
                                     child: OverflowBox(
                                       maxWidth: double.infinity,
-                                      child: floorsText(_was),
+                                      child: Text.rich(TextSpan(children: _floorSpans(_was, lit, led))),
                                     ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      },
-                    ),
-                  ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
         ),
       ),
     );
   }
+
+  /// The floors' labels, each lit in its own colour, a dot between them.
+  List<InlineSpan> _floorSpans(List<Floor> floors, TextStyle Function(Color) lit, Color led) => [
+        for (var i = 0; i < floors.length; i++) ...[
+          if (i > 0) const TextSpan(text: '\u00B7'),
+          TextSpan(text: floors[i].label, style: lit(FloorStyle.of(floors[i]).light)),
+        ],
+      ];
 }
 
 /// The dark plate behind the load gauge (style frame, `.gauge`).

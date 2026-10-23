@@ -187,7 +187,7 @@ class _PowerButton extends StatelessWidget {
             enabled: _playing,
             builder: (context, down) => PressSpring(
               down: down,
-              child: SizedBox(
+              builder: (context, squeeze) => SizedBox(
                 width: d,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -205,6 +205,7 @@ class _PowerButton extends StatelessWidget {
                               // Outset keeps the face round; its edge paints into the label gap.
                               inset: false,
                               pressed: down,
+                              squeeze: squeeze,
                               glow: armed ? LL.pickGlow : null,
                               width: d,
                               height: d,
