@@ -37,19 +37,30 @@ class ShaftPainter extends CustomPainter {
   /// The channel either side of the cabin, where the rails run.
   final double channel;
 
+  /// How much wider than the cabin column (plus its channels) the doorway may
+  /// grow, so the cabin can stand in the middle of it when the column sits
+  /// off the panel's centre.
+  static const double doorLoose = 1.15;
+
   /// Where [image] is drawn on a panel of [size]: scaled so its doorway
   /// ([ArtAssets.shaftDoorway]) spans the cabin column and its channels and
-  /// stands on [floorY], centred on the column, then grown and slid as
-  /// little as needed to cover the whole panel.
+  /// stands on [floorY], centred on the column (the doorway grows by up to
+  /// [doorLoose] to make that possible), then slid as little as needed to
+  /// cover the panel's top and sides. Below [floorY] the image has only a
+  /// strip of floor, so a panel taller than that is filled by
+  /// [paint] repeating the image's bottom edge.
   static Rect placement(Size image, Size size,
       {required double railLeft, required double railRight, required double floorY, required double channel}) {
     const door = ArtAssets.shaftDoorway;
     final fitDoor = (railRight - railLeft + 2 * channel) / (door.width * image.width);
     final cover = math.max(size.width / image.width, size.height / image.height);
-    final k = math.max(fitDoor, cover);
+    // The widest the image must be to centre the doorway on the column.
+    final mid = (railLeft + railRight) / 2;
+    final centred = 2 * math.max(mid, size.width - mid) / image.width;
+    final k = math.max(math.max(fitDoor, cover), math.min(centred, fitDoor * doorLoose));
     final w = image.width * k, h = image.height * k;
-    final left = ((railLeft + railRight) / 2 - door.center.dx * w).clamp(size.width - w, 0.0).toDouble();
-    final top = (floorY - door.bottom * h).clamp(size.height - h, 0.0).toDouble();
+    final left = (mid - door.center.dx * w).clamp(size.width - w, 0.0).toDouble();
+    final top = math.min(floorY - door.bottom * h, 0.0);
     return Rect.fromLTWH(left, top, w, h);
   }
 
@@ -60,12 +71,18 @@ class ShaftPainter extends CustomPainter {
     final image = art;
     if (image != null) {
       final src = Size(image.width.toDouble(), image.height.toDouble());
-      canvas.drawImageRect(
-        image,
-        Offset.zero & src,
-        placement(src, size, railLeft: railLeft, railRight: railRight, floorY: floorY, channel: channel),
-        Paint()..filterQuality = FilterQuality.medium,
-      );
+      final at = placement(src, size, railLeft: railLeft, railRight: railRight, floorY: floorY, channel: channel);
+      final paint = Paint()..filterQuality = FilterQuality.medium;
+      canvas.drawImageRect(image, Offset.zero & src, at, paint);
+      // The floor runs on under the cabin: the image's last row, repeated.
+      if (at.bottom < h) {
+        canvas.drawImageRect(
+          image,
+          Rect.fromLTWH(0, src.height - 1, src.width, 1),
+          Rect.fromLTRB(at.left, at.bottom - 1, at.right, h),
+          paint,
+        );
+      }
       // The walls either side of the doorway sit a little in shadow, so the
       // NEXT chips (the later ones faded) and the Scale button read over
       // lamps and city lights.

@@ -135,7 +135,7 @@ void main() {
         final h = m.benchFigureFor(seats);
         expect(h, lessThanOrEqualTo(m.benchFigure), reason: '$name $seats seats');
         expect(h, greaterThanOrEqualTo(52 * m.scale - 1e-9), reason: '$name $seats seats, v1.6 size');
-        expect(m.seatHeightFor(h), greaterThanOrEqualTo(Metrics.minTouch));
+        expect(m.seatHeight, greaterThanOrEqualTo(Metrics.minTouch));
       }
       expect(m.cabinFigure, 128 * m.scale, reason: name);
     }

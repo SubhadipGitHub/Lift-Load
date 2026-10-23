@@ -3,6 +3,31 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-23 · PRD v1.7 polish pass, slice A: layout and clean-up (branch polish-layout)
+
+**Done**
+- The queue scrolls with touch, mouse drag, trackpad, stylus and wheel (`widgets/lane_scroller.dart`: `PlayScrollBehavior`,
+  `LaneScroller`), soft bounce, a thin bar in the gutter and top and bottom edge fades while more lies that way. A drag
+  never selects; a tap still does. `Metrics.visibleDepth` is untouched (3 to 5 drawn), so queue length still never shows.
+- Lanes get 381 dp of 844 (45.1%) at 390x844, up from 301 (35.6%): the message line moved into a strip at the foot of
+  the shaft panel (`LiftShaft.footer`), the cabin is 190 dp tall (same aspect), bench seats are one 64 dp height empty or
+  full with the floor tag in the seat's corner, the bar is 80 dp, the HUD 48. The backdrop doorway is now centred on the
+  cabin (`ShaftPainter.doorLoose`, side columns share the spare width) and the floor row repeats under the cabin.
+- One gutter (`Metrics.gap`) from HUD to bar, panel radius 22, inner radius 14 (`Metrics.innerRadius`), HUD pills as tall
+  as the round buttons, right group and settings at the right edge, Send as tall as a dock button, Scale as wide as the
+  gauge plate.
+- Floor shapes are gone (`FloorShape`, `floor_shape_painter.dart`): tags, NEXT chips and the display carry colour and
+  the "2F" label. The cabin's floor pill is gone; the display above the cabin is the one indicator (labels lit in each
+  floor's colour). The NEXT strip already started after the current lift (`upcomingLifts`), now asserted in a test.
+- Tests: `polish_a_test` (scroll gestures, lane share and per-size no-regression table, shared edges, single indicator,
+  no shapes, source guards). 357 green.
+
+**Open**
+- A lane-area share of 45% is only reached at 390x844 and taller phones; 320x568 gets 31% (up from 21%).
+- Two-pane tablets still centre the shaft and bench with empty space above and below (as before).
+- The scroll range is short by design (3 to 5 people per lane); the owner's open question on showing whole queues stands.
+- Slice B (premium motion) not started.
+
 ## 2026-10-22 · PRD v1.7 restyle slice 4: Sunrise backdrops and punch (branch restyle-slice4)
 
 **Done**

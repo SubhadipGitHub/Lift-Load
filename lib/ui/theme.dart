@@ -99,6 +99,17 @@ abstract final class LL {
   static const messagePill = Color(0x77000000);
   static const messageRim = Color(0x22FFFFFF);
 
+  /// The lane area's scroll cue: the bar, and the shade over the floor's
+  /// edge (and where it fades to).
+  static const scrollThumb = Color(0xB3FFF6E6);
+  static const scrollFade = Color(0x66141330);
+  static const scrollFadeClear = Color(0x00141330);
+
+  /// The lit floor display over the cabin: its amber lamp, dark bed and rim.
+  static const led = Color(0xFFFFC46B);
+  static const displayBed = Color(0xFF0E0C22);
+  static const displayRim = Color(0xFF3A3670);
+
   /// The load gauge (style frame): its plate, the dark bed under the arcs,
   /// the grey zone, the gloss line over the arcs, and the needle's hub.
   static const gaugePlateTop = Color(0xCC14132E);
@@ -159,13 +170,12 @@ abstract final class LL {
       );
 }
 
-/// Each floor has a colour and a shape; the shape carries the meaning so the
-/// game reads in grayscale and for colour-blind players.
+/// Each floor has a colour; its label ("2F") is what tells floors apart for
+/// anyone who cannot rely on colour, so every tag, chip and display prints it.
 class FloorStyle {
-  const FloorStyle(this.color, this.dark, this.shape, {required this.light, required this.edge});
+  const FloorStyle(this.color, this.dark, {required this.light, required this.edge});
   final Color color;
   final Color dark;
-  final FloorShape shape;
 
   /// The top of a floor chip's lit gradient, and its outline and bottom
   /// edge (style frame, `.tag` and `.nchip`).
@@ -173,18 +183,18 @@ class FloorStyle {
   final Color edge;
 
   static FloorStyle of(Floor f) => switch (f) {
-        Floor.coral => const FloorStyle(Color(0xFFFF6B5B), Color(0xFFB03A2E), FloorShape.circle,
-            light: Color(0xFFFF9A8C), edge: Color(0xFF8A2A20)),
-        Floor.sun => const FloorStyle(Color(0xFFFFC233), Color(0xFFA6740A), FloorShape.triangle,
-            light: Color(0xFFFFE07A), edge: Color(0xFF7A5206)),
-        Floor.teal => const FloorStyle(Color(0xFF14B8A6), Color(0xFF0B6E64), FloorShape.square,
-            light: Color(0xFF4BE0CF), edge: Color(0xFF08524A)),
-        Floor.blue => const FloorStyle(Color(0xFF4C7DFF), Color(0xFF2747B0), FloorShape.diamond,
-            light: Color(0xFF86A6FF), edge: Color(0xFF1C3380)),
-        Floor.plum => const FloorStyle(Color(0xFFA066F5), Color(0xFF5B2DB0), FloorShape.hexagon,
-            light: Color(0xFFC49CFF), edge: Color(0xFF43208A)),
-        Floor.leaf => const FloorStyle(Color(0xFF7BD148), Color(0xFF3F7A1C), FloorShape.plus,
-            light: Color(0xFFA8EF7A), edge: Color(0xFF2D5A12)),
+        Floor.coral =>
+          const FloorStyle(Color(0xFFFF6B5B), Color(0xFFB03A2E), light: Color(0xFFFF9A8C), edge: Color(0xFF8A2A20)),
+        Floor.sun =>
+          const FloorStyle(Color(0xFFFFC233), Color(0xFFA6740A), light: Color(0xFFFFE07A), edge: Color(0xFF7A5206)),
+        Floor.teal =>
+          const FloorStyle(Color(0xFF14B8A6), Color(0xFF0B6E64), light: Color(0xFF4BE0CF), edge: Color(0xFF08524A)),
+        Floor.blue =>
+          const FloorStyle(Color(0xFF4C7DFF), Color(0xFF2747B0), light: Color(0xFF86A6FF), edge: Color(0xFF1C3380)),
+        Floor.plum =>
+          const FloorStyle(Color(0xFFA066F5), Color(0xFF5B2DB0), light: Color(0xFFC49CFF), edge: Color(0xFF43208A)),
+        Floor.leaf =>
+          const FloorStyle(Color(0xFF7BD148), Color(0xFF3F7A1C), light: Color(0xFFA8EF7A), edge: Color(0xFF2D5A12)),
       };
 }
 
@@ -211,7 +221,8 @@ class SurfaceStyle {
   final double gloss;
 
   /// Send and the rewarded buttons.
-  static const mint = SurfaceStyle(hi: LL.mintHi, mid: LL.mint, lo: LL.mintLo, edge: LL.mintEdge, drop: LL.mintDrop, ink: LL.ink);
+  static const mint =
+      SurfaceStyle(hi: LL.mintHi, mid: LL.mint, lo: LL.mintLo, edge: LL.mintEdge, drop: LL.mintDrop, ink: LL.ink);
 
   /// Primary actions that spend coins or move on; the level pill.
   static const brass =
@@ -236,10 +247,10 @@ class SurfaceStyle {
       hi: LL.seatHi, mid: LL.seatHi, lo: LL.seatLo, edge: LL.brassDark, drop: LL.brassEdge, ink: LL.ink, gloss: 0.5);
 
   /// Any button that cannot be pressed: flat slate, so it never reads as live.
-  static const off =
-      SurfaceStyle(hi: LL.offHi, mid: LL.offMid, lo: LL.offLo, edge: LL.offEdge, drop: LL.offDrop, ink: LL.lilac, gloss: 0);
+  static const off = SurfaceStyle(
+      hi: LL.offHi, mid: LL.offMid, lo: LL.offLo, edge: LL.offEdge, drop: LL.offDrop, ink: LL.lilac, gloss: 0);
 
-  /// A floor's chip or tag: its own colour, white glyph, ink label.
+  /// A floor's chip or tag: its own colour and an ink label.
   static SurfaceStyle floor(Floor f) {
     final s = FloorStyle.of(f);
     return SurfaceStyle(hi: s.light, mid: s.light, lo: s.color, edge: s.edge, drop: LL.plumDrop, ink: LL.ink);
@@ -263,8 +274,6 @@ class SurfaceStyle {
 /// How deep a surface is built: a button, a chip (HUD pills, NEXT chips,
 /// sheet rows), a floor tag, or a bench seat. Sizes in `Metrics.surface`.
 enum SurfaceDepth { button, chip, tag, seat }
-
-enum FloorShape { circle, triangle, square, diamond, hexagon, plus }
 
 /// How a venue looks: the shaft wall, the lobby floor and its pattern, the
 /// sign colour and the prop in the shaft corner.

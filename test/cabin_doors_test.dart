@@ -142,9 +142,10 @@ void main() {
       // Open: no leaf is drawn.
       expect(_doors(tester), 1);
       expect(_painter<CabinLeavesPainter>(), findsNothing);
-      // The floor pills read on top of the art.
+      // The floors this lift serves are in the display above the cabin, once.
+      final display = find.byKey(LiftShaft.floorDisplayKey);
       for (final f in c.game.liftFloors) {
-        expect(find.descendant(of: find.byType(LiftShaft), matching: find.textContaining(f.label)), findsWidgets);
+        expect(find.descendant(of: display, matching: find.textContaining(f.label)), findsOneWidget);
       }
     });
   }

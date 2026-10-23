@@ -46,12 +46,12 @@ class BenchRow extends StatelessWidget {
     final playing = game.phase == Phase.playing;
     final seating = playing && game.selection != null && !game.selection!.fromBench;
     final m = Metrics.of(context);
-    final label = LL.label.copyWith(fontSize: m.font(11));
+    final label = LL.label.copyWith(fontSize: m.font(11), height: 1.1);
     final seats = game.bench.length;
     final perRow = Metrics.benchPerRow(seats);
     final figure = m.benchFigureFor(seats);
     return Padding(
-      padding: EdgeInsets.fromLTRB(m.benchInset, 0, m.benchInset, 8 * m.scale),
+      padding: EdgeInsets.fromLTRB(m.benchInset, m.benchTop, m.benchInset, m.benchBottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -62,7 +62,7 @@ class BenchRow extends StatelessWidget {
               Text('${game.benchUsed}/${game.bench.length}', style: label),
             ],
           ),
-          SizedBox(height: 5 * m.scale),
+          SizedBox(height: m.benchLabelGap),
           // One row up to five seats; more (the +2 seats power) split into two even
           // rows, so a seat never gets narrower than a touch target.
           for (var row = 0; row * perRow < game.bench.length; row++) ...[
@@ -124,7 +124,7 @@ class _Seat extends StatelessWidget {
     final r = resident;
     final m = Metrics.of(context);
     final radius = m.seatRadius;
-    final height = m.seatHeightFor(figure);
+    final height = m.seatHeight;
     Widget seat(double breath) {
       if (r != null) {
         // Occupied: a cream glossy seat; picked, its rim turns brass and glows,
@@ -136,11 +136,10 @@ class _Seat extends StatelessWidget {
           radius: radius,
           height: height,
           glow: selected ? LL.pickGlow : null,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
+          child: Stack(
             children: [
-              FloorTag(floor: r.floor, compact: true, scale: m.scale),
-              Flexible(
+              Align(
+                alignment: Alignment.bottomCenter,
                 child: Opacity(
                   opacity: hidden ? 0 : 1,
                   child: FittedBox(
@@ -157,6 +156,12 @@ class _Seat extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+              // The tag sits in the corner, so the figure gets the seat's height.
+              Positioned(
+                left: m.seatTag,
+                top: m.seatTag,
+                child: FloorTag(floor: r.floor, compact: true, scale: m.scale),
               ),
             ],
           ),
@@ -456,7 +461,7 @@ class _Cones extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
             color: const Color(0xB31E1B3A),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(Metrics.of(context).innerRadius),
           ),
           child: Builder(builder: (context) {
             final m = Metrics.of(context);
@@ -525,7 +530,7 @@ class _QueueSlot extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(m.slotPadding, 3 * m.scale, m.slotPadding, 1 * m.scale),
             transform: Matrix4.translationValues(0, selected ? -m.selectedLift : 0, 0),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(m.innerRadius),
               color: selected || picked
                   ? LL.cream
                   : front

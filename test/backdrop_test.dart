@@ -112,7 +112,16 @@ void main() {
 
   test('the cabin stands in the doorway, and the wall always covers the panel', () {
     const image = Size(1200, 800);
-    for (final size in [const Size(390, 844), const Size(320, 568), const Size(768, 1024), const Size(1366, 1024)]) {
+    for (final size in [
+      const Size(390, 844),
+      const Size(320, 568),
+      const Size(360, 640),
+      const Size(375, 667),
+      const Size(412, 915),
+      const Size(430, 932),
+      const Size(768, 1024),
+      const Size(1366, 1024),
+    ]) {
       final m = Metrics.from(size);
       final panel = Size(m.columnWidth - 2 * m.gap, m.shaftHeight);
       final railLeft = 10 * m.scale + m.nextColumn + 8 * m.scale;
@@ -123,7 +132,11 @@ void main() {
       expect(at.left, lessThanOrEqualTo(1e-6), reason: '$size');
       expect(at.top, lessThanOrEqualTo(1e-6), reason: '$size');
       expect(at.right, greaterThanOrEqualTo(panel.width - 1e-6), reason: '$size');
-      expect(at.bottom, greaterThanOrEqualTo(panel.height - 1e-6), reason: '$size');
+      // Down to the cabin's floor the image is the wall; under it (the message
+      // strip) the painter repeats the image's floor row, so the strip is
+      // never longer than the floor the image itself shows there.
+      expect(at.bottom, greaterThanOrEqualTo(floorY - 1e-6), reason: '$size');
+      expect(panel.height - at.bottom, lessThanOrEqualTo(m.messageHeight + 1e-6), reason: '$size');
       const door = ArtAssets.shaftDoorway;
       final doorLeft = at.left + door.left * at.width, doorRight = at.left + door.right * at.width;
       // At least as wide as the cabin and its channels.
