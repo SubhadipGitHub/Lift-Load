@@ -625,28 +625,28 @@ class _Cabin extends StatelessWidget {
 
   /// The chime light as the lift stops: a soft wash falling from the top of
   /// the cabin, brightest as the lamp above flashes.
-  Widget _wash() => chime <= 0 || chime >= 1
-      ? const SizedBox.shrink()
-      : Positioned.fill(
-          child: IgnorePointer(
-            child: FractionallySizedBox(
-              alignment: Alignment.topCenter,
-              heightFactor: FloorMotion.chimeWashDepth,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      LL.chimeLight.withValues(alpha: FloorMotion.chimeWash * math.sin(math.pi * chime)),
-                      LL.chimeLight.withValues(alpha: 0),
-                    ],
+  Widget _wash() => Positioned.fill(
+        child: IgnorePointer(
+          child: chime <= 0 || chime >= 1
+              ? const SizedBox.shrink()
+              : FractionallySizedBox(
+                  alignment: Alignment.topCenter,
+                  heightFactor: FloorMotion.chimeWashDepth,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          LL.chimeLight.withValues(alpha: FloorMotion.chimeWash * math.sin(math.pi * chime)),
+                          LL.chimeLight.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-        );
+        ),
+      );
 
   /// The interior dims as the doors close.
   Widget _dim() => IgnorePointer(
