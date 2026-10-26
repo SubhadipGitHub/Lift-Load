@@ -3,6 +3,24 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-26 · Play feature graphic (branch play-graphic)
+
+**Done**
+- `tool/art/make_feature_graphic.py` builds `docs/store/feature_graphic_1024x500.png` (401 KB, RGB, no alpha) from the
+  approved landscape cover: cropped to the Play aspect (top offset 110 of 1080), a soft night wash on the left, the app
+  icon tile, "Lift Load" in Baloo 2 800 and the manifest tagline "Guess who fits. Mind the cable." in Nunito Sans.
+  Deterministic; reruns from the approved files. The garbled hotel sign is illegible at this size.
+
+**Open**
+- This is a stopgap: it has no characters. The manifest's `store_key_art` (lobby, crowd squeezing into the lift) is the
+  better store hero if the owner generates it; this script can take it as the background instead of the cover.
+- Five phone screenshots, 1080x1920 RGB PNG (9:16), in `docs/store/screenshots/`: tap to board (L12), the green zone with the
+  mint Send (L12), powers dock and unknown ghosts (L30), World 2 five lanes with pram and wheelchair (L77), home map.
+  Taken from the release web build (`flutter build web --release --no-web-resources-cdn`) in headless Chromium at 450x800
+  CSS px, 2.4x, sprite art on, with a seeded save (640 coins, powers stocked). No win screen: it needs a scripted full
+  play-through. The 512 px Play icon is `web/icons/Icon-512.png`.
+- Nothing is uploaded: publishing to Play Console needs the owner's explicit "proceed".
+
 ## 2026-10-26 · Boot splash from the cover art (branch splash-cover)
 
 **Done**
