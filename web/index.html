@@ -29,15 +29,32 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preload" as="image" href="splash/portrait.webp" media="(max-aspect-ratio: 1/1)">
+  <link rel="preload" as="image" href="splash/landscape.webp" media="(min-aspect-ratio: 1/1)">
 
   <title>Lift Load</title>
   <link rel="manifest" href="manifest.json">
   <style>
     html, body { margin: 0; height: 100%; background: #1C1A3F; }
-    #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-    #boot img { width: 96px; height: 96px; animation: bob 1.4s ease-in-out infinite; }
+    /* Cover art, cover-cropped. Portrait art on tall viewports, landscape art on wide ones. The sky is calm, so the
+       icon sits in it: top third in portrait, left half in landscape. */
+    #boot {
+      position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center;
+      background: #1C1A3F url(splash/portrait.webp) center bottom / cover no-repeat;
+      transition: opacity .35s ease-out;
+    }
+    #boot.done { opacity: 0; }
+    #boot img {
+      margin-top: 18vh; width: 112px; height: 112px; border-radius: 25px;
+      box-shadow: 0 10px 30px rgba(10, 8, 40, .55);
+      animation: bob 1.4s ease-in-out infinite;
+    }
+    @media (min-aspect-ratio: 1/1) {
+      #boot { background-image: url(splash/landscape.webp); background-position: center; justify-content: flex-start; align-items: center; }
+      #boot img { margin: 0 0 6vh 18vw; }
+    }
     @keyframes bob { 50% { transform: translateY(-8px); } }
-    @media (prefers-reduced-motion: reduce) { #boot img { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { #boot img { animation: none; } #boot { transition: none; } }
   </style>
 </head>
 <body>
@@ -54,7 +71,9 @@
   <script>
     window.addEventListener('flutter-first-frame', function () {
       var boot = document.getElementById('boot');
-      if (boot) boot.remove();
+      if (!boot) return;
+      boot.classList.add('done');
+      setTimeout(function () { boot.remove(); }, 400);
     });
   </script>
   <script src="flutter_bootstrap.js" async></script>
