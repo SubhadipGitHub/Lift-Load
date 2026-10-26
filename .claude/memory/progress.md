@@ -14,8 +14,12 @@ entries; fold older ones into "Earlier".
 **Open**
 - This is a stopgap: it has no characters. The manifest's `store_key_art` (lobby, crowd squeezing into the lift) is the
   better store hero if the owner generates it; this script can take it as the background instead of the cover.
-- Play also wants 2 to 8 phone screenshots (min 320 px, 16:9 or 9:16) and a 512 px icon; neither exists yet. Nothing is
-  uploaded: publishing to Play Console needs the owner's explicit "proceed".
+- Five phone screenshots, 1080x1920 RGB PNG (9:16), in `docs/store/screenshots/`: tap to board (L12), the green zone with the
+  mint Send (L12), powers dock and unknown ghosts (L30), World 2 five lanes with pram and wheelchair (L77), home map.
+  Taken from the release web build (`flutter build web --release --no-web-resources-cdn`) in headless Chromium at 450x800
+  CSS px, 2.4x, sprite art on, with a seeded save (640 coins, powers stocked). No win screen: it needs a scripted full
+  play-through. The 512 px Play icon is `web/icons/Icon-512.png`.
+- Nothing is uploaded: publishing to Play Console needs the owner's explicit "proceed".
 
 ## 2026-10-26 · Boot splash from the cover art (branch splash-cover)
 
