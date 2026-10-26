@@ -3,6 +3,21 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-26 · Boot splash from the cover art (branch splash-cover)
+
+**Done**
+- `web/index.html` boot splash is now the approved cover art, cover-cropped: portrait art on viewports taller than wide,
+  landscape art on wide ones (`web/splash/portrait.webp`, `landscape.webp`, copies of `docs/art/approved/home_skyline_*`).
+  The app icon bobs in the calm sky (top third in portrait, left half in landscape); both images are preloaded by
+  media query. On `flutter-first-frame` the splash fades out over 350 ms and is removed; reduce-motion skips the bob
+  and the fade.
+- Checked in headless Chromium at 390x844, 1280x720 and 820x1180 with the Flutter bootstrap stubbed; the removal on
+  first frame was confirmed. Not checked against a real Flutter boot (the build was not run for this change).
+
+**Open**
+- Splash adds 184 KB to the web build. The Android native splash comes with M3 and needs its own asset.
+- Wide-screen backdrop and Play feature graphic from the cover art are still unbuilt.
+
 ## 2026-10-23 · App icon and cover art (branch art-icon-cover)
 
 **Done**
