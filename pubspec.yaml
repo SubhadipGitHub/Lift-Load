@@ -29,6 +29,8 @@ flutter:
     - assets/music/
     # Approved cast sprites (docs/art/approved); paths live only in lib/ui/art_assets.dart.
     - assets/art/
+    # Cover art behind wide screens (docs/art/approved/home_skyline_*); paths live in lib/ui/art_assets.dart.
+    - assets/cover/
   # SIL Open Font License: assets/fonts/OFL-*.txt
   fonts:
     - family: Baloo2

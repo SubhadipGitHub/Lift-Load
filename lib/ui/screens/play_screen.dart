@@ -25,6 +25,7 @@ import '../widgets/punch.dart';
 import '../widgets/resident_figure.dart';
 import '../widgets/result_sheets.dart';
 import '../widgets/settings_sheet.dart';
+import '../widgets/wide_backdrop.dart';
 
 /// The level screen. Owns the cabin animations: when the engine enters
 /// [Phase.departing] or [Phase.falling], this screen animates the cabin and
@@ -674,59 +675,61 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         if (!didPop) _leave();
       },
       child: Scaffold(
-        body: SafeArea(
-          child: IdleClockScope(
-            // A touch finishes the entrance at once: it never holds up play.
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (_) {
-                if (_entrance.isAnimating) _entrance.value = 1;
-              },
-              child: Stack(
-                key: _stackKey,
-                children: [
-                  Positioned.fill(
-                    child: AnimatedBuilder(
-                      animation: _shake,
-                      builder: (context, child) {
-                        final v = _shake.value;
-                        final dx = _shake.isAnimating ? math.sin(v * 38) * 9 * (1 - v) : 0.0;
-                        return Transform.translate(offset: Offset(dx, dx.abs() * 0.3), child: child);
-                      },
-                      child: ScrollConfiguration(behavior: const PlayScrollBehavior(), child: body),
-                    ),
-                  ),
-                  for (final f in _flights) _FlightView(key: ObjectKey(f), flight: f, onDone: () => _landed(f)),
-                  if (g.phase == Phase.failed)
-                    FailSheet(
-                      c: c,
-                      onHome: () {
-                        c.quitToHome();
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  if (g.phase == Phase.won)
-                    WinSheet(
-                      c: c,
-                      onHome: () {
-                        c.quitToHome();
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  Positioned.fill(child: EffectsLayer(key: _effects)),
-                  // The trip's score over the shaft, above the coins flying out
-                  // of it (style frame), until a result sheet comes up.
-                  if (slamRating != null && slamRect != null && g.phase != Phase.won && g.phase != Phase.failed)
-                    Positioned.fromRect(
-                      rect: slamRect,
+        body: WideBackdrop(
+          child: SafeArea(
+            child: IdleClockScope(
+              // A touch finishes the entrance at once: it never holds up play.
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) {
+                  if (_entrance.isAnimating) _entrance.value = 1;
+                },
+                child: Stack(
+                  key: _stackKey,
+                  children: [
+                    Positioned.fill(
                       child: AnimatedBuilder(
-                        animation: _slam,
-                        builder: (context, _) => _slam.isAnimating
-                            ? ScoreSlam(rating: slamRating, coins: _slamCoins, progress: _slam.value)
-                            : const SizedBox.shrink(),
+                        animation: _shake,
+                        builder: (context, child) {
+                          final v = _shake.value;
+                          final dx = _shake.isAnimating ? math.sin(v * 38) * 9 * (1 - v) : 0.0;
+                          return Transform.translate(offset: Offset(dx, dx.abs() * 0.3), child: child);
+                        },
+                        child: ScrollConfiguration(behavior: const PlayScrollBehavior(), child: body),
                       ),
                     ),
-                ],
+                    for (final f in _flights) _FlightView(key: ObjectKey(f), flight: f, onDone: () => _landed(f)),
+                    if (g.phase == Phase.failed)
+                      FailSheet(
+                        c: c,
+                        onHome: () {
+                          c.quitToHome();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    if (g.phase == Phase.won)
+                      WinSheet(
+                        c: c,
+                        onHome: () {
+                          c.quitToHome();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    Positioned.fill(child: EffectsLayer(key: _effects)),
+                    // The trip's score over the shaft, above the coins flying out
+                    // of it (style frame), until a result sheet comes up.
+                    if (slamRating != null && slamRect != null && g.phase != Phase.won && g.phase != Phase.failed)
+                      Positioned.fromRect(
+                        rect: slamRect,
+                        child: AnimatedBuilder(
+                          animation: _slam,
+                          builder: (context, _) => _slam.isAnimating
+                              ? ScoreSlam(rating: slamRating, coins: _slamCoins, progress: _slam.value)
+                              : const SizedBox.shrink(),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

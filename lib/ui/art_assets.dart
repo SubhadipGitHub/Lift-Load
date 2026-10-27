@@ -132,6 +132,12 @@ abstract final class ArtAssets {
   /// 1200 x 900 px, lifted so lane text and floor tags keep 4.3:1 contrast.
   static String? lobbyFloor(Venue venue) => backdropVenues.contains(venue) ? '$_dir/bg_${venue.name}_lobby.webp' : null;
 
+  /// The cover art behind a wide screen: the landscape scene (1920 x 1080) for a window wider than tall, the portrait
+  /// one (1080 x 1920) for a tablet standing up. It lives in `assets/cover/`, outside the sprite table: it is
+  /// decoded only on a wide screen, never preloaded.
+  static String coverArt({required bool landscape}) =>
+      landscape ? 'assets/cover/cover_landscape.webp' : 'assets/cover/cover_portrait.webp';
+
   /// The lift doorway in every shaft wall, as fractions of the image: the
   /// cabin is drawn standing in it (`painters/shaft_painter.dart`).
   static const ui.Rect shaftDoorway = ui.Rect.fromLTRB(332 / 1200, 72 / 800, 868 / 1200, 744 / 800);
