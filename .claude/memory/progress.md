@@ -3,6 +3,24 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-26 · Wide-screen backdrop (branch wide-backdrop)
+
+**Done**
+- `widgets/wide_backdrop.dart`: `WideBackdrop` puts the cover art behind the Play screen on a two-pane layout (landscape
+  window, tablet or phone on its side) or a tablet standing up, under a 40% navy scrim; phones standing up get the flat
+  page and never load the image. Follows `useSpriteArt`, fades in (not under reduce-motion), flat page on load failure,
+  `ExcludeSemantics` and `IgnorePointer`. Art in `assets/cover/` (outside the sprite table, not preloaded);
+  `ArtAssets.coverArt`. Decoded at 1280 / 720 px wide.
+- `test/wide_backdrop_test.dart` (9 tests); 447 green with the existing suite, analyze clean. Release web build checked in
+  headless Chromium at 1280x720, 1700x900 and 820x1180.
+- First pass at a 68% scrim hid the art; 40% reads and the labels keep their contrast on it.
+
+**Open**
+- Home keeps its own sky (its skyline is the progress map). Settings, store and result sheets sit above the backdrop.
+- On a 1280x720 window the buildings fall behind the lanes panel, so the visible art is sky and a lawn silhouette; the
+  skyline shows from about 1500 px wide and on tablets standing up.
+- Phone-in-landscape (844x390) now decodes a 1280 px image (3.7 MB); not measured on a device.
+
 ## 2026-10-26 · Boot splash from the cover art (branch splash-cover)
 
 **Done**

@@ -151,3 +151,18 @@ same for every resident (no weight cue), sits in `lib/ui/motion.dart`, and is st
 **Open question for the owner.** Lanes draw at most 3 to 5 people (`Metrics.visibleDepth`). That was chosen so the
 length of a queue never shows, as signed off in PRD v1.6. If the whole queue should scroll into view, a player can
 count people by lane length, which reopens that rule.
+
+## Cover art pass (owner request 2026-10-26)
+
+The approved app icon and cover art are in. The icon feeds the web icons, the cover art the web boot splash, the Play
+feature graphic (`docs/store/`) and, here, a backdrop on wide screens.
+
+**Wide backdrop.** On the Play screen, when the layout is two-pane (a window or tablet wider than tall, including a phone
+on its side) or a tablet standing up, the cover art (landscape or portrait) shows behind the content under a navy scrim
+(40%), in the margins and gaps around the play column. Phones standing up get nothing and never load the image. It
+follows the `useSpriteArt` switch, fades in (not under reduce-motion), falls back to the flat page if the image fails,
+and shows nothing of the game: the picture is the same whatever is in the lift. The files live in `assets/cover/`,
+outside the sprite table, so they are decoded only when a wide screen asks.
+
+Not done: the Home screen keeps its own night sky, because its skyline is the progress map and the cover buildings
+would compete with it.
