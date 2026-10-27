@@ -24,6 +24,7 @@ with this file. Logged through `AnalyticsService` (`DebugAnalytics` in M1, Fireb
 | `setting_changed` | setting (sound / music / haptics / left_handed), on | A settings toggle is flipped | How many mute, and whether muters churn faster |
 | `crash_fairness` | level, attempt, fair | Tester build: the tester taps Fair or Unfair on a crash sheet | Gate A "crashes called unfair" |
 | `exit_heavy_types` | level, answer (free text), skipped | Tester build: once, on the first win from level 15 | Gate A "names the heavy types" |
+| `exit_unknown_fair` | level, fair (absent when skipped), skipped | Tester build: once, on the first win from level 13 on a level with unknown people, never on the heavy-types win | Gate A with powers on: "unknown people felt fair" |
 | `test_complete` | level | Tester build: level 60 won | Gate A completion |
 
 `attempt` is 1 on the first try at a level and counts up on every Retry or restart (stored per level in the

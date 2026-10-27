@@ -287,6 +287,31 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The optional "did the unknown people feel fair?" question (PRD v1.6, Gate A): once, on a win from level
+  /// [TesterConfig.unknownFairAfterLevel] on that had unknown people, and not on the win that asked the
+  /// heavy-types question (one question at a time).
+  bool get askUnknownFair =>
+      tester.enabled &&
+      testerLog != null &&
+      !testerLog!.unknownFairAsked &&
+      hasGame &&
+      game.phase == Phase.won &&
+      game.level.number >= TesterConfig.unknownFairAfterLevel &&
+      game.level.unknownIds.isNotEmpty &&
+      !askHeavyTypes &&
+      testerLog!.heavyTypesLevel != game.level.number;
+
+  /// [fair] null is a skip.
+  void answerUnknownFair(bool? fair) {
+    if (!askUnknownFair) return;
+    analytics.log('exit_unknown_fair', {
+      'level': game.level.number,
+      'skipped': fair == null,
+      if (fair != null) 'fair': fair,
+    });
+    notifyListeners();
+  }
+
   // ── Player input ──
 
   void tapQueue(int lane) {

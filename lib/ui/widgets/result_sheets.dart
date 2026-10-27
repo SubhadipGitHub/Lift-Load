@@ -428,6 +428,10 @@ class WinSheet extends StatelessWidget {
           _Stage(4, child: HeavyTypesCard(c: c)),
           const SizedBox(height: 12),
         ],
+        if (c.askUnknownFair) ...[
+          _Stage(4, child: UnknownFairCard(c: c)),
+          const SizedBox(height: 12),
+        ],
         if (c.testComplete) ...[
           const _Stage(
             5,

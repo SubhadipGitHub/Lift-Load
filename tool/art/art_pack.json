@@ -584,6 +584,22 @@
       "weight_read": "six objects, none green; old, service and express must be told apart at a glance (they are the NEXT-strip lift kinds)."
     },
     {
+      "id": "icons_powers",
+      "kind": "icon_sheet",
+      "name": "Icons: Swap and Express powers",
+      "aspect": "3:2",
+      "cols": 2,
+      "rows": 1,
+      "chroma": "green",
+      "icons": [
+        "swap",
+        "express"
+      ],
+      "reference": "resident_kid",
+      "prompt": "A sheet of two game icons side by side, left to right, with a wide empty gap between them: 1) two chunky glossy curved arrows trading places, one pointing right over the other pointing left, deep indigo-blue (#3B3FA8) with a thin brass edge and a soft top highlight, no letters or numbers. 2) a chunky glossy gold lightning bolt (#FFC233) leaning to the right, with a thin brass edge and two short rounded speed streaks trailing behind it, no letters or numbers.",
+      "weight_read": "two separate objects, neither green, no overlap; the bolt is gold, not blue, so it is never mistaken for the express lift badge; nothing suggests a scale, a weight or a number."
+    },
+    {
       "kind": "scene",
       "id": "bg_society_shaft_ground",
       "name": "Sunrise Towers shaft wall: ground (levels 1-4)",
