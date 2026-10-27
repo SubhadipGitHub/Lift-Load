@@ -18,6 +18,7 @@ import 'package:lift_load/ui/widgets/art_icon.dart';
 import 'package:lift_load/ui/widgets/glossy.dart';
 import 'package:lift_load/ui/widgets/load_gauge.dart';
 import 'package:lift_load/ui/widgets/play_bar.dart';
+import 'package:lift_load/ui/widgets/power_dock.dart';
 import 'package:lift_load/ui/widgets/resident_figure.dart';
 
 import 'helpers.dart';
@@ -101,6 +102,35 @@ void main() {
       for (final e in find.byType(ArtIcon).evaluate()) {
         expect(tester.getSize(find.byWidget(e.widget)), const Size(24, 24));
       }
+    });
+
+    testWidgets('every power draws its approved icon in the dock, Material only as the fallback', (tester) async {
+      Widget row({required bool sprites}) => app(SpriteArtScope(
+            enabled: sprites,
+            child: Center(
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                for (final p in Power.values) PowerIcon(p, size: 32, color: LL.ink),
+              ]),
+            ),
+          ));
+      await tester.pumpWidget(row(sprites: true));
+      expect(find.byType(RawImage), findsNWidgets(Power.values.length));
+      expect(find.byType(Icon), findsNothing);
+      final images = tester.widgetList<RawImage>(find.byType(RawImage)).map((r) => r.image).toList();
+      expect(images, [
+        SpriteCache.instance.icon(GameIcon.swap),
+        SpriteCache.instance.icon(GameIcon.seat),
+        SpriteCache.instance.icon(GameIcon.trip),
+        SpriteCache.instance.icon(GameIcon.express),
+      ]);
+      await tester.pumpWidget(row(sprites: false));
+      expect(find.byType(RawImage), findsNothing);
+      expect(tester.widgetList<Icon>(find.byType(Icon)).map((i) => i.icon), [
+        Icons.swap_horiz_rounded,
+        Icons.event_seat_rounded,
+        Icons.elevator_rounded,
+        Icons.bolt_rounded,
+      ]);
     });
 
     testWidgets('with the switch off every icon falls back to its Material icon', (tester) async {

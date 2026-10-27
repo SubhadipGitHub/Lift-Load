@@ -3,6 +3,22 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-27 · Swap and Express icons in the dock (branch power-icons)
+
+**Done**
+- Owner's `icons_powers` sheet processed (`icon_swap.webp`: indigo trading arrows, `icon_express.webp`: gold bolt with
+  speed streaks, 256 px, 15 + 13 KB). No green left in either, both read at 24 px, and the gold bolt is clearly not the
+  blue express-lift badge. Approved into `docs/art/approved/` and shipped in `assets/art/`.
+- `GameIcon.swap` and `GameIcon.express` (Material fallbacks `swap_horiz` and `bolt`); `PowerIcon` now draws all four
+  powers through `ArtIcon`. The dock was checked in the release web build with stock and with none. New test in
+  `surfaces_test` (images in the dock, Material when the switch is off). 457 green.
+- The first image the owner sent was the lifts sheet again, not this one; it was not processed.
+
+**Open**
+- The Swap icon is two indigo arrows trading places and reads a little like a refresh icon. It is indigo, in the dock, and
+  the pause menu's restart is the cream ring, so the two should not be confused; watch for it in Gate A.
+- This is a visible change to the tester build: land it before inviting testers.
+
 ## 2026-10-27 · Gate A with powers on: the kit, and the Swap/Express icon sheet (branch gate-a-powers)
 
 **Done**

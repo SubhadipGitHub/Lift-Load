@@ -39,11 +39,9 @@ extension PowerCopy on Power {
       };
 }
 
-/// SPRITE SLOT. The one place a power's picture is chosen. +2 seats and +1
-/// trip use the approved seat and trip icons ([ArtIcon], which falls back to
-/// Material when sprite art is off); Swap and Express keep Material
-/// placeholders until their art exists. [color] tints placeholders and
-/// fallbacks only.
+/// SPRITE SLOT. The one place a power's picture is chosen: the approved seat,
+/// trip, swap and express icons ([ArtIcon], which falls back to Material when
+/// sprite art is off or an image failed). [color] tints the fallbacks only.
 class PowerIcon extends StatelessWidget {
   const PowerIcon(this.power, {super.key, required this.size, required this.color});
 
@@ -55,8 +53,8 @@ class PowerIcon extends StatelessWidget {
   Widget build(BuildContext context) => switch (power) {
         Power.seats => ArtIcon(GameIcon.seat, size: size, color: color),
         Power.trip => ArtIcon(GameIcon.trip, size: size, color: color),
-        Power.swap => Icon(Icons.swap_horiz_rounded, size: size, color: color),
-        Power.express => Icon(Icons.bolt_rounded, size: size, color: color),
+        Power.swap => ArtIcon(GameIcon.swap, size: size, color: color),
+        Power.express => ArtIcon(GameIcon.express, size: size, color: color),
       };
 }
 
