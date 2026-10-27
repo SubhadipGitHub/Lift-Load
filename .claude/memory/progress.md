@@ -3,6 +3,21 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-27 · Gate A dry run with bots (branch gate-a-dryrun)
+
+**Done**
+- `test/gate_a_dry_run_test.dart`: three bots (careful, sloppy with crashes and an abandon, power buyer) play real
+  generated levels 1-20 through `GameController` with the tester log on, export as a tester would, and
+  `GateAReport` reads the files. Asserts the four gate rows, crashes and their fairness answers, heavy-types and
+  unknown-people answers once per tester, empty-tap and use and buy counts for powers, no `Exception`, no "kg" in the
+  export, no dropped events. It found no bug in the kit.
+- Reading the printed report: levels 1-20 played through, the Hard rows (L10, L20) show up, the unassisted split reads,
+  and a level the bots only started (21) shows a row with no decided first attempts, which is expected.
+
+**Open**
+- This checks the kit, not the game: the bots are scripted, so the report's rates mean nothing. Gate A needs people.
+- Swap and Express icons still wait for the `icons_powers` image.
+
 ## 2026-10-27 · Gate A with powers on: the kit, and the Swap/Express icon sheet (branch gate-a-powers)
 
 **Done**
