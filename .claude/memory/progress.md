@@ -3,6 +3,31 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-27 · Gate A with powers on: the kit, and the Swap/Express icon sheet (branch gate-a-powers)
+
+**Done**
+- The tester build now logs power use for the report: `power_used`, `power_bought`, `power_refill_ad` (stub),
+  `power_empty_tapped` join the kept events; `level_*` events already carried `powers_used`, `lanes`, `unknown_share`.
+- New optional exit question (PRD v1.6 "Gate A"): "Did the unknown people in the queue feel fair?" (Fair / Unfair /
+  Skip) on the first win from level 13 on a level with unknown people, never on the heavy-types win (`exit_unknown_fair`,
+  `GameController.askUnknownFair`, `UnknownFairCard`).
+- `tool/gate_a_report.dart`: Hard first-attempt win rate over every first attempt (the gate number, unchanged) and over
+  first attempts that used no power; a Powers block (use by type, testers using, first level, coin buys, stub-ad refills,
+  taps while empty); unknown-people fairness (no target of its own; read beside the crash number). Files from before the
+  powers still read.
+- Tests: `gate_a_test` +9 (question rules, skip, never on the heavy win, log keeps the power events, controller to log,
+  report sums and an old file, the sheet). 456 total. `docs/gate-a.md` and `docs/analytics.md` updated.
+- `icons_powers` added to `art_pack.json` (Swap: indigo trading arrows; Express: gold bolt, so it is not mistaken for
+  the blue express-lift badge). Not generated: the owner makes the image by hand.
+
+**Open**
+- Gate A itself needs 10 to 15 people and is the owner's to run; nothing here measures it. The Pages build is the tester
+  build (CI `--dart-define=TESTER=true`), which publishes from main when this merges.
+- Swap and Express icon wiring waits for the image: add `GameIcon.swap` and `GameIcon.express` to the sprite table,
+  use `ArtIcon` in `power_dock.dart`, ship the two files (the "assets/art holds exactly the table" tests must stay green).
+- The art restyle shipped before Gate A (the owner's call), against the art pack's original "ship after Gate A" rule;
+  the PRD addendum accepts that Gate A measures the restyle, the layout, unknown people and the powers together.
+
 ## 2026-10-26 · Wide-screen backdrop (branch wide-backdrop)
 
 **Done**

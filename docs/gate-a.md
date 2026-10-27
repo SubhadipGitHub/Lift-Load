@@ -15,8 +15,14 @@ The Pages build at https://subhadipgithub.github.io/Lift-Load/ is the tester bui
 - **Crash question.** After a crash, the fail sheet asks one optional question: was that crash fair?
 - **Heavy-types question.** On the first win from level 15 on, the win sheet asks once: "Which residents do you think
   are the heaviest?" It shows no choices, so the answer is unprompted.
-- **Results log.** Level starts, wins, fails, abandons, overloads, trips and the two answers are kept on the device,
-  with a timestamp. Nothing is sent anywhere until the tester sends it themselves.
+- **Powers are on.** Swap, +2 seats, +1 trip and Express unlock at levels 14, 19, 27 and 29, start at 0 uses, and
+  cost 150 coins or one ad. Testers start with 300 coins. The ad is a stub: a short fake ad, then the reward, with the
+  daily cap of 12 views still applied.
+- **Unknown-people question.** On the first win from level 13 on that had unknown people (they debut at level 11), and
+  never on the same win as the heavy-types question: "Did the unknown people in the queue feel fair?" with Fair,
+  Unfair and Skip.
+- **Results log.** Level starts, wins, fails, abandons, overloads, trips, power use (used, bought, refilled by the stub ad,
+  tapped while empty) and the three answers are kept on the device, with a timestamp. Nothing is sent anywhere until the tester sends it themselves.
 - **Send results.** Home and the final win sheet have Send results. It downloads `lift-load-<code>.json`, or copies
   a code starting `LLGA1.` that can be pasted into a message.
 
@@ -58,6 +64,9 @@ Weights never appear anywhere: not in the game, the file or the code.
   or the weights.
 - Note:
   - The level where they first say something about weight or size.
+  - When they first notice the dock, whether they try a power while it shows 0 (the Get more sheet), and whether
+    they understand Swap's two taps without help.
+  - Their words when a ghost reaches the front and is revealed.
   - Every crash, and their words right after it.
   - Any time they hesitate over Send, which is the push-your-luck moment.
   - Where they stop, and why.
@@ -74,6 +83,18 @@ Weights never appear anywhere: not in the game, the file or the code.
 | First-attempt wins on Hard levels | 45–55% | Under: slack over the weight-aware solver's par is too thin (Hard levels have one trip). Over: Hard is not hard |
 | Named the heavy types unprompted | ≥ 60% of testers who reached L15 | The cast is not learnable. Look at overloads by type: whoever leads is misread |
 | Crashes called unfair | ≤ 1 in 5 rated | A crash felt random. Check which types and cargo caused the "unfair" crashes |
+
+**Powers change what the numbers mean.** This run measures the restyle, the layout, unknown people, lane variety and
+the powers together (PRD v1.6, "Gate A"), so a miss cannot be pinned on one cause. The report helps separate them:
+- Metric 2 stays the gate number over every first attempt. Under it the report shows the Hard first attempts that used
+  no power, which is the closest read on the weight-guessing thesis alone. A big gap between the two means the powers
+  carry Hard levels, so read the gate number as "with help".
+- The Powers block shows use by type, coin buys, stub-ad refills and taps while empty. Taps while empty are wanted
+  and missing: a high count for one power says it is valued, or that stock runs out too early. Few uses overall mean
+  testers did not find the dock or did not want it.
+- Unknown-people fairness has no target of its own. Read it beside the crash number: more than about 1 in 5 saying
+  Unfair is a miss in spirit, and the levers are `Formulas.unknownMax` and the debut level.
+- Levers for a follow-up run: `powersEnabled`, `unknownShare` and `laneCount`.
 
 **Expected sample sizes.** From L32 on, levels hold 72 residents and 24–33 trips, so most testers will stop around
 L15–25.

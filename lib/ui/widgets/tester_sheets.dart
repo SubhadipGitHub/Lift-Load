@@ -40,6 +40,39 @@ class CrashFairRow extends StatelessWidget {
       );
 }
 
+/// "Did the unknown people in the queue feel fair?" on a win sheet (Gate A with powers on). Optional: Fair,
+/// Unfair or Skip, once.
+class UnknownFairCard extends StatelessWidget {
+  const UnknownFairCard({super.key, required this.c});
+
+  final GameController c;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+        decoration: BoxDecoration(color: LL.steel.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          children: [
+            const Text('Tester question: did the unknown people in the queue feel fair?',
+                textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800, color: LL.ink)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _Choice(label: 'Fair', onPressed: () => c.answerUnknownFair(true))),
+                const SizedBox(width: 10),
+                Expanded(child: _Choice(label: 'Unfair', onPressed: () => c.answerUnknownFair(false))),
+              ],
+            ),
+            TextButton(
+              onPressed: () => c.answerUnknownFair(null),
+              child: const Text('Skip', style: TextStyle(color: LL.inkSoft, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+}
+
 class _Choice extends StatelessWidget {
   const _Choice({required this.label, required this.onPressed});
 

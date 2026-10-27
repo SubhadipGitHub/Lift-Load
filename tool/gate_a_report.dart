@@ -57,6 +57,9 @@ class GateAReport {
   int hardDecided = 0;
   int hardFirstWins = 0;
   int hardFirstWinsWithContinue = 0;
+  // Hard first attempts played without a power (the thesis read: no help), and how many of them were won outright.
+  int hardDecidedUnassisted = 0;
+  int hardFirstWinsUnassisted = 0;
   int reachedHeavyQuestion = 0;
   final List<(String, String)> heavyAnswers = [];
   int heavySkipped = 0;
@@ -67,6 +70,18 @@ class GateAReport {
   final Map<String, int> overloadByType = {};
   final Map<String, int> overloadByCargo = {};
   int completedTest = 0;
+
+  // Powers (PRD v1.6, "Gate A"). Names are `Power.name`: swap, seats, trip, express.
+  final Map<String, int> powerUsed = {};
+  final Map<String, int> powerBought = {};
+  final Map<String, int> powerAdRefills = {};
+  final Map<String, int> powerEmptyTaps = {};
+  final Set<String> testersUsingPower = {};
+  final Set<String> _levelsWithPower = {}; // "tester:level"
+  int? firstPowerLevel;
+  int unknownFair = 0;
+  int unknownUnfair = 0;
+  int unknownSkipped = 0;
 
   static GateAReport from(List<Map<String, dynamic>> results) {
     // Testers may send "so far" and again at the end: keep the fullest file.
@@ -109,6 +124,8 @@ class GateAReport {
     // without a later win, or abandoned). Started and never finished is
     // left out.
     final firstOutcome = <int, String>{};
+    final firstPowers = <int, int>{}; // powers used on the first attempt, from its closing event
+    int powers(Map<String, dynamic> e) => (e['powers_used'] as num?)?.toInt() ?? 0;
     for (final e in events) {
       final n = lvl(e);
       // Only level events get a row in the per-level table.
@@ -120,15 +137,22 @@ class GateAReport {
         case 'level_win':
           if (attempt(e) == 1) {
             firstOutcome[n] = ((e['continues'] as num?)?.toInt() ?? 0) == 0 ? 'win' : 'win+continue';
+            firstPowers[n] = powers(e);
           }
           if (n >= TesterConfig.heavyTypesAfterLevel) _reachedHeavy.add(code);
         case 'level_fail':
           s().fails[e['kind'] as String] = (s().fails[e['kind'] as String] ?? 0) + 1;
           if (e['kind'] == 'crash') crashes++;
-          if (attempt(e) == 1) firstOutcome.putIfAbsent(n, () => 'loss');
+          if (attempt(e) == 1) {
+            firstOutcome.putIfAbsent(n, () => 'loss');
+            firstPowers.putIfAbsent(n, () => powers(e));
+          }
         case 'level_abandon':
           s().abandons++;
-          if (attempt(e) == 1) firstOutcome[n] = 'loss';
+          if (attempt(e) == 1) {
+            firstOutcome[n] = 'loss';
+            firstPowers.putIfAbsent(n, () => powers(e));
+          }
         case 'overload':
           s().overloads++;
           final type = e['type'] as String;
@@ -147,6 +171,29 @@ class GateAReport {
           } else {
             heavyAnswers.add((code, e['answer'] as String));
           }
+        case 'power_used':
+          final power = e['power'] as String;
+          powerUsed[power] = (powerUsed[power] ?? 0) + 1;
+          testersUsingPower.add(code);
+          _levelsWithPower.add('$code:$n');
+          if (firstPowerLevel == null || n < firstPowerLevel!) firstPowerLevel = n;
+        case 'power_bought':
+          final power = e['power'] as String;
+          powerBought[power] = (powerBought[power] ?? 0) + 1;
+        case 'power_refill_ad':
+          final power = e['power'] as String;
+          powerAdRefills[power] = (powerAdRefills[power] ?? 0) + 1;
+        case 'power_empty_tapped':
+          final power = e['power'] as String;
+          powerEmptyTaps[power] = (powerEmptyTaps[power] ?? 0) + 1;
+        case 'exit_unknown_fair':
+          if (e['skipped'] == true) {
+            unknownSkipped++;
+          } else if (e['fair'] == true) {
+            unknownFair++;
+          } else {
+            unknownUnfair++;
+          }
         case 'test_complete':
           completedTest++;
       }
@@ -162,6 +209,10 @@ class GateAReport {
         hardDecided++;
         if (outcome == 'win') hardFirstWins++;
         if (outcome == 'win+continue') hardFirstWinsWithContinue++;
+        if ((firstPowers[n] ?? 0) == 0) {
+          hardDecidedUnassisted++;
+          if (outcome == 'win') hardFirstWinsUnassisted++;
+        }
       }
     }
     reachedHeavyQuestion = _reachedHeavy.length;
@@ -190,6 +241,9 @@ class GateAReport {
         '${_verdict(hardRate == null ? null : hardRate >= 0.45 && hardRate <= 0.55)}');
     b.writeln('     counting wins after a continue:     '
         '${_pct(hardFirstWins + hardFirstWinsWithContinue, hardDecided)}');
+    b.writeln('     first attempts that used no power:  '
+        '${_pct(hardFirstWinsUnassisted, hardDecidedUnassisted)}  ($hardFirstWinsUnassisted of '
+        '$hardDecidedUnassisted; the gate number above counts every first attempt, powers or not)');
 
     b.writeln('  3. Named the heavy types unprompted     grade by hand below; target >= 60% of the '
         '$reachedHeavyQuestion testers who reached level ${TesterConfig.heavyTypesAfterLevel}');
@@ -198,6 +252,24 @@ class GateAReport {
     b.writeln('  4. Crashes called unfair                ${_pct(crashesUnfair, crashesRated)}'
         '  ($crashesUnfair of $crashesRated rated; $crashes crashes)   target <= 20%   '
         '${_verdict(unfairRate == null ? null : unfairRate <= 0.2)}');
+    b.writeln();
+
+    b.writeln('Powers (the build had them on: stock starts at 0, 150 coins or one stub ad per use)');
+    String byPower(Map<String, int> m) {
+      final entries = m.entries.toList()..sort((a, c) => c.value.compareTo(a.value));
+      return entries.isEmpty ? 'none' : entries.map((e) => '${e.key} ${e.value}').join(', ');
+    }
+
+    b.writeln(
+        '  Used:                ${byPower(powerUsed)}   (${testersUsingPower.length} of ${testers.length} testers, '
+        '${_levelsWithPower.length} tester-levels${firstPowerLevel == null ? '' : ', first on level $firstPowerLevel'})');
+    b.writeln('  Bought with coins:   ${byPower(powerBought)}');
+    b.writeln('  Refilled by stub ad: ${byPower(powerAdRefills)}');
+    b.writeln('  Tapped while empty:  ${byPower(powerEmptyTaps)}   (wanted, had none)');
+    final unknownAnswered = unknownFair + unknownUnfair;
+    b.writeln(
+        '  Unknown people fair: ${_pct(unknownFair, unknownAnswered)}  ($unknownFair fair, $unknownUnfair unfair, '
+        '$unknownSkipped skipped)   no target set; read beside the crash number (<= 20% unfair)');
     b.writeln();
 
     b.writeln('Heavy-types answers (${heavyAnswers.length} answered, $heavySkipped skipped)');

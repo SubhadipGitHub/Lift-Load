@@ -35,6 +35,12 @@ class TesterLog implements AnalyticsService {
     'overload',
     'crash_fairness',
     'exit_heavy_types',
+    'exit_unknown_fair',
+    // Powers (PRD v1.6, "Gate A"): what was used, bought, refilled by the stub ad, and wanted while empty.
+    'power_used',
+    'power_bought',
+    'power_refill_ad',
+    'power_empty_tapped',
     'test_complete',
   };
 
@@ -79,6 +85,13 @@ class TesterLog implements AnalyticsService {
 
   /// True once the heavy-types question was answered or skipped.
   bool get heavyTypesAsked => events.any((e) => e['e'] == 'exit_heavy_types');
+
+  /// True once the unknown-people question was answered or skipped.
+  bool get unknownFairAsked => events.any((e) => e['e'] == 'exit_unknown_fair');
+
+  /// The level the heavy-types question was answered on, or null.
+  int? get heavyTypesLevel =>
+      events.where((e) => e['e'] == 'exit_heavy_types').map((e) => (e['level'] as num).toInt()).firstOrNull;
 
   @override
   void log(String event, [Map<String, Object> params = const {}]) {

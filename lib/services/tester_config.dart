@@ -17,6 +17,10 @@ class TesterConfig {
   /// Once-only free-text question after this level's win.
   static const int heavyTypesAfterLevel = 15;
 
+  /// Once-only question after a win on a level with unknown people, from this level on (they debut at 11, so the
+  /// tester has met a few by now). Never on the same win as the heavy-types question.
+  static const int unknownFairAfterLevel = 13;
+
   final bool enabled;
 }
 
