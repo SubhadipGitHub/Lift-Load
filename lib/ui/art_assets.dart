@@ -46,7 +46,9 @@ enum GameIcon {
   hourglass('hourglass'),
   star('star'),
   trophy('trophy'),
-  cableSnap('cable_snap');
+  cableSnap('cable_snap'),
+  swap('swap'),
+  express('express');
 
   const GameIcon(this.file);
 

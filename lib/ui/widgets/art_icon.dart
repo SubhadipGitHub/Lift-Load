@@ -57,6 +57,8 @@ class ArtIcon extends StatelessWidget {
         GameIcon.star => Icons.star_rounded,
         GameIcon.trophy => Icons.emoji_events_rounded,
         GameIcon.cableSnap => Icons.link_off_rounded,
+        GameIcon.swap => Icons.swap_horiz_rounded,
+        GameIcon.express => Icons.bolt_rounded,
       };
 
   static Color fallbackColorOf(GameIcon icon) => switch (icon) {
@@ -65,7 +67,13 @@ class ArtIcon extends StatelessWidget {
         GameIcon.hourglass => LL.brassDark,
         GameIcon.play => LL.mintInk,
         GameIcon.lock => LL.inkSoft,
-        GameIcon.scale || GameIcon.trip || GameIcon.seat || GameIcon.restart => LL.ink,
+        GameIcon.scale ||
+        GameIcon.trip ||
+        GameIcon.seat ||
+        GameIcon.restart ||
+        GameIcon.swap ||
+        GameIcon.express =>
+          LL.ink,
       };
 
   /// The fallback tint for [icon] on a dark surface: its own colour, or
