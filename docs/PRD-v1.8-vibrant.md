@@ -1,7 +1,6 @@
 # PRD v1.8: vibrant and fun
 
-Status: open questions answered by the owner 2026-10-28 (see "Owner decisions"); explicit sign-off on the whole PRD
-and the style board still pending. Designed while Gate A runs; nothing under `lib/` or `assets/` changes until the
+Status: signed off by the owner 2026-10-28, with the style board and the answers under "Owner decisions". Designed while Gate A runs; nothing under `lib/` or `assets/` changes until the
 Gate A result is in, and the build order below is re-ranked by what testers said.
 
 ## Problem
