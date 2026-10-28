@@ -2,6 +2,24 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-28 · v1.8 "vibrant and fun" direction (owner's answers)
+
+- **Gate A runs first on today's build; v1.8 is designed in parallel and built after the result.** Mechanics before
+  Gate A would muddy what it measures. Nothing under `lib/` or `assets/` changes while testers play.
+- **Look: per-venue colour worlds, dark UI chrome kept.** One bold palette per building; the chrome keeps the
+  contrast and the surface recipe.
+- **Mechanics in scope: combo and stars, resident personalities (VIP, hurry, reactions), pairs and families, daily
+  challenge and golden lift, and riders on the cabin floor in a front or back row the player picks (owner's own ask).**
+  All keyed to visible information only (rule 3). PRD: `docs/PRD-v1.8-vibrant.md`, DRAFT for sign-off.
+- **PRD v1.8 signed off** (owner, 2026-10-28), with the palette board. The build still waits for the Gate A result.
+- **v1.8 combo stays ×3; trip coins become green 6 / perfect 11 (from 8 / 15).** `tool/economy_v18.dart`: ×3 as
+  specced is +55% coins per won level, ×2 is +39%; ×3 with 6/11 is +23%, inside the +25% cap, so the owner's
+  "×2 only if Formulas cannot hold the cap" does not trigger. Blind bot is skilled, so this is an upper bound.
+- **v1.8 open questions, answered "go with your recommendations":** replays cost no life and pay coins only until the
+  first 3-star clear; groups always move as one unit; combo cap ×3 (×2 only if `Formulas` cannot hold the 25% coin
+  cap, back to the owner); spot marks from L1, refusal from L22; daily opens after L10 at 30/60/100 coins plus a free
+  power on day 7.
+
 ## 2026-10-22 · Gemini art pack
 
 - **Describe the look; never name a studio.** CLAUDE.md bans brand names, and Gemini waters down "in the style of".
