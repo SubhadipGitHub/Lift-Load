@@ -11,6 +11,10 @@ Newest first. One line of decision, one line of why. Reopen a decision only with
 - **Mechanics in scope: combo and stars, resident personalities (VIP, hurry, reactions), pairs and families, daily
   challenge and golden lift, and riders on the cabin floor in a front or back row the player picks (owner's own ask).**
   All keyed to visible information only (rule 3). PRD: `docs/PRD-v1.8-vibrant.md`, DRAFT for sign-off.
+- **v1.8 open questions, answered "go with your recommendations":** replays cost no life and pay coins only until the
+  first 3-star clear; groups always move as one unit; combo cap ×3 (×2 only if `Formulas` cannot hold the 25% coin
+  cap, back to the owner); spot marks from L1, refusal from L22; daily opens after L10 at 30/60/100 coins plus a free
+  power on day 7.
 
 ## 2026-10-22 · Gemini art pack
 

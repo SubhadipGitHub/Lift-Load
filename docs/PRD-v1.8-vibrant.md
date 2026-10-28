@@ -1,6 +1,7 @@
 # PRD v1.8: vibrant and fun
 
-Status: DRAFT for the owner's sign-off. Designed while Gate A runs; nothing under `lib/` or `assets/` changes until the
+Status: open questions answered by the owner 2026-10-28 (see "Owner decisions"); explicit sign-off on the whole PRD
+and the style board still pending. Designed while Gate A runs; nothing under `lib/` or `assets/` changes until the
 Gate A result is in, and the build order below is re-ranked by what testers said.
 
 ## Problem
@@ -127,8 +128,8 @@ natural.
 - **Where stars show:** on the win sheet, and as gold windows on the Home skyline.
 - **Replays:**
   - Tapping a cleared level on the map replays it for stars and coins.
-  - Replays never move progress.
-  - Lives cost on replays is an open question.
+  - Replays never move progress and cost no life. They pay coins until the level's first 3-star clear, then
+    nothing.
 - **Profile v3** adds `stars` (level to 0–3) and `bestCombo`, with the same tolerant migration as v2.
 
 ### D. Resident personalities (reopens rule 1's "who you see")
@@ -272,16 +273,14 @@ New events, all added to `docs/analytics.md`:
 - **Visual:** release web build screenshots of each venue at 450x800 and 1280x720, against the style board.
 - **Kit:** `test/gate_a_dry_run_test.dart` still green, so the tester kit keeps working for the re-run.
 
-## Open questions for the owner
+## Owner decisions (2026-10-28, "go with your recommendations")
 
-1. **Replays:**
-   - Do replays cost a life?
-   - My recommendation: no, but they also pay no coins after the first 3-star clear.
-2. **Pairs:**
-   - Is it right that a group always moves as one unit?
-   - The alternative is members boarding separately but having to share the same trip, which is harder to read.
-3. **Combo cap:** is ×3 right, or should it be ×2 to keep coins modest?
-4. **Cabin spots in levels 1–21:**
-   - Should spots be visible from L1 but never binding until L22?
-   - My recommendation: yes. Rows show from L1; the refusal starts at L22.
-5. **Daily challenge:** is "after level 10" too early or too late, and are the coin rewards right?
+1. **Replays** cost no life and never move progress. They pay coins until the level's first 3-star clear, and nothing
+   after it, so a cleared level cannot be farmed.
+2. **Pairs and families** always move as one unit: select, board, bench, swap and Express together.
+3. **Combo cap** is ×3. The economy model (Plan, step 2) can lower it to ×2 only if the 25% coin cap cannot be held
+   by `Formulas` changes alone. That would come back to the owner.
+4. **Cabin spots:** rows and spot marks show from level 1. A full cabin starts refusing riders at level 22 (the
+   debut).
+5. **Daily challenge** opens after level 10, paying 30 / 60 / 100 coins by stars, with a free power use on day 7 of a
+   streak.
