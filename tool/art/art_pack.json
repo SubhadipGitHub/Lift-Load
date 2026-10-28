@@ -633,6 +633,171 @@
       "weight_read": "floor one pale cream colour, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
     },
     {
+      "kind": "scene",
+      "id": "bg_society_v2_shaft_ground",
+      "name": "Sunrise Towers (v2, morning) shaft wall: ground (storeys 1-7)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a warm Indian apartment-society lobby in the morning, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: cream wainscot panelling under warm coral walls, a brass wall lamp on each side, a leafy potted plant at each edge, soft morning sunlight falling across the side walls. Palette: warm coral (#FF7A59), sun gold (#FFC233) and soft peach, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_v2_shaft_mid",
+      "name": "Sunrise Towers (v2, morning) shaft wall: mid (storeys 8-14)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on an apartment-building landing between floors in the morning, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a tall window on each side with a brass frame showing a clear peach-and-gold sunrise sky over low rooftops, a small wall sconce beside each window, light plaster texture on the coral walls. Palette: warm coral (#FF7A59), sun gold (#FFC233) and soft peach, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_v2_shaft_high",
+      "name": "Sunrise Towers (v2, morning) shaft wall: high (storeys 15-20)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a top-floor landing in the morning, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a tall arched window on each side with gold trim showing a bright sunrise above the city and a few soft clouds, coral walls with fine gold moulding. Palette: warm coral (#FF7A59), sun gold (#FFC233) and soft peach, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_society_v2_lobby",
+      "name": "Sunrise Towers (v2, morning) lobby floor",
+      "aspect": "4:3",
+      "ink": "#6B5C44",
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a warm apartment-society lobby in morning light: large square floor tiles all in the same very pale warm cream with a faint peach tint, close to #FBEBD3, separated by thin slightly darker grout, a soft pool of sunlight in the middle and gently warmer corners. The floor fills the frame edge to edge, with only a very thin strip of wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. No checkerboard, no bold pattern. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no logos, no text, no numbers.",
+      "weight_read": "floor one pale tint, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_office_shaft_ground",
+      "name": "Skyline Offices shaft wall: ground (storeys 1-7)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a bright modern office-tower lobby on a sunny weekday, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: pale teal stone panels with brushed steel trim, a tall leafy plant in a white planter at each edge, a slim vertical light strip on each side. Palette: teal (#14B8A6), glass blue (#4C9DFF) and light steel grey, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_office_shaft_mid",
+      "name": "Skyline Offices shaft wall: mid (storeys 8-14)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a glass-walled office floor halfway up a tower, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a floor-to-ceiling glass panel on each side showing a bright blue sky and other glass towers, slim steel mullions, a small hanging plant beside each panel. Palette: teal (#14B8A6), glass blue (#4C9DFF) and light steel grey, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_office_shaft_high",
+      "name": "Skyline Offices shaft wall: high (storeys 15-20)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on the top floor of an office tower with a sky lounge feel, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a wide glass panel on each side showing open sky and a few clouds far above the city, teal wall panels with warm wood slats. Palette: teal (#14B8A6), glass blue (#4C9DFF) and light steel grey, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_office_lobby",
+      "name": "Skyline Offices lobby floor",
+      "aspect": "4:3",
+      "ink": "#6B5C44",
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a bright modern office lobby: large polished stone floor tiles all in the same very pale cool grey with a faint teal tint, close to #E8F1F0, thin light grout lines, soft daylight reflections. The floor fills the frame edge to edge, with only a very thin strip of wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. No checkerboard, no bold pattern. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no logos, no text, no numbers.",
+      "weight_read": "floor one pale tint, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hospital_shaft_ground",
+      "name": "Lakeside Hospital shaft wall: ground (storeys 1-7)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a calm, sunlit modern hospital entrance hall, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: clean white wall panels with soft mint accent stripes, a round wall clock with no numbers on each side, a leafy plant at each edge. Palette: mint (#3DDC97), clean white and soft aqua, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers, no cross symbols, no medical emblems.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hospital_shaft_mid",
+      "name": "Lakeside Hospital shaft wall: mid (storeys 8-14)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a quiet hospital ward landing, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a wide window on each side showing a calm blue lake and trees outside, white walls with a mint handrail running along them. Palette: mint (#3DDC97), clean white and soft aqua, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers, no cross symbols, no medical emblems.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hospital_shaft_high",
+      "name": "Lakeside Hospital shaft wall: high (storeys 15-20)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a top-floor hospital garden landing, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a glass door on each side looking out onto a sunny rooftop garden with planters, soft aqua walls with white trim. Palette: mint (#3DDC97), clean white and soft aqua, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers, no cross symbols, no medical emblems.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hospital_lobby",
+      "name": "Lakeside Hospital lobby floor",
+      "aspect": "4:3",
+      "ink": "#6B5C44",
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a clean modern hospital hall: smooth seamless vinyl floor in one very pale mint-white, close to #EEF8F3, with a faint soft sheen and gentle daylight. The floor fills the frame edge to edge, with only a very thin strip of wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. No checkerboard, no bold pattern. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no logos, no text, no numbers, no cross symbols.",
+      "weight_read": "floor one pale tint, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_mall_shaft_ground",
+      "name": "Bazaar Mall shaft wall: ground (storeys 1-7)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a busy, festive shopping-mall atrium, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: colourful shopfront awnings in pink and violet on each side with blank, unlabelled shop windows full of soft light, strings of small round bulbs above them. Palette: candy pink (#FF5FA2), violet (#A066F5) and warm neon glow, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_mall_shaft_mid",
+      "name": "Bazaar Mall shaft wall: mid (storeys 8-14)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a mall gallery level overlooking the atrium, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a glass balustrade on each side with bright hanging festival lanterns and paper decorations beyond, pink and violet walls. Palette: candy pink (#FF5FA2), violet (#A066F5) and warm neon glow, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_mall_shaft_high",
+      "name": "Bazaar Mall shaft wall: high (storeys 15-20)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on the top level of a mall near the food court, in the evening, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a large glass skylight edge on each side showing a violet evening sky, glowing neon-tube shapes of simple stars and swirls (no letters) on the walls. Palette: candy pink (#FF5FA2), violet (#A066F5) and warm neon glow, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_mall_lobby",
+      "name": "Bazaar Mall lobby floor",
+      "aspect": "4:3",
+      "ink": "#6B5C44",
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a shopping mall atrium: polished terrazzo floor in one very pale pink-cream, close to #F9ECEF, with only a very fine, faint speckle, and soft festive light. The floor fills the frame edge to edge, with only a very thin strip of wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. No checkerboard, no bold pattern. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no logos, no text, no numbers.",
+      "weight_read": "floor one pale tint, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hotel_shaft_ground",
+      "name": "Starlight Hotel shaft wall: ground (storeys 1-7)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area in a grand evening hotel lobby, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: rich burgundy walls with gold panel mouldings, a crystal wall sconce glowing on each side, a tall potted palm at each edge. Palette: royal gold (#F5B83D), burgundy (#8E2A4A) and deep night blue, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hotel_shaft_mid",
+      "name": "Starlight Hotel shaft wall: mid (storeys 8-14)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a hotel corridor landing in the evening, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a tall window on each side with heavy burgundy curtains tied back, showing a deep blue night sky and city lights, gold wall lamps beside them. Palette: royal gold (#F5B83D), burgundy (#8E2A4A) and deep night blue, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hotel_shaft_high",
+      "name": "Starlight Hotel shaft wall: high (storeys 15-20)",
+      "aspect": "3:2",
+      "prompt": "The back wall of a lift shaft area on a rooftop penthouse landing of a grand hotel at night, seen straight on and flat, filling the whole frame edge to edge. The centre third of the frame is a plain, calm, slightly darker recessed panel and is left completely empty, because a lift cabin will be drawn over it. All the detail sits in the left and right fifths of the frame: a tall arched window on each side with gold trim showing a starry night sky and a full moon, burgundy walls with gold leaf detail and a small chandelier glow at the top edge. Palette: royal gold (#F5B83D), burgundy (#8E2A4A) and deep night blue, bold and saturated but mid-tone and lower in contrast than the game's buttons, so bright buttons, chips and a gauge still sit clearly on top. No people, no lift doors, no signs, no logos, no text, no numbers.",
+      "weight_read": "centre third empty and calm; detail only at the sides; bold venue colour but mid-tone and lower contrast than the UI"
+    },
+    {
+      "kind": "scene",
+      "id": "bg_hotel_lobby",
+      "name": "Starlight Hotel lobby floor",
+      "aspect": "4:3",
+      "ink": "#6B5C44",
+      "prompt": "A nearly top-down view (the camera almost directly overhead, with just a hint of perspective) of the floor of a grand hotel lobby: polished marble floor tiles all in the same very pale warm ivory, close to #F6EFE2, with only very faint soft veining and a warm chandelier glow in the middle. The floor fills the frame edge to edge, with only a very thin strip of wall and skirting along the top edge. The floor is bright and evenly pale, so dark text and cartoon characters stand out on top. No checkerboard, no bold pattern. Nothing on the floor: no plants, no furniture, no rugs, no objects, no people, no logos, no text, no numbers.",
+      "weight_read": "floor one pale tint, no checks, nothing on it (lane text and residents sit on it); contrast check prints 4.3:1 or better"
+    },
+    {
       "id": "unknown_ghost",
       "kind": "prop",
       "name": "Unknown resident (ghost silhouette)",

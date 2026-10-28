@@ -2,6 +2,16 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-28 · v1.8 "vibrant and fun" direction (owner's answers)
+
+- **Gate A runs first on today's build; v1.8 is designed in parallel and built after the result.** Mechanics before
+  Gate A would muddy what it measures. Nothing under `lib/` or `assets/` changes while testers play.
+- **Look: per-venue colour worlds, dark UI chrome kept.** One bold palette per building; the chrome keeps the
+  contrast and the surface recipe.
+- **Mechanics in scope: combo and stars, resident personalities (VIP, hurry, reactions), pairs and families, daily
+  challenge and golden lift, and riders on the cabin floor in a front or back row the player picks (owner's own ask).**
+  All keyed to visible information only (rule 3). PRD: `docs/PRD-v1.8-vibrant.md`, DRAFT for sign-off.
+
 ## 2026-10-22 · Gemini art pack
 
 - **Describe the look; never name a studio.** CLAUDE.md bans brand names, and Gemini waters down "in the style of".

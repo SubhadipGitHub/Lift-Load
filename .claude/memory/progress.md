@@ -3,6 +3,26 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-28 · PRD v1.8 "vibrant and fun" draft and colour-world art prep (branch prd-v18-vibrant)
+
+**Done**
+- `docs/PRD-v1.8-vibrant.md` (DRAFT): colour worlds, cabin floor rows plus cabin spots, combo and stars, VIP and
+  hurry traits, pairs and families, daily challenge and golden lift. It also covers rule amendments (CLAUDE.md rules
+  1, 2, 6, 8, 10), the debut schedule (rows/combo/stars L1, spots L22, VIP L24, pairs L31, hurry L35, golden L44,
+  families L51, daily after L10, all free breathers today), economy (at most +25% coins/level), analytics and 5 open
+  questions.
+- 20 backdrop prompts in `tool/art/art_pack.json`: 3 shaft bands plus a lobby floor for office, hospital, mall and
+  hotel, and a brighter Sunrise set (`bg_society_v2_*`). The hospital prompts forbid cross symbols.
+- `tool/art/make_venue_board.py` writes `docs/art/venue-worlds/palette-board.png`, a palette mock per venue.
+- Board finding, written into the PRD: the office (teal), hospital (mint) and mall (pink/violet) walls share hues
+  with floor colours. Walls stay mid-tone and a little desaturated, chips keep outlines, and a 3:1 chip-vs-wall test is
+  planned.
+
+**Open**
+- Owner sign-off on the PRD and the board; answers to its 5 open questions.
+- Owner generates the 20 backdrops during Gate A; they are processed into `docs/art/approved/` only, nothing shipped.
+- Build waits for the Gate A result; slices are re-ranked by it.
+
 ## 2026-10-27 · Swap and Express icons in the dock (branch power-icons)
 
 **Done**
