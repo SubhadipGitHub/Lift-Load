@@ -184,8 +184,9 @@ game layer.
   in one lane with a tether and move as one unit; none of a group is ever unknown."
 - **Rule 2, added:** "The lift has a visible number of spots per lift kind in a front and a back row; wide figures take
   two; a full lift refuses more riders. The player picks the row."
-- **Rule 6, replaced:** "Send needs ≥ 1 rider, uses one trip, and scores grey 0 / green +8 / ≥ 95% perfect +15 coins,
+- **Rule 6, replaced:** "Send needs ≥ 1 rider, uses one trip, and scores grey 0 / green +6 / ≥ 95% perfect +11 coins,
   times the combo (×1, ×1.5, ×2, ×3, reset by a grey send), plus VIP and hurry tips, doubled on a perfect golden lift."
+  The coin values come from the economy model (see Economy).
 - **Rule 8, note:** a missed hurry badge loses a tip; it never fails a level.
 - **Rule 10, note:** the golden lift is a scoring flag shown in the NEXT strip, allowed in levels 1–60.
 
@@ -207,15 +208,31 @@ free levels today.
 
 ## Economy
 
-- Combo, tips, the daily and the golden lift all add coins.
-- Before any build, model income per level with `tool/simulate.dart` extended to score combos and tips, then adjust
-  `Formulas`:
-  - trip coins;
-  - power prices (150 today);
-  - the coin continue price (300 today).
-- The target is at most 25% more coins per level, keeping powers and the rewarded ads worth reaching for.
-- Every new number lives in `Formulas`.
-- The monetization-auditor reviews the change.
+Combo, tips, the daily and the golden lift all add coins. The cap is at most 25% more coins per level, so powers and
+rewarded ads stay worth reaching for.
+
+**The model.** `tool/economy_v18.dart` plays levels 1–100 with the blind bot from `tool/blind_study.dart`, rates each
+send by its fill, then prices the same play under today's rules and under v1.8.
+- The rating rule reproduces the engine's own trip coins on every level the bot wins (79 of 100).
+- The tips and the golden lift are expected values. The assumptions are one VIP per level from 24, one hurry resident
+  per level from 35 (70% on time), and one golden lift in six from 44.
+- The daily challenge is per day, not per level, so it is left out, as are the smooth-exit coins.
+
+| Coins per won level | 1–20 | 21–40 | 41–60 | 61–80 | 81–100 | All |
+| --- | --- | --- | --- | --- | --- | --- |
+| Today | 74 | 143 | 137 | 147 | 188 | 131 |
+| v1.8, combo cap ×3 | +71% | +62% | +42% | +45% | +58% | **+55%** |
+| v1.8, combo cap ×2 | +45% | +42% | +33% | +34% | +43% | +39% |
+
+**Decision.** The combo stays at ×3, per the owner's rule: ×2 only if `Formulas` cannot hold the cap, and it can.
+- Trip coins go from green 8 and perfect 15 to **green 6 and perfect 11**. That lands at **+23%** overall.
+- A lone green pays a little less than today. A run of greens pays more, which is the point of the combo.
+- Power prices (150) and the coin continue (300) stay as they are for now. The monetization-auditor reviews them with
+  the real build, and the model reruns after any change to levels or `Formulas`.
+
+**The bot is skilled, so read this as an upper bound.** It knows the cast's weights. Players who send fewer greens
+build fewer combos, and their increase will be smaller. Gate B analytics (`combo_peak`, coins per level) replace these
+numbers with real ones.
 
 ## Analytics
 

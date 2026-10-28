@@ -18,8 +18,12 @@ entries; fold older ones into "Earlier".
   with floor colours. Walls stay mid-tone and a little desaturated, chips keep outlines, and a 3:1 chip-vs-wall test is
   planned.
 
+- Owner signed off the PRD and the board, and took the recommendations on the 5 open questions.
+- Economy model `tool/economy_v18.dart`: the v1.8 extras add +55% coins per won level at the ×3 combo. With trip
+  coins at green 6 / perfect 11 the total is +23%, inside the 25% cap; the PRD's rule 6 text now uses these numbers.
+
 **Open**
-- Owner sign-off on the PRD and the board; answers to its 5 open questions.
+- The economy numbers come from a skilled bot (an upper bound); the monetization-auditor reviews prices with the build.
 - Owner generates the 20 backdrops during Gate A; they are processed into `docs/art/approved/` only, nothing shipped.
 - Build waits for the Gate A result; slices are re-ranked by it.
 
