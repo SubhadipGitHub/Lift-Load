@@ -1,6 +1,7 @@
 # PRD v1.8: vibrant and fun
 
-Status: signed off by the owner 2026-10-28, with the style board and the answers under "Owner decisions". Designed
+Status: signed off by the owner 2026-10-28, with the style board and the answers under "Owner decisions". Stars
+amended and signed off 2026-10-30 (C, from the star study). Designed
 while Gate A runs; nothing under `lib/` or `assets/` changes until the Gate A result is in, and the build order below
 is re-ranked by what testers said.
 
@@ -119,12 +120,18 @@ natural.
     coins.
   - A grey send resets it, and a crash ends the level as now.
   - A combo meter sits by Send. The score slam shows the multiplier.
-- **Stars per level:**
+- **Stars per level** (amended 2026-10-30 after the star study, `docs/star-study.md`):
+  - Each level has a perfect target P = ⌊⅔ × the most perfect lifts best play reaches on it⌋, minimum 1.
   - 1 star: win.
-  - 2 stars: win with at least one trip spare, or at least `⌈sends/3⌉` perfects.
-  - 3 stars: every send green or better, and at least `⌈sends/3⌉` perfects.
-  - The thresholds are checked against a new best-play solver (it searches orders and benches, not greedy), so that 3
-    stars is always reachable with full knowledge.
+  - 2 stars: win with at least ⌈P/2⌉ perfect lifts.
+  - 3 stars: win with at least P perfect lifts.
+  - The level intro and win sheet show the target ("3 stars: P perfect lifts"). P counts lifts, never weight.
+  - Grey sends do not cost stars; they already reset the combo.
+  - P comes from a best-play search (`tool/star_study.dart`), run offline and shipped as a `Formulas` table for
+    levels 1 to 100. Because P comes from a run that exists, 3 stars is always reachable with full knowledge. A
+    `generator_test` check keeps the table in step with the levels. The daily challenge needs its own target (open).
+  - Why not the first rule (every send green plus `⌈sends/3⌉` perfects): best play reached it on 0 of 100 levels. On
+    33 levels a floor's weight cannot split into all-green trips, so a grey send is forced.
 - **Where stars show:** on the win sheet, and as gold windows on the Home skyline.
 - **Replays:**
   - Tapping a cleared level on the map replays it for stars and coins.
@@ -301,3 +308,6 @@ New events, all added to `docs/analytics.md`:
    debut).
 5. **Daily challenge** opens after level 10, paying 30 / 60 / 100 coins by stars, with a free power use on day 7 of a
    streak.
+6. **Stars** (2026-10-30, after `docs/star-study.md`): 3 stars for at least P perfect lifts, 2 stars for at least
+   ⌈P/2⌉, with P = ⌊⅔ × best-play perfects⌋ (minimum 1) per level. This replaces "every send green". If Gate A shows
+   people land far fewer perfects than the blind bot, the share drops to ½; the rule does not change.
