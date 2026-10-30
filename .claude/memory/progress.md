@@ -6,13 +6,13 @@ entries; fold older ones into "Earlier".
 ## 2026-10-30 · v1.8 colour-world backdrops, intake (branch art-venue-worlds, PR #30)
 
 **Done**
-- 18 of 20 backdrops approved into `docs/art/approved/` (not shipped), all centre-third-empty with detail at the sides and
+- 19 of 20 backdrops approved into `docs/art/approved/` (not shipped), all centre-third-empty with detail at the sides and
   no text: Sunrise v2 (4, lobby 4.5:1), Skyline Offices (4, lobby 4.5:1), Lakeside Hospital (4, lobby 4.6:1), Bazaar Mall
-  (4, lobby 4.6:1) and the hotel ground and mid walls. Hospital `shaft_high` was re-rolled once: the first take drew a dial with
+  (4, lobby 4.6:1) and the hotel ground, mid and high walls. Hospital `shaft_high` was re-rolled once: the first take drew a dial with
   coloured zones and chip stacks (a load-gauge look-alike), so its prompt now forbids dials, gauges, buttons and chips.
 
 **Open**
-- 2 prompts left, served one at a time: hotel high and lobby. Hotel mid was re-rolled once: the first take had a flat mustard wall, so its prompt now demands burgundy.
+- 1 prompt left: the hotel lobby floor. Hotel mid was re-rolled once: the first take had a flat mustard wall, so its prompt now demands burgundy.
 - The coral side walls are bright (luminance about 0.33): cream labels such as NEXT would sit near 3:1. Build with a
   light dark wash over shaft walls (PRD v1.8, floor-colour/wall contrast test), not a re-roll.
 
