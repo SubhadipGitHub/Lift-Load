@@ -3,6 +3,21 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-30 · Star study for PRD v1.8 C (branch star-study)
+
+**Done**
+- `tool/star_study.dart`: a best-play beam search with full knowledge, through `LiftGame`, plus the greedy and blind
+  bots, a forced-grey count per floor and an exhaustive `prove` mode. Write-up in `docs/star-study.md`.
+- Finding: the specced 3-star rule (every send green, perfects >= ceil(sends/3)) is reached on 0 of 100 levels, even
+  by best play. On 33 levels a floor's weight cannot split into all-green trips, so a grey is forced. Best play sends
+  33% grey, the blind bot 48%.
+
+**Open**
+- Owner sign-off on the amendment: 3 stars = win with >= P perfects, P = floor(2/3 x best-play perfects), min 1;
+  2 stars = >= ceil(P/2) perfects; drop "every send green" and the spare-trip clause. Blind bot: 33 three-star,
+  26 two-star, 20 one-star of 79 wins.
+- Slice 3 needs a P table in `Formulas` (written by the tool), a generator_test guard, and a daily-challenge target.
+
 ## 2026-10-30 · v1.8 colour-world backdrops, intake (branch art-venue-worlds, PR #30)
 
 **Done**
