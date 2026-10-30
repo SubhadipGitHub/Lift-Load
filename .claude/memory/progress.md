@@ -3,6 +3,19 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-30 · v1.8 colour-world backdrops, intake (branch art-venue-worlds, PR #30)
+
+**Done**
+- All 20 backdrops approved into `docs/art/approved/` (not shipped), all centre-third-empty with detail at the sides and
+  no text: Sunrise v2 (4, lobby 4.5:1), Skyline Offices (4, lobby 4.5:1), Lakeside Hospital (4, lobby 4.6:1), Bazaar Mall
+  (4, lobby 4.6:1) and Starlight Hotel (4, lobby 4.5:1). Hospital `shaft_high` was re-rolled once: the first take drew a dial with
+  coloured zones and chip stacks (a load-gauge look-alike), so its prompt now forbids dials, gauges, buttons and chips.
+
+**Open**
+- No prompts left. Hotel mid was re-rolled once: the first take had a flat mustard wall, so its prompt now demands burgundy. The hotel lobby has a thin wall strip with chandelier bulbs along its top edge and six soft light pools: crop or cover the top 9% in the build.
+- The coral side walls are bright (luminance about 0.33): cream labels such as NEXT would sit near 3:1. Build with a
+  light dark wash over shaft walls (PRD v1.8, floor-colour/wall contrast test), not a re-roll.
+
 ## 2026-10-28 · PRD v1.8 "vibrant and fun" draft and colour-world art prep (branch prd-v18-vibrant)
 
 **Done**
