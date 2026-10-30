@@ -6,11 +6,11 @@ entries; fold older ones into "Earlier".
 ## 2026-10-30 · v1.8 colour-world backdrops, intake started (branch art-venue-worlds)
 
 **Done**
-- 5 of 20 backdrops approved into `docs/art/approved/` (not shipped): the Sunrise v2 set (`bg_society_v2_shaft_ground`, `_mid`, `_high`, `_lobby`; lobby contrast 4.5:1). Centre third is a calm
+- 6 of 20 backdrops approved into `docs/art/approved/` (not shipped): the Sunrise v2 set (`bg_society_v2_shaft_ground`, `_mid`, `_high`, `_lobby`; lobby contrast 4.5:1). Centre third is a calm
   flat panel, detail at the sides, no text.
 
 **Open**
-- 15 prompts left, served one at a time: office mid, high, lobby, hospital, mall, hotel (shaft ground,
+- 14 prompts left, served one at a time: office high, lobby, hospital, mall, hotel (shaft ground,
   mid, high, lobby each).
 - The coral side walls are bright (luminance about 0.33): cream labels such as NEXT would sit near 3:1. Build with a
   light dark wash over shaft walls (PRD v1.8, floor-colour/wall contrast test), not a re-roll.
