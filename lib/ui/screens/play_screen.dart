@@ -13,6 +13,7 @@ import '../motion.dart';
 import '../painters/resident_painter.dart';
 import '../theme.dart';
 import '../widgets/art_icon.dart';
+import '../widgets/cabin_floor.dart';
 import '../widgets/count_up.dart';
 import '../widgets/effects.dart';
 import '../widgets/entrance.dart';
@@ -363,18 +364,24 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       if (from == null || to == null) continue;
       final bench = m.benchFigureFor(c.game.bench.length);
       final fromHeight = mo.from.fromBench ? bench : m.laneFigureFor(c.game.laneCount);
-      final toHeight = seat != null ? bench : m.cabinFigure;
+      // Into the lift, they walk to their own spot on the cabin floor.
+      final spot = seat != null
+          ? null
+          : CabinFloor.layout(c.game.riders, m).where((s) => s.resident.id == mo.resident.id).firstOrNull;
+      final toHeight = seat != null ? bench : spot?.height ?? m.cabinFigure;
       _hidden.add(mo.resident.id);
       _flights.add(_Flight(
         resident: mo.resident,
-        // Bottoms of the figure box: the bottom of a seat, the cabin's feet
-        // line, or just under the floor tag at the front of a lane.
+        // Bottoms of the figure box: the bottom of a seat, the rider's spot
+        // on the cabin floor, or just under the floor tag at the front of a lane.
         from: mo.from.fromBench
             ? from.bottomCenter - Offset(0, 6 * m.scale)
             : from.topCenter + Offset(0, 18 * m.scale + fromHeight),
         to: seat != null
             ? to.bottomCenter - Offset(0, 6 * m.scale)
-            : to.bottomCenter - Offset(0, m.cabinFeetInset - toHeight * ResidentFigure.belowFeet),
+            : spot != null
+                ? to.topLeft + Offset(spot.left + spot.footprint / 2, spot.feet + toHeight * ResidentFigure.belowFeet)
+                : to.bottomCenter,
         fromHeight: fromHeight,
         toHeight: toHeight,
       ));

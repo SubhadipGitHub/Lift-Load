@@ -3,6 +3,20 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-30 · Cabin floor rows, visual only (branch cabin-floor-rows)
+
+**Done**
+- `lib/ui/widgets/cabin_floor.dart` (`CabinFloor.layout`): two depth rows on fixed spots, back row first (spots at
+  0.5, 0.24, 0.76 of the width, 0.86 scale and shade, heads clearing the front row's). The front row stands in the gaps
+  (0.37, 0.63), then at the sides, so the back row shows between them (owner's follow-up). A spot never moves once
+  taken, and figures near a wall are nudged in, so nothing clips (the water can in the owner's screenshot). Items are drawn on their own (`CargoFigure`, `CargoPainter`, `SpriteCargoPainter`),
+  set down just in front of the owner's feet. The boarding walk lands on the rider's own spot.
+- Tests: `test/cabin_floor_test.dart` (rows, stable rows, rule-3 guard, nothing outside the cabin, items) plus the two
+  feet-line tests moved to the back row. The full suite (464) passes.
+
+**Open**
+- Slice 2 after Gate A: the player chooses the row, and cabin spots.
+
 ## 2026-10-30 · Star study for PRD v1.8 C (branch star-study)
 
 **Done**

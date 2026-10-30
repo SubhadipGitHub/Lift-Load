@@ -938,3 +938,57 @@ class ResidentPainter extends CustomPainter {
   bool shouldRepaint(ResidentPainter old) =>
       old.type != type || old.cargo != cargo || old.dimmed != dimmed || old.blink != blink;
 }
+
+/// A cargo prop on its own, set down on the floor (the cabin draws items
+/// apart from their owners). The box is [cargoWidth] by [designHeight]
+/// design units, feet on [feetY], the same prop the figure draws beside a
+/// person.
+class CargoPainter extends CustomPainter {
+  CargoPainter(this.cargo);
+
+  final Cargo cargo;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final layers = ResidentPainter._cargoCache.putIfAbsent(cargo, () => _cargoLayers(cargo));
+    if (layers.isEmpty) return;
+    final scale = size.height / designHeight;
+    canvas
+      ..save()
+      ..scale(scale)
+      ..translate(-58, 0); // the props are drawn in the figure's cargo strip
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(58 + cargoWidth / 2, feetY), width: cargoWidth, height: 4),
+      Paint()..color = const Color(0x2E000000),
+    );
+    final ink = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = _outline
+      ..isAntiAlias = true;
+    for (final layer in layers) {
+      if (layer.outlined) canvas.drawPath(layer.path, ink..strokeWidth = layer.stroke + _outlineWidth);
+    }
+    final fill = Paint()..isAntiAlias = true;
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+    for (final layer in layers) {
+      if (layer.stroke > 0) {
+        canvas.drawPath(
+            layer.path,
+            stroke
+              ..color = layer.color
+              ..strokeWidth = layer.stroke);
+      } else {
+        canvas.drawPath(layer.path, fill..color = layer.color);
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(CargoPainter old) => old.cargo != cargo;
+}

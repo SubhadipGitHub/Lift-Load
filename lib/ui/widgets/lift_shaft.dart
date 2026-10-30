@@ -17,6 +17,7 @@ import '../painters/lobby_painter.dart';
 import '../painters/shaft_painter.dart';
 import '../theme.dart';
 import 'art_icon.dart';
+import 'cabin_floor.dart';
 import 'entrance.dart';
 import 'glossy.dart';
 import 'load_gauge.dart';
@@ -551,8 +552,8 @@ class _KindBadge extends StatelessWidget {
 /// The cabin: a tap target that shows who is riding. With sprite art on and
 /// this kind's images loaded it draws the approved interior, the riders, then
 /// the two door leaves over them, with the floor pill (and the kind's sign)
-/// on top; otherwise the painted cabin. Either way the riders' feet sit at
-/// [Metrics.cabinFeetLine] and nothing drawn depends on load.
+/// on top; otherwise the painted cabin. Either way riders stand on the floor
+/// in two rows ([CabinFloor]) and nothing drawn depends on load.
 class _Cabin extends StatelessWidget {
   const _Cabin({
     required this.game,
@@ -601,39 +602,56 @@ class _Cabin extends StatelessWidget {
     );
   }
 
-  /// The riders in a row, feet [bottom] above the bottom of their stack
-  /// (less the part of the figure box below the feet).
-  Widget _riders(Metrics m, double bottom) => Positioned(
-        left: 0,
-        right: 0,
-        bottom: bottom - m.cabinFigure * ResidentFigure.belowFeet,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          // Shrinking a full cabin keeps the feet on the line.
-          alignment: Alignment.bottomCenter,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (final r in game.riders)
-                Align(
-                  widthFactor: 0.68,
-                  child: Opacity(
-                    opacity: hiddenIds.contains(r.id) ? 0 : 1,
-                    child: LandSettle(
-                      hidden: hiddenIds.contains(r.id),
-                      child: IdleSway(
-                        seed: r.id,
-                        amplitude: 0.5,
-                        builder: (context, blink) => ResidentFigure.of(r, height: m.cabinFigure, blink: blink),
-                      ),
-                    ),
-                  ),
+  /// The riders on the cabin floor (`cabin_floor.dart`): the back row, then
+  /// its items, then the front row and its items, so nearer things overlap
+  /// farther ones. [inset] is how far this stack sits inside the cabin box.
+  Widget _riders(Metrics m, {double inset = 0}) {
+    final spots = CabinFloor.layout(game.riders, m);
+    Widget place(CabinSpot s, {required bool item}) {
+      final r = s.resident;
+      final hidden = hiddenIds.contains(r.id);
+      final c = s.cargo;
+      Widget child = Opacity(
+        opacity: hidden ? 0 : 1,
+        child: LandSettle(
+          hidden: hidden,
+          child: item
+              ? CargoFigure(cargo: r.cargo, height: s.height)
+              : IdleSway(
+                  seed: r.id,
+                  amplitude: 0.5,
+                  builder: (context, blink) => ResidentFigure(type: r.type, height: s.height, blink: blink),
                 ),
-            ],
-          ),
         ),
       );
+      if (s.back) child = ColorFiltered(colorFilter: _backShade, child: child);
+      final feet = item ? c!.feet : s.feet;
+      return Positioned(
+        key: ValueKey((r.id, item)),
+        left: (item ? c!.left : s.left) - inset,
+        top: feet - s.height * (1 - ResidentFigure.belowFeet) - inset,
+        child: child,
+      );
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        for (final back in [true, false]) ...[
+          for (final s in spots.where((s) => s.back == back)) place(s, item: false),
+          for (final s in spots.where((s) => s.back == back && s.cargo != null)) place(s, item: true),
+        ],
+      ],
+    );
+  }
+
+  /// The back row, a shade darker for depth.
+  static const ColorFilter _backShade = ColorFilter.matrix([
+    Metrics.cabinBackShade, 0, 0, 0, 0, //
+    0, Metrics.cabinBackShade, 0, 0, 0, //
+    0, 0, Metrics.cabinBackShade, 0, 0, //
+    0, 0, 0, 1, 0, //
+  ]);
 
   /// The chime light as the lift stops: a soft wash falling from the top of
   /// the cabin, brightest as the lamp above flashes.
@@ -746,7 +764,7 @@ class _Cabin extends StatelessWidget {
                   ),
                 ),
               ),
-            _riders(m, m.cabinFeetInset),
+            Positioned.fill(child: _riders(m)),
             if (doorOpen < 1) _dim(),
             _wash(),
             if (crashed) const IgnorePointer(child: ColoredBox(color: LL.crashTint)),
@@ -838,7 +856,7 @@ class _Cabin extends StatelessWidget {
                         ),
                       ),
                     // This stack sits inside the cabin's padding.
-                    _riders(m, m.cabinFeetInset - m.cabinPadding),
+                    Positioned.fill(child: _riders(m, inset: m.cabinPadding)),
                     if (doorOpen < 1) Positioned.fill(child: _dim()),
                     _wash(),
                   ],

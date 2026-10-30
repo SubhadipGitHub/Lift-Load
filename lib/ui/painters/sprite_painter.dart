@@ -108,3 +108,29 @@ class SpriteFigurePainter extends CustomPainter {
   bool shouldRepaint(SpriteFigurePainter old) =>
       old.person != person || old.cargo != cargo || old.designWidth != designWidth || old.ghost != ghost;
 }
+
+/// A cargo sprite on its own, standing on the feet line of a [cargoWidth]-wide
+/// box with its contact shadow: an item set down on the cabin floor.
+class SpriteCargoPainter extends CustomPainter {
+  SpriteCargoPainter(this.image);
+
+  final ui.Image image;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = size.height / designHeight;
+    final rect = SpriteFigurePainter._standing(image, size.width / 2, feetY * k, k);
+    SpriteFigurePainter.paintContactShadow(canvas, rect);
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      rect,
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..isAntiAlias = true,
+    );
+  }
+
+  @override
+  bool shouldRepaint(SpriteCargoPainter old) => old.image != image;
+}
