@@ -61,7 +61,7 @@ The blind bot wins 79 of the 100 levels.
 (a spare trip, or the perfect bar) is nearly automatic: the blind bot earns it on 77 of its 79 wins, because the trip
 budget is par plus slack.
 
-## Recommendation (needs the owner's sign-off; it amends PRD v1.8 C)
+## Recommendation (signed off by the owner 2026-10-30; PRD v1.8 C amended)
 
 - **3 stars:** win with at least P perfect lifts, where P = ⌊⅔ × best-play perfects⌋, minimum 1. Show it on the level
   intro and win sheet as "3 stars: P perfect lifts".

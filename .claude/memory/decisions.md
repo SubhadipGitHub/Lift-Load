@@ -2,6 +2,16 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-30 · v1.8 stars amended (owner signed off)
+
+- **3 stars = win with >= P perfect lifts; 2 stars = >= ceil(P/2); 1 star = win. P = floor(2/3 x best-play
+  perfects), minimum 1, per level.** The specced rule (every send green plus perfects >= ceil(sends/3)) was reached
+  on 0 of 100 levels by best play. On 33 levels a grey is forced by floor weights alone. A grey send already resets
+  the combo, so it costs no star. `docs/star-study.md`, `tool/star_study.dart`.
+- **P ships as an offline `Formulas` table, guarded by `generator_test`.** The search is too slow for the runtime
+  generator. The daily challenge target is still open.
+- **Lever:** if Gate A shows people land far fewer perfects than the blind bot, lower the share from 2/3 to 1/2.
+
 ## 2026-10-28 · v1.8 "vibrant and fun" direction (owner's answers)
 
 - **Gate A runs first on today's build; v1.8 is designed in parallel and built after the result.** Mechanics before
