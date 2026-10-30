@@ -15,7 +15,7 @@ entries; fold older ones into "Earlier".
   - The lobby inks pass on every floor (4.4 to 5.0:1).
 
 **Open**
-- Owner: keep the pot-plant prop only on the painted fallback (recommended)? Plate on every venue (recommended)?
+- Owner decided (recommendations): the prop shows only on the painted fallback, and the plate goes on every venue.
 - The build waits for the Gate A result: PR 1 is walls, doorways and the plate; PR 2 is palette and juice.
 
 ## 2026-10-30 · Cabin floor rows, visual only (branch cabin-floor-rows)

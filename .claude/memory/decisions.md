@@ -2,6 +2,12 @@
 
 Newest first. One line of decision, one line of why. Reopen a decision only with new evidence.
 
+## 2026-10-30 · Colour worlds wiring (owner: "go with your recommendations")
+
+- **The pot-plant prop under NEXT is drawn only on the painted fallback wall.** The new walls paint their own plants.
+- **The NEXT plate (LL.cabinPlate) goes behind the NEXT column on every venue**, so the HUD keeps one shape. It
+  replaces a wall wash, which would have needed 72-77% on the bright walls. Plan: `docs/colour-worlds-plan.md`.
+
 ## 2026-10-30 · Cabin floor rows ship before Gate A (owner)
 
 - **The look of PRD v1.8 B ships now, visual only:** riders stand on the cabin floor in two rows, items set down at

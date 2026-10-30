@@ -73,13 +73,13 @@ Two PRs, each green on its own.
      - at the design size, `placement` puts the doorway on the cabin column and its bottom on the cabin floor
        (extending `test/backdrop_test.dart`).
 3. **The NEXT plate.**
-   - A rounded plate in `LL.cabinPlate` behind the NEXT label and chips, on every venue, so the look does not change
-     between walls.
+   - A rounded plate in `LL.cabinPlate` behind the NEXT label and chips, on every venue (owner decision 2), so the
+     look does not change between walls.
    - The shipped scrim stays as it is.
    - Test: the label and all six floor colours against the plate composited over white, the worst case, at 4.5:1 for
      the label and 3:1 for the chips. It uses theme constants only.
-4. **The painted prop.** The new walls paint their own plants, lamps and decor, so the pot-plant prop would double
-   up. My recommendation is to draw it only on the painted fallback wall (open question 1).
+4. **The painted prop.** The new walls paint their own plants, lamps and decor, so the pot-plant prop is drawn only
+   on the painted fallback wall (owner decision 1). Test: with a backdrop loaded, no `VenuePropPainter` is in the tree.
 5. **Fallback colours.** Retune the painted fallback `VenueStyle.wall` and `skyTop`/`skyBottom` to each world's hue,
    for a device where an image fails to load. Keep `floor` and `laneInk` as they are (they pass).
 
@@ -109,9 +109,8 @@ Two PRs, each green on its own.
 - Screenshots of each venue at 450×800 and 1280×720 from a release web build, compared with
   `docs/art/venue-worlds/palette-board.png`, before the PR is marked ready.
 
-## Open questions for the owner
+## Owner decisions (2026-10-30, "go with your recommendations")
 
-1. **The pot-plant prop under NEXT:** keep it on every venue, or only where the wall is the painted fallback?
-   Recommended: fallback only, since the new walls already have plants and lamps.
-2. **NEXT plate on every venue, or only on the bright ones?** Recommended: every venue, so the HUD does not change
-   shape between buildings.
+1. **The pot-plant prop under NEXT** is drawn only on the painted fallback wall. The new walls already paint their own
+   plants and lamps.
+2. **The NEXT plate** is drawn on every venue, so the HUD keeps one shape across buildings.
