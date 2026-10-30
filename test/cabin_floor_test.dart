@@ -28,14 +28,30 @@ void main() {
   });
 
   test('a rider keeps their spot as more board behind them', () {
-    final riders = [for (var i = 0; i < 6; i++) r(i, ResidentType.values[i % 9], Cargo.waterCan)];
+    final riders = [for (var i = 0; i < 8; i++) r(i, ResidentType.values[i % 9], Cargo.waterCan)];
     for (var n = 1; n < riders.length; n++) {
       final before = CabinFloor.layout(riders.sublist(0, n), phone);
       final after = CabinFloor.layout(riders.sublist(0, n + 1), phone);
       for (var i = 0; i < n; i++) {
-        expect(after[i].back, before[i].back, reason: 'rider $i keeps their row');
+        expect((after[i].back, after[i].left, after[i].feet), (before[i].back, before[i].left, before[i].feet),
+            reason: 'rider $i stays put when rider $n boards');
       }
     }
+  });
+
+  test('the front row stands in the gaps, so every back-row head shows', () {
+    final riders = [for (var i = 0; i < 5; i++) r(i, ResidentType.officeM)];
+    final spots = CabinFloor.layout(riders, phone);
+    double centre(CabinSpot s) => s.left + s.personWidth / 2;
+    final back = spots.where((s) => s.back), front = spots.where((s) => !s.back);
+    for (final f in front) {
+      for (final b in back) {
+        expect((centre(f) - centre(b)).abs(), greaterThan(b.personWidth * 0.3),
+            reason: 'a front rider stands off every back rider');
+      }
+    }
+    // The back row's heads clear the front row's.
+    expect(back.first.top, lessThan(front.first.top));
   });
 
   test('rule 3: spots depend on boarding order and the look, never on floor or anything hidden', () {
@@ -47,7 +63,7 @@ void main() {
     }
   });
 
-  test('a crowded cabin shrinks each row to fit; nothing hangs outside the cabin', () {
+  test('however crowded, nothing hangs outside the cabin', () {
     for (final t in [ResidentType.pram, ResidentType.gym, ResidentType.kid]) {
       for (var n = 1; n <= 9; n++) {
         final riders = [for (var i = 0; i < n; i++) r(i, t, t.canCarry ? Cargo.suitcase : Cargo.none)];

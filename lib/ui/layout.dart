@@ -171,21 +171,21 @@ class Metrics {
   /// Riders stand on the cabin floor in two rows (`widgets/cabin_floor.dart`).
   /// Feet lines as fractions of the cabin's height: the back row just in
   /// front of the back wall, the front row near the floor's front edge. All
-  /// four cabin interiors put their floor between 0.80 and 0.97.
-  static const double cabinBackFeetLine = 0.855;
-  static const double cabinFrontFeetLine = 0.935;
+  /// four cabin interiors put their floor between 0.80 and 0.97. The back
+  /// row stands high enough that its heads clear the front row's.
+  static const double cabinBackFeetLine = 0.835;
+  static const double cabinFrontFeetLine = 0.95;
 
   /// The back row stands this much smaller and darker, for depth.
-  static const double cabinBackScale = 0.88;
+  static const double cabinBackScale = 0.86;
   static const double cabinBackShade = 0.86;
 
-  /// Riders who walk to the back before the front row starts filling.
-  static const int cabinBackSlots = 3;
-
-  /// Each rider starts this far across the one before (of their width), and a
-  /// row may use this much of the cabin's width before it shrinks to fit.
-  static const double cabinRiderStep = 0.68;
-  static const double cabinRowSpan = 0.94;
+  /// Where riders stand across the cabin, as fractions of its width, in the
+  /// order they take them. The back row fills first; the front row stands
+  /// in the gaps between the back row's riders, then at the sides, so the
+  /// back row shows between them. A spot never moves once taken.
+  static const List<double> cabinBackSpots = [0.5, 0.24, 0.76];
+  static const List<double> cabinFrontSpots = [0.37, 0.63, 0.13, 0.87, 0.5, 0.25, 0.75];
 
   /// An item is set down this much (of the cabin's height) in front of its
   /// owner's feet, tucked this much (of its width) in against their legs.

@@ -7,8 +7,9 @@ Newest first. One line of decision, one line of why. Reopen a decision only with
 - **The look of PRD v1.8 B ships now, visual only:** riders stand on the cabin floor in two rows, items set down at
   their owners' feet. The owner asked after seeing the live build. Testers have not started, so the build Gate A
   measures includes it.
-- **Back row first:** the first three riders walk to the back wall (0.88 scale, a shade darker), later riders stand
-  in front. Placement depends only on boarding order and the visible look (rule 3).
+- **Back row first, front row in the gaps:** the first three riders walk to the back wall (0.86 scale, a shade
+  darker, heads clearing the front row's). Later riders stand in the gaps between them, then at the sides, so the back
+  row stays visible (owner: "show the back row from in between the front row"). Placement depends only on boarding order and the visible look (rule 3).
 - **Still waiting for slice 2:** the player picking a row (tapping the top or bottom half of the cabin) and cabin
   spots (refusal from L22).
 

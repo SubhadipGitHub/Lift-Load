@@ -1,12 +1,13 @@
 /// Where riders stand on the cabin floor: two rows in depth, items set down
 /// by their owners' feet.
 ///
-/// The first [Metrics.cabinBackSlots] riders walk to the back wall, a little
-/// smaller and darker; everyone after them stands in the front row. Within a
-/// row, riders stand left to right in boarding order, overlapping a little,
-/// and a row too wide for the cabin shrinks to fit. Placement depends only on
-/// boarding order and how riders look (type and cargo, both visible), never
-/// on weight (rule 3).
+/// The first riders walk to the back wall, a little smaller and darker, one
+/// per spot of [Metrics.cabinBackSpots]; everyone after them stands in the
+/// front row, in the gaps between the back row first so the back row shows
+/// through ([Metrics.cabinFrontSpots]). A spot never moves once taken, and a
+/// figure near a wall is nudged in so nothing hangs outside the cabin.
+/// Placement depends only on boarding order and how riders look (type and
+/// cargo, both visible), never on weight (rule 3).
 library;
 
 import '../../game/cast.dart';
@@ -60,38 +61,28 @@ class CabinSpot {
 abstract final class CabinFloor {
   /// Spots for [riders] in boarding order, in a cabin of [m]'s size.
   static List<CabinSpot> layout(List<Resident> riders, Metrics m) {
-    final split = riders.length < Metrics.cabinBackSlots ? riders.length : Metrics.cabinBackSlots;
+    const back = Metrics.cabinBackSpots, front = Metrics.cabinFrontSpots;
     return [
-      ..._row(riders.sublist(0, split), m, back: true),
-      ..._row(riders.sublist(split), m, back: false),
+      for (var i = 0; i < riders.length; i++)
+        i < back.length
+            ? _spot(riders[i], m, back[i], back: true)
+            : _spot(riders[i], m, front[(i - back.length) % front.length], back: false),
     ];
   }
 
-  static List<CabinSpot> _row(List<Resident> row, Metrics m, {required bool back}) {
-    if (row.isEmpty) return const [];
-    final base = m.cabinFigure * (back ? Metrics.cabinBackScale : 1);
-    double widthOf(Resident r, double h) => h / designHeight * ResidentLook.designWidth(r.type, r.cargo);
-    var span = 0.0;
-    for (var i = 0; i < row.length; i++) {
-      span += widthOf(row[i], base) * (i == row.length - 1 ? 1 : Metrics.cabinRiderStep);
-    }
-    final room = m.cabinWidth * Metrics.cabinRowSpan;
-    final fit = span > room ? room / span : 1.0;
-    final height = base * fit;
-    final feet = m.cabinHeight * (back ? Metrics.cabinBackFeetLine : Metrics.cabinFrontFeetLine);
-    var left = (m.cabinWidth - span * fit) / 2;
-    final spots = <CabinSpot>[];
-    for (final r in row) {
-      spots.add(CabinSpot(
-        resident: r,
-        back: back,
-        left: left,
-        feet: feet,
-        height: height,
-        cargoForward: m.cabinHeight * Metrics.cabinCargoForward * (back ? Metrics.cabinBackScale : 1),
-      ));
-      left += widthOf(r, height) * Metrics.cabinRiderStep;
-    }
-    return spots;
+  static CabinSpot _spot(Resident r, Metrics m, double across, {required bool back}) {
+    final height = m.cabinFigure * (back ? Metrics.cabinBackScale : 1);
+    final unit = height / designHeight;
+    final person = unit * ResidentLook.designWidth(r.type, Cargo.none);
+    final footprint = unit * ResidentLook.designWidth(r.type, r.cargo);
+    final left = (m.cabinWidth * across - person / 2).clamp(0.0, m.cabinWidth - footprint);
+    return CabinSpot(
+      resident: r,
+      back: back,
+      left: left,
+      feet: m.cabinHeight * (back ? Metrics.cabinBackFeetLine : Metrics.cabinFrontFeetLine),
+      height: height,
+      cargoForward: m.cabinHeight * Metrics.cabinCargoForward * (back ? Metrics.cabinBackScale : 1),
+    );
   }
 }
