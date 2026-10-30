@@ -3,6 +3,18 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-30 · v1.8 colour-world backdrops, intake started (branch art-venue-worlds)
+
+**Done**
+- 1 of 20 backdrops approved into `docs/art/approved/` (not shipped): `bg_society_v2_shaft_ground`. Centre third is a calm
+  flat panel, detail at the sides, no text.
+
+**Open**
+- 19 prompts left, served one at a time: society_v2 mid, high, lobby, then office, hospital, mall, hotel (shaft ground,
+  mid, high, lobby each).
+- The coral side walls are bright (luminance about 0.33): cream labels such as NEXT would sit near 3:1. Build with a
+  light dark wash over shaft walls (PRD v1.8, floor-colour/wall contrast test), not a re-roll.
+
 ## 2026-10-28 · PRD v1.8 "vibrant and fun" draft and colour-world art prep (branch prd-v18-vibrant)
 
 **Done**
