@@ -284,7 +284,8 @@ void main() {
     final rider = find.descendant(of: find.byType(LiftShaft), matching: find.byType(ResidentFigure)).first;
     final box = tester.getRect(rider);
     final feet = box.bottom - box.height * ResidentFigure.belowFeet;
-    expect(feet, closeTo(cabin.top + cabin.height * Metrics.cabinFeetLine, 0.5));
+    // The first rider walks to the back row.
+    expect(feet, closeTo(cabin.top + cabin.height * Metrics.cabinBackFeetLine, 0.5));
   });
 
   testWidgets('a cabin image that fails keeps that kind painted, the others in art', (tester) async {

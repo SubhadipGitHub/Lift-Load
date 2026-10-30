@@ -88,6 +88,36 @@ class ResidentFigure extends StatelessWidget {
   }
 }
 
+/// A [cargo] item on its own at a figure [height], in a [cargoWidth]-wide box:
+/// the cabin sets items down on the floor beside their owners. The sprite
+/// when it is loaded, otherwise the painted prop.
+class CargoFigure extends StatelessWidget {
+  const CargoFigure({super.key, required this.cargo, required this.height});
+
+  final Cargo cargo;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final painted = CargoPainter(cargo);
+    return SizedBox(
+      width: height / designHeight * cargoWidth,
+      height: height,
+      child: !SpriteArtScope.of(context)
+          ? CustomPaint(painter: painted)
+          : ListenableBuilder(
+              listenable: SpriteCache.instance,
+              builder: (context, _) => CustomPaint(
+                painter: switch (SpriteCache.instance.cargo(cargo)) {
+                  final image? => SpriteCargoPainter(image),
+                  null => painted,
+                },
+              ),
+            ),
+    );
+  }
+}
+
 /// The floor tag shown above a waiting resident: a glossy pill in the
 /// floor's colour with its label (style frame, `.tag`).
 /// The outline and edge paint around the tag, so its layout height is the

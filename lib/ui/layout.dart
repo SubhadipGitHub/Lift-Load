@@ -168,12 +168,29 @@ class Metrics {
   /// backdrop's doorway is fitted to the cabin plus this on each side.
   double get shaftChannel => 6 * scale;
 
-  /// Riders' feet sit at this fraction of the cabin's height, mid-floor
-  /// (`docs/art/gemini-art-pack.md`, Integration).
-  static const double cabinFeetLine = 0.90;
+  /// Riders stand on the cabin floor in two rows (`widgets/cabin_floor.dart`).
+  /// Feet lines as fractions of the cabin's height: the back row just in
+  /// front of the back wall, the front row near the floor's front edge. All
+  /// four cabin interiors put their floor between 0.80 and 0.97.
+  static const double cabinBackFeetLine = 0.855;
+  static const double cabinFrontFeetLine = 0.935;
 
-  /// From the bottom of the cabin up to the riders' feet.
-  double get cabinFeetInset => cabinHeight * (1 - cabinFeetLine);
+  /// The back row stands this much smaller and darker, for depth.
+  static const double cabinBackScale = 0.88;
+  static const double cabinBackShade = 0.86;
+
+  /// Riders who walk to the back before the front row starts filling.
+  static const int cabinBackSlots = 3;
+
+  /// Each rider starts this far across the one before (of their width), and a
+  /// row may use this much of the cabin's width before it shrinks to fit.
+  static const double cabinRiderStep = 0.68;
+  static const double cabinRowSpan = 0.94;
+
+  /// An item is set down this much (of the cabin's height) in front of its
+  /// owner's feet, tucked this much (of its width) in against their legs.
+  static const double cabinCargoForward = 0.018;
+  static const double cabinCargoTuck = 0.35;
 
   /// Cabin chrome over the art: the floor pill row's inset from the top.
   double get cabinChromeTop => 7 * scale;
