@@ -3,15 +3,16 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
-## 2026-10-30 · v1.8 colour-world backdrops, intake started (branch art-venue-worlds)
+## 2026-10-30 · v1.8 colour-world backdrops, intake (branch art-venue-worlds, PR #30)
 
 **Done**
-- 17 of 20 backdrops approved into `docs/art/approved/` (not shipped): the Sunrise v2 set (`bg_society_v2_shaft_ground`, `_mid`, `_high`, `_lobby`; lobby contrast 4.5:1). Centre third is a calm
-  flat panel, detail at the sides, no text.
+- 17 of 20 backdrops approved into `docs/art/approved/` (not shipped), all centre-third-empty with detail at the sides and
+  no text: Sunrise v2 (4, lobby 4.5:1), Skyline Offices (4, lobby 4.5:1), Lakeside Hospital (4, lobby 4.6:1), Bazaar Mall
+  (4, lobby 4.6:1) and the hotel ground wall. Hospital `shaft_high` was re-rolled once: the first take drew a dial with
+  coloured zones and chip stacks (a load-gauge look-alike), so its prompt now forbids dials, gauges, buttons and chips.
 
 **Open**
-- 3 prompts left, served one at a time: hotel mid, high, lobby; then hospital, mall, hotel (shaft ground,
-  mid, high, lobby each).
+- 3 prompts left, served one at a time: hotel mid, high and lobby.
 - The coral side walls are bright (luminance about 0.33): cream labels such as NEXT would sit near 3:1. Build with a
   light dark wash over shaft walls (PRD v1.8, floor-colour/wall contrast test), not a re-roll.
 
