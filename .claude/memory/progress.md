@@ -3,6 +3,21 @@
 Update at the end of every session and before switching domains (skill: `session-checkpoint`). Keep the last five
 entries; fold older ones into "Earlier".
 
+## 2026-10-30 · Colour worlds wiring plan (branch colour-worlds-plan)
+
+**Done**
+- `docs/colour-worlds-plan.md`: the build plan for v1.8 slice 1. `tool/art/wall_contrast.py` reproduces its numbers,
+  and `docs/art/venue-worlds/doorway-check.png` shows the doorway fit.
+- Findings:
+  - The 15 new walls do not match the shared `ArtAssets.shaftDoorway`, so each wall needs a doorway measured by hand.
+  - The bright new walls need a dark plate (LL.cabinPlate) behind the NEXT column, not a wall wash (a wash would
+    need 72-77%). The plate gives label 6.4:1 and chips 3.6:1 or better on every wall, 6.3 and 3.4 over pure white.
+  - The lobby inks pass on every floor (4.4 to 5.0:1).
+
+**Open**
+- Owner decided (recommendations): the prop shows only on the painted fallback, and the plate goes on every venue.
+- The build waits for the Gate A result: PR 1 is walls, doorways and the plate; PR 2 is palette and juice.
+
 ## 2026-10-30 · Cabin floor rows, visual only (branch cabin-floor-rows)
 
 **Done**
